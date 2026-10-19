@@ -1,0 +1,23 @@
+# Server Port
+server.port=8080
+
+# 1. PostgreSQL Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/ticketrush
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA / Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# 2. Redis Configuration
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+# spring.data.redis.password=
+
+# 3. JWT Configuration (Nội bộ hệ thống)
+jwt.secret=TicketRushSuperSecretKeyForJwtSigningMustBeAtLeast256BitsLongTicketRush2026!
+jwt.expiration=86400000

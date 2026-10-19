@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,12 +86,11 @@ public class EventService {
     @Transactional
     public EventResponse createEvent(EventCreateRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof Jwt)) {
+        if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("Xác thực không hợp lệ!");
         }
 
-        Jwt jwt = (Jwt) auth.getPrincipal();
-        String adminId = jwt.getSubject();
+        String adminId = auth.getName();
 
         User admin = userRepository.findById(UUID.fromString(adminId))
                 .orElseThrow(() -> new RuntimeException("Tài khoản Admin không tồn tại!"));

@@ -87,8 +87,11 @@ export default function AuthModal() {
         );
         setMessage({
           type: "success",
-          text: "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.",
+          text: "Đăng ký thành công!",
         });
+        setTimeout(() => {
+          closeAuthModal();
+        }, 1000);
       }
     } catch (error) {
       setMessage({ type: "error", text: error.message || "Đã có lỗi xảy ra." });

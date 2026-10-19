@@ -1,149 +1,148 @@
-import { supabase } from "../lib/supabaseClient";
+import axiosClient from "./axiosClient";
+
+const listeners = [];
+
+function notifyListeners(event, session) {
+  listeners.forEach((callback) => {
+    try {
+      callback(event, session);
+    } catch (e) {
+      console.error("Error in auth listener:", e);
+    }
+  });
+}
+
+function formatUser(rawUser) {
+  if (!rawUser) return null;
+  const role = (rawUser.role || "USER").toUpperCase();
+  return {
+    ...rawUser,
+    role,
+    app_metadata: {
+      role: role,
+    },
+    user_metadata: {
+      full_name: rawUser.fullName || "",
+    },
+  };
+}
 
 /**
- * Auth API — tất cả giao tiếp với Supabase Auth được đóng gói tại đây.
- * Frontend chỉ cần import và gọi, KHÔNG cần biết chi tiết bên trong.
+ * Auth API — Quản lý xác thực nội bộ với Spring Boot (BCrypt + JWT).
  */
 export const authApi = {
   /**
    * Đăng ký tài khoản mới bằng Email + Password.
-   * Các thông tin bổ sung (full_name, date_of_birth, gender) được gửi vào
-   * `options.data` để SQL Trigger tự động tạo profile trong bảng `users`.
-   *
-   * @param {string} email
-   * @param {string} password - Tối thiểu 6 ký tự
-   * @param {string} fullName - Họ và tên đầy đủ
-   * @param {string} dateOfBirth - Định dạng "YYYY-MM-DD"
-   * @param {string} gender - "Male" | "Female" | "Other"
-   * @returns {Promise<object>} user object từ Supabase
    */
-  async registerWithEmail(email, password, fullName, dateOfBirth, gender) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          date_of_birth: dateOfBirth,
-          gender: gender,
-        },
-      },
-    });
+  async registerWithEmail(email, password, fullName, dateOfBirth, gender, phoneNumber) {
+    try {
+      const response = await axiosClient.post("/auth/register", {
+        email,
+        password,
+        fullName,
+        dateOfBirth: dateOfBirth || null,
+        gender: gender || "Other",
+        phoneNumber: phoneNumber || null,
+      });
 
-    if (error) throw error;
+      const { token, user } = response.data;
+      const formattedUser = formatUser(user);
+      const session = { access_token: token, user: formattedUser };
 
-    // data.user tồn tại nhưng session=null nếu cần xác thực email trước
-    return data.user;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(formattedUser));
+
+      notifyListeners("SIGNED_IN", session);
+      return formattedUser;
+    } catch (error) {
+      const message = error.response?.data?.message || error.response?.data || error.message || "Đăng ký thất bại";
+      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    }
   },
 
   /**
    * Đăng nhập bằng Email + Password.
-   *
-   * @param {string} email
-   * @param {string} password
-   * @returns {Promise<object>} session object chứa access_token
    */
   async loginWithEmail(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const response = await axiosClient.post("/auth/login", {
+        email,
+        password,
+      });
 
-    if (error) throw error;
+      const { token, user } = response.data;
+      const formattedUser = formatUser(user);
+      const session = { access_token: token, user: formattedUser };
 
-    return data.session;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(formattedUser));
+
+      notifyListeners("SIGNED_IN", session);
+      return session;
+    } catch (error) {
+      const message = error.response?.data?.message || error.response?.data || error.message || "Đăng nhập thất bại";
+      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    }
   },
 
   /**
-   * Đăng nhập bằng Google OAuth.
-   * Hàm này sẽ chuyển hướng trình duyệt sang trang đăng nhập Google.
-   * Sau khi Google xác thực xong, user sẽ được redirect về:
-   * `http://localhost:5173/auth/callback`
-   * Không cần xử lý giá trị trả về — Supabase tự handle session.
+   * Đăng nhập Google (Placeholder).
    */
   async loginWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-
-    if (error) throw error;
+    throw new Error("Chế độ đăng nhập Google chỉ áp dụng khi có OAuth Provider. Vui lòng đăng nhập bằng Email/Password.");
   },
 
   /**
-   * Lấy session hiện tại (nếu user đang đăng nhập).
-   * Dùng trong useEffect để kiểm tra trạng thái đăng nhập khi app khởi động.
-   *
-   * @returns {Promise<object|null>} session object hoặc null
+   * Lấy session hiện tại từ localStorage.
    */
   async getCurrentSession() {
-    const { data, error } = await supabase.auth.getSession();
+    const token = localStorage.getItem("token");
+    const rawUserStr = localStorage.getItem("user");
 
-    if (error) throw error;
+    if (!token || !rawUserStr) {
+      return null;
+    }
 
-    return data.session;
+    try {
+      const formattedUser = JSON.parse(rawUserStr);
+      return {
+        access_token: token,
+        user: formattedUser,
+      };
+    } catch (e) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return null;
+    }
   },
 
   /**
-   * Lấy thông tin user hiện tại đang đăng nhập.
-   *
-   * @returns {Promise<object|null>} user object hoặc null
+   * Lấy thông tin user hiện tại.
    */
   async getCurrentUser() {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error) throw error;
-
-    return data.user;
+    const session = await this.getCurrentSession();
+    return session?.user ?? null;
   },
 
   /**
-   * Đăng xuất — xóa session khỏi localStorage và Supabase server.
+   * Đăng xuất.
    */
   async logout() {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) throw error;
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    notifyListeners("SIGNED_OUT", null);
   },
 
   /**
-   * Quên mật khẩu — gửi email reset password.
-   *
-   * @param {string} email
-   */
-  async resetPassword(email) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-
-    if (error) throw error;
-  },
-
-  /**
-   * Cập nhật mật khẩu mới (sau khi user nhấn link trong email reset).
-   * Chỉ gọi hàm này khi user đã được redirect về trang reset với valid token.
-   *
-   * @param {string} newPassword
-   */
-  async updatePassword(newPassword) {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) throw error;
-  },
-
-  /**
-   * Đăng ký listener lắng nghe sự kiện thay đổi auth state.
-   * Dùng trong useAuth hook để cập nhật UI tự động khi login/logout.
-   *
-   * @param {function} callback - (event, session) => void
-   * @returns {function} unsubscribe function — gọi khi component unmount
+   * Đăng ký listener lắng nghe sự kiện auth.
    */
   onAuthStateChange(callback) {
-    const { data: subscription } = supabase.auth.onAuthStateChange(callback);
-    return () => subscription.subscription.unsubscribe();
+    listeners.push(callback);
+    return () => {
+      const index = listeners.indexOf(callback);
+      if (index !== -1) {
+        listeners.splice(index, 1);
+      }
+    };
   },
 };
