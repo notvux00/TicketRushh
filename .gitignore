@@ -1,0 +1,8 @@
+backend/src/main/resources/application.properties
+frontend/.env
+
+# Antigravity-kit
+/.agent
+
+# Document
+docs/

@@ -1,0 +1,1 @@
+mapper: Chứa logic để chuyển đổi qua lại giữa Entity và DTO (giúp code sạch hơn, không phải viết thủ công nhiều lần).

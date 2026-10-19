@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0B1F4D;
+  --color-secondary: #123A8F;
+  --color-background: #F5F7FB;
+  --color-surface: #ffffff;
+  --color-text: #1a1c1e;
+  --color-muted: #4B5563;
+  --color-accent: #1E5EFF;
+  --shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-glass-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --color-border: rgba(11, 31, 77, 0.08);
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-glass);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glass-hover);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #00327d 0%, #0056d2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}

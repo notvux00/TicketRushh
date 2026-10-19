@@ -1,0 +1,1 @@
+# Quản lý state toàn cục (nếu cần dùng Zustand/Context)
