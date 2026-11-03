@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShoppingCart, User, Info, 
   CreditCard, Ticket, Clock, X, Lock
 } from "lucide-react";
-import SockJS from "sockjs-client";
+import { getWsUrl } from "../lib/wsUrl";
 import { Client } from "@stomp/stompjs";
 import { eventApi } from "../api/eventApi";
 import Navbar from "../components/layout/Navbar";
@@ -44,7 +44,7 @@ export default function BookingPage() {
   const [selectedSeats, setSelectedSeats] = useState(() => {
     const saved = localStorage.getItem(`cart_${showtimeId}`);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return []; }
+      try { return JSON.parse(saved); } catch { return []; }
     }
     return [];
   });
@@ -149,7 +149,7 @@ export default function BookingPage() {
     if (!showtimeId) return;
 
     const client = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      brokerURL: getWsUrl(),
       // Tự reconnect sau 5 giây nếu mất kết nối
       reconnectDelay: 5000,
       // Heartbeat để phát hiện đứt kết nối sớm hơn

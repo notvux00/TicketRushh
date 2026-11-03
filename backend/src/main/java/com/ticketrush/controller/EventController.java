@@ -14,7 +14,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = "http://localhost:5173") // Cho phép Frontend truy cập
 public class EventController {
 
     @Autowired

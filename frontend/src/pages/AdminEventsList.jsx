@@ -29,7 +29,7 @@ import axiosClient from "../api/axiosClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { ZONE_COLORS, CANVAS_W, CANVAS_H } from "../constants/zoneColors";
 import { isEventExpired } from "../utils/eventUtils";
-import { supabase } from "../lib/supabaseClient";
+import { uploadMedia } from "../api/mediaApi";
 import { eventApi } from "../api/eventApi";
 
 const MotionDiv = motion.div;
@@ -274,6 +274,7 @@ function QueueManagementSection({ showtimeId }) {
     placeholderData: (previousData) => previousData,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (queueInfo?.threshold !== undefined) {
       setThreshold(queueInfo.threshold);
@@ -282,6 +283,7 @@ function QueueManagementSection({ showtimeId }) {
       setBatchSize(queueInfo.batchSize);
     }
   }, [queueInfo?.threshold, queueInfo?.batchSize]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const setThresholdMutation = useMutation({
     mutationFn: () => eventApi.adminSetQueueThreshold(showtimeId, threshold),
@@ -775,23 +777,10 @@ function AdminEventsList() {
 
     setIsUploadingCover(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `event-covers/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("event-covers")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = supabase.storage
-        .from("event-covers")
-        .getPublicUrl(filePath).data.publicUrl;
-
+      const publicUrl = await uploadMedia(file, "event-cover");
       updateDraftEvent("coverImage", publicUrl);
     } catch (error) {
-      alert("Lỗi tải ảnh lên Supabase: " + error.message);
+      alert("Lỗi tải ảnh lên S3: " + error.message);
     } finally {
       setIsUploadingCover(false);
       e.target.value = "";

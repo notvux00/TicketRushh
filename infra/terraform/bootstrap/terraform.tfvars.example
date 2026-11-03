@@ -1,0 +1,6 @@
+aws_region         = "ap-southeast-1"
+state_bucket_name  = "REPLACE-WITH-GLOBALLY-UNIQUE-NAME"
+lock_table_name    = "ticketrush-terraform-locks"
+github_org         = "REPLACE-WITH-GITHUB-OWNER"
+github_repo        = "cloud-proj"
+github_branch      = "main"

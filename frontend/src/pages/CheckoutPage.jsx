@@ -4,8 +4,9 @@ import { Calendar, Clock, Copy, MapPin, Ticket, User, XCircle, Lock, Building } 
 import Navbar from "../components/layout/Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { eventApi } from "../api/eventApi";
+import { DEFAULT_QR_URL } from "../lib/mediaUrl";
 
-const PAYMENT_QR = "https://suvvqekfdveuionhrsou.supabase.co/storage/v1/object/public/qr/qr_for_all.png";
+const PAYMENT_QR = DEFAULT_QR_URL;
 
 export default function CheckoutPage() {
   const { orderId } = useParams();

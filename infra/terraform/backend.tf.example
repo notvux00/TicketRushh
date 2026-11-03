@@ -1,0 +1,19 @@
+# Remote state backend example.
+#
+# The bootstrap stack creates the S3 bucket and DynamoDB lock table.
+# Copy this file into an environment directory as `backend.tf`, then replace
+# the placeholders with the bootstrap outputs:
+#
+#   cp backend.tf.example envs/demo/backend.tf
+#
+# Use a different `key` per environment (for example ticketrush/demo/... and
+# ticketrush/prod/...).
+terraform {
+  backend "s3" {
+    bucket         = "REPLACE-WITH-BOOTSTRAP-STATE-BUCKET"
+    key            = "ticketrush/REPLACE-WITH-ENV/terraform.tfstate"
+    region         = "ap-southeast-1"
+    dynamodb_table = "REPLACE-WITH-BOOTSTRAP-LOCK-TABLE"
+    encrypt        = true
+  }
+}

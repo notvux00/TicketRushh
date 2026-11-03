@@ -1,0 +1,53 @@
+name: Deploy backend (manual, gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "deploy" to confirm
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == 'deploy'
+    runs-on: ubuntu-latest
+    environment: demo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" backend
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+      - name: Publish image tag
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          PARAMETER_NAME: ${{ vars.IMAGE_TAG_PARAMETER }}
+        run: |
+          aws ssm put-parameter --name "$PARAMETER_NAME" --type String --overwrite --value "$IMAGE_TAG"
+
+      - name: Rolling refresh
+        env:
+          ASG_NAME: ${{ vars.ASG_NAME }}
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-rollback \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":180}'

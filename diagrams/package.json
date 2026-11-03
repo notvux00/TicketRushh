@@ -1,0 +1,23 @@
+{
+  "name": "ticketrush-diagrams",
+  "version": "1.0.0",
+  "description": "Draw.io architecture diagram for TicketRush (AWS + CI/CD)",
+  "main": "index.js",
+  "scripts": {
+    "build:demo": "node build_demo.mjs",
+    "build:prod": "node build_production.mjs",
+    "build": "npm run build:demo && npm run build:prod",
+    "validate:demo": "drawio-ai validate ../../docs/architecture/TicketRush-AWS-Architecture-Demo.drawio",
+    "validate:prod": "drawio-ai validate ../../docs/architecture/TicketRush-AWS-Architecture-Production.drawio",
+    "validate": "npm run validate:demo && npm run validate:prod",
+    "render:demo": "drawio-ai render ../../docs/architecture/TicketRush-AWS-Architecture-Demo.drawio -o ../../docs/architecture/TicketRush-AWS-Architecture-Demo.png --scale 2",
+    "render:prod": "drawio-ai render ../../docs/architecture/TicketRush-AWS-Architecture-Production.drawio -o ../../docs/architecture/TicketRush-AWS-Architecture-Production.png --scale 2",
+    "render": "npm run render:demo && npm run render:prod"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "drawio-ai-kit": "^2.0.0"
+  }
+}

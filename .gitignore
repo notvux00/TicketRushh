@@ -1,8 +1,16 @@
-backend/src/main/resources/application.properties
 frontend/.env
+.env
+backend/.env
 
 # Antigravity-kit
 /.agent
 
-# Document
-docs/
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Local runtime
+frontend/dist/

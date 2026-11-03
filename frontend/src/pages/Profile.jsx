@@ -56,7 +56,7 @@ export default function Profile() {
 
     try {
       setUploading(true);
-      const publicUrl = await profileApi.uploadAvatar(file, user?.id);
+      const publicUrl = await profileApi.uploadAvatar(file);
       setProfile(prev => ({ ...prev, avatarUrl: publicUrl }));
       refreshProfile(); // Sync with global context (Navbar)
       setMessage({ type: "success", text: "Cập nhật ảnh đại diện thành công!" });

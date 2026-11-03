@@ -109,7 +109,7 @@ export const authApi = {
         access_token: token,
         user: formattedUser,
       };
-    } catch (e) {
+    } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       return null;

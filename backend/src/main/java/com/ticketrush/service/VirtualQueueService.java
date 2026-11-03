@@ -1,9 +1,12 @@
 package com.ticketrush.service;
 
 import com.ticketrush.model.dto.QueueStatusResponse;
+import com.ticketrush.realtime.RealtimePublisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -16,7 +19,7 @@ public class VirtualQueueService {
     private StringRedisTemplate redisTemplate;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private RealtimePublisher realtimePublisher;
 
     private static final int DEFAULT_ACTIVATION_THRESHOLD = 200;
     private static final int DEFAULT_BATCH_SIZE = 50;
@@ -178,7 +181,7 @@ public class VirtualQueueService {
             Map<String, Object> payload = new HashMap<>();
             payload.put("type", "ACCESS_GRANTED");
             payload.put("userId", userId);
-            messagingTemplate.convertAndSend("/topic/queue/" + showtimeId, payload);
+            realtimePublisher.publish("/topic/queue/" + showtimeId, payload);
         }
 
         // Broadcast POSITION_UPDATE cho tất cả users còn lại trong hàng chờ
@@ -198,7 +201,7 @@ public class VirtualQueueService {
         payload.put("type", "POSITION_UPDATE");
         payload.put("totalInQueue", totalInQueue != null ? totalInQueue.intValue() : 0);
         payload.put("activeUsers", getActiveCount(showtimeId));
-        messagingTemplate.convertAndSend("/topic/queue/" + showtimeId, payload);
+        realtimePublisher.publish("/topic/queue/" + showtimeId, payload);
     }
 
     /**
@@ -334,15 +337,18 @@ public class VirtualQueueService {
      * Lấy danh sách tất cả showtime đang có hàng chờ
      */
     public Set<String> getActiveQueueShowtimeIds() {
-        Set<String> keys = redisTemplate.keys("queue:waiting:*");
-        if (keys == null) return Set.of();
-        Set<String> ids = new HashSet<>();
-        for (String key : keys) {
-            // key format: queue:waiting:{showtimeId}
-            String id = key.replace("queue:waiting:", "");
-            ids.add(id);
-        }
-        return ids;
+        ScanOptions options = ScanOptions.scanOptions().match("queue:waiting:*").count(256).build();
+        Set<String> ids = redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            Set<String> found = new HashSet<>();
+            try (Cursor<byte[]> cursor = connection.scan(options)) {
+                while (cursor.hasNext()) {
+                    String key = new String(cursor.next());
+                    found.add(key.substring("queue:waiting:".length()));
+                }
+            }
+            return found;
+        });
+        return ids == null ? Set.of() : ids;
     }
 
     private int estimateWait(int position, UUID showtimeId) {

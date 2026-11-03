@@ -1,0 +1,43 @@
+# Production example. Do not apply this in the student/demo account without a
+# cost and security review. The prod stack is included so the modules can be
+# validated with production feature flags enabled.
+aws_region  = "ap-southeast-1"
+project     = "ticketrush"
+environment = "prod"
+
+# Keep this different from the demo subdomain. Delegate the NS records at
+# Cloudflare exactly as described in ../../README.md.
+domain_name = "sudothanh.me"
+subdomain   = "ticketrush-prod"
+
+admin_email = "admin@example.com"
+alarm_email = "alerts@example.com"
+
+image_tag     = "latest"
+instance_type = "t3.medium"
+
+asg_min_size         = 3
+asg_max_size         = 10
+asg_desired_capacity = 3
+
+db_instance_class          = "db.t4g.small"
+db_backup_retention_period = 14
+redis_node_type            = "cache.t4g.small"
+
+cloudfront_price_class = "PriceClass_200"
+log_retention_days     = 30
+enable_dashboard       = true
+
+nat_gateway_count          = 2
+enable_interface_endpoints = true
+enable_vpc_origin          = true
+enable_waf                 = true
+waf_rate_limit             = 2000
+
+# Placeholders only. Keep these false until the corresponding platform
+# resources are implemented.
+enable_shield_advanced = false
+enable_aws_backup      = false
+enable_cloudtrail      = false
+enable_guardduty       = false
+enable_config          = false

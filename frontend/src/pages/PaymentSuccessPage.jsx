@@ -1,18 +1,19 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, CheckCircle, MapPin, Info, Ticket } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
+import { DEFAULT_QR_URL } from "../lib/mediaUrl";
 
 export default function PaymentSuccessPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // Lấy dữ liệu vé từ state truyền qua
   const { selectedSeats, event, showtime } = location.state || {};
 
   if (!selectedSeats || !event) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <button 
+        <button
           onClick={() => navigate("/")}
           className="bg-primary text-white px-6 py-2 rounded-lg"
         >
@@ -28,7 +29,7 @@ export default function PaymentSuccessPage() {
 
       <main className="pt-24 pb-20 px-6 min-h-screen">
         <div className="max-w-3xl mx-auto">
-          
+
 
           <section className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-50 rounded-full mb-6 ring-4 ring-white shadow-sm">
@@ -42,7 +43,7 @@ export default function PaymentSuccessPage() {
           <div className="space-y-6">
             {selectedSeats.map((seat, index) => (
               <div key={seat.id} className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden relative border border-slate-100 flex flex-col md:flex-row transition-all duration-300 hover:shadow-2xl">
-                
+
                 {/* Event Info Section */}
                 <div className="flex-1 p-8 flex flex-col justify-between">
                   <div>
@@ -51,12 +52,12 @@ export default function PaymentSuccessPage() {
                         <span className="px-2.5 py-1 bg-blue-900/10 text-blue-900 text-[10px] font-extrabold uppercase tracking-widest rounded-lg">
                           {seat.zoneName?.includes("VIP") ? "VIP ACCESS" : "STANDARD"}
                         </span>
-                        <span className="text-slate-400 text-xs font-medium">#TR-{Math.floor(100000 + Math.random() * 900000)}</span>
+                        <span className="text-slate-400 text-xs font-medium">#TR-{String(100000 + index)}</span>
                       </div>
                     </div>
-                    
+
                     <h3 className="text-xl font-black text-slate-900 mb-6 leading-tight">{event.eventName}</h3>
-                    
+
                     <div className="grid grid-cols-2 gap-8">
                       <div>
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Chỗ ngồi</p>
@@ -70,7 +71,7 @@ export default function PaymentSuccessPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-8 pt-4 border-t border-slate-50 flex items-center gap-2 text-slate-500 text-sm">
                     <MapPin size={16} />
                     <span>{event.venueName}</span>
@@ -87,8 +88,8 @@ export default function PaymentSuccessPage() {
                 {/* QR Code Section */}
                 <div className="w-full md:w-52 bg-slate-50/30 p-8 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
                   <div className="p-4 bg-white shadow-sm rounded-xl mb-4">
-                    <img 
-                      src="https://suvvqekfdveuionhrsou.supabase.co/storage/v1/object/public/qr/qr_for_all.png" 
+                    <img
+                      src={DEFAULT_QR_URL}
                       alt="Ticket QR Code"
                       className="w-24 h-24 object-contain"
                     />
@@ -116,14 +117,14 @@ export default function PaymentSuccessPage() {
 
           {/* Navigation Buttons Moved to Bottom */}
           <div className="mt-12 flex justify-center gap-4">
-            <button 
+            <button
               onClick={() => navigate("/")}
               className="px-8 py-4 bg-white text-slate-900 border border-slate-200 font-black rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-3 text-sm"
             >
               <Home size={18} />
               Trang chủ
             </button>
-            <button 
+            <button
               onClick={() => navigate("/my-tickets")}
               className="px-8 py-4 bg-blue-900 text-white font-black rounded-2xl shadow-xl shadow-blue-900/20 hover:shadow-2xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-3 text-sm"
             >

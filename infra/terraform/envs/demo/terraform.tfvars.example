@@ -1,0 +1,26 @@
+aws_region  = "ap-southeast-1"
+project     = "ticketrush"
+environment = "demo"
+
+# The subdomain ticketrush.sudothanh.me is delegated from Cloudflare to the
+# Route 53 zone created by Terraform. sudothanh.me itself stays at Cloudflare.
+domain_name = "sudothanh.me"
+subdomain   = "ticketrush"
+
+admin_email    = "admin@gmail.com"
+admin_password = "admin123"
+alarm_email    = "alerts@example.com"
+
+image_tag     = "latest"
+instance_type = "t3.small"
+
+asg_min_size         = 2
+asg_max_size         = 4
+asg_desired_capacity = 2
+
+db_instance_class = "db.t4g.micro"
+redis_node_type   = "cache.t4g.micro"
+
+cloudfront_price_class = "PriceClass_200"
+log_retention_days     = 14
+enable_dashboard       = true

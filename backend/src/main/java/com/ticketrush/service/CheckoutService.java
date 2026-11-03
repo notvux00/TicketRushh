@@ -10,8 +10,9 @@ import com.ticketrush.repository.OrderRepository;
 import com.ticketrush.repository.SeatRepository;
 import com.ticketrush.repository.TicketRepository;
 import com.ticketrush.repository.UserRepository;
+import com.ticketrush.realtime.RealtimePublisher;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,14 +27,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CheckoutService {
     private static final int CHECKOUT_TTL_MINUTES = 10;
-    private static final String PAYMENT_QR_BASE = "https://suvvqekfdveuionhrsou.supabase.co/storage/v1/object/public/qr/qr_for_all.png";
+
+    @Value("${app.qr.base-url:/media/qr/qr_for_all.png}")
+    private String qrBaseUrl;
 
     private final OrderRepository orderRepository;
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final SeatLockService seatLockService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RealtimePublisher realtimePublisher;
     private final VirtualQueueService virtualQueueService;
 
     @Transactional
@@ -85,7 +88,7 @@ public class CheckoutService {
             Ticket ticket = new Ticket();
             ticket.setOrder(order);
             ticket.setSeat(seat);
-            ticket.setQrCode(PAYMENT_QR_BASE + "?order=" + order.getId() + "&seat=" + seat.getId());
+            ticket.setQrCode(qrBaseUrl + "?order=" + order.getId() + "&seat=" + seat.getId());
             ticketRepository.save(ticket);
         }
 
@@ -132,7 +135,7 @@ public class CheckoutService {
             Map<String, String> payload = new HashMap<>();
             payload.put("seatId", seatId.toString());
             payload.put("status", "SOLD");
-            messagingTemplate.convertAndSend("/topic/events/showtimes/" + showtimeId + "/seats", payload);
+            realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
         }
 
         // Giải phóng slot trong virtual queue

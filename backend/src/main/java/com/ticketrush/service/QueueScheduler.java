@@ -1,5 +1,6 @@
 package com.ticketrush.service;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ public class QueueScheduler {
      * cấp thẻ vào cửa cho batch tiếp theo nếu còn slot.
      */
     @Scheduled(fixedRate = 10000)
+    @SchedulerLock(name = "queueScheduler", lockAtMostFor = "30s", lockAtLeastFor = "5s")
     public void processQueues() {
         Set<String> showtimeIds = virtualQueueService.getActiveQueueShowtimeIds();
         if (showtimeIds.isEmpty()) return;

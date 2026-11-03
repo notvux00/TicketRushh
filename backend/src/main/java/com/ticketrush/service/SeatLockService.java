@@ -1,11 +1,12 @@
 package com.ticketrush.service;
 
+import com.ticketrush.realtime.RealtimePublisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,9 +23,35 @@ public class SeatLockService {
     private StringRedisTemplate redisTemplate;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private RealtimePublisher realtimePublisher;
+
+    @Value("${app.qr.base-url:/media/qr/qr_for_all.png}")
+    private String qrBaseUrl;
 
     private static final int LOCK_TTL_SECONDS = 600; // 10 minutes
+    private static final long LOCK_TTL_MILLIS = LOCK_TTL_SECONDS * 1000L;
+
+    /**
+     * Acquire all seat locks or none. Existing locks owned by the same user are
+     * renewed, which makes refresh (F5) safe.
+     */
+    private static final DefaultRedisScript<Long> LOCK_SEATS_SCRIPT = new DefaultRedisScript<>("""
+            local userId = ARGV[1]
+            local lockValue = ARGV[2]
+            local ttl = tonumber(ARGV[3])
+            for i = 1, #KEYS do
+              local current = redis.call('GET', KEYS[i])
+              if current then
+                if current ~= userId and string.sub(current, 1, string.len(userId) + 1) ~= userId .. ':' then
+                  return 0
+                end
+              end
+            end
+            for i = 1, #KEYS do
+              redis.call('SET', KEYS[i], lockValue, 'PX', ttl)
+            end
+            return 1
+            """, Long.class);
 
     /**
      * Lock multiple seats for a user
@@ -39,40 +66,19 @@ public class SeatLockService {
         }
 
         String lockValue = orderId == null ? userId : userId + ":" + orderId;
+        List<String> keys = seatIds.stream()
+                .map(seatId -> "lock:seat:" + showtimeId + ":" + seatId)
+                .toList();
 
-        // Try to lock all seats atomically if possible.
-        // For simplicity in Redis, we use a loop with SETNX.
-        // If one fails, we must rollback the successful ones.
-        boolean allLocked = true;
-        for (UUID seatId : seatIds) {
-            String key = "lock:seat:" + showtimeId + ":" + seatId;
-            Boolean locked = redisTemplate.opsForValue().setIfAbsent(key, lockValue, Duration.ofSeconds(LOCK_TTL_SECONDS));
-            
-            if (Boolean.FALSE.equals(locked)) {
-                // Ghế đã bị khóa. Kiểm tra xem ai là người khóa?
-                String existingLocker = redisTemplate.opsForValue().get(key);
-                if (isOwnedByUser(existingLocker, userId)) {
-                    // Ghế này đã được chính user này khóa từ trước (do F5 tải lại trang)
-                    // Gia hạn lại thời gian 10 phút và coi như thành công
-                    redisTemplate.opsForValue().set(key, lockValue, Duration.ofSeconds(LOCK_TTL_SECONDS));
-                } else {
-                    // Người khác đang giữ ghế này
-                    allLocked = false;
-                    break;
-                }
-            }
-        }
+        Long result = redisTemplate.execute(
+                LOCK_SEATS_SCRIPT,
+                keys,
+                userId,
+                lockValue,
+                String.valueOf(LOCK_TTL_MILLIS));
 
-        if (!allLocked) {
-            // Rollback already locked seats in this attempt
-            for (UUID seatId : seatIds) {
-                String key = "lock:seat:" + showtimeId + ":" + seatId;
-                String locker = redisTemplate.opsForValue().get(key);
-                if (lockValue.equals(locker)) {
-                    redisTemplate.delete(key);
-                }
-            }
-            return false; // Failed to lock all
+        if (result == null || result != 1L) {
+            return false;
         }
 
         // Broadcast to WebSocket that seats are LOCKED
@@ -80,7 +86,7 @@ public class SeatLockService {
             Map<String, String> payload = new HashMap<>();
             payload.put("seatId", seatId.toString());
             payload.put("status", "LOCKED");
-            messagingTemplate.convertAndSend("/topic/events/showtimes/" + showtimeId + "/seats", payload);
+            realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
         }
 
         return true;
@@ -101,7 +107,7 @@ public class SeatLockService {
                 Map<String, String> payload = new HashMap<>();
                 payload.put("seatId", seatId.toString());
                 payload.put("status", "AVAILABLE");
-                messagingTemplate.convertAndSend("/topic/events/showtimes/" + showtimeId + "/seats", payload);
+                realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
             }
         }
     }
@@ -212,7 +218,7 @@ public class SeatLockService {
             }
         }
 
-        // 2. Fetch User from DB (Supabase ID = userId). If not exists, create a JIT record.
+        // 2. Fetch User from DB (JWT subject = userId). If not exists, create a JIT record.
         com.ticketrush.model.entity.User user = userRepository.findById(UUID.fromString(userId))
                 .orElseGet(() -> {
                     log.info("User {} not found in local DB, creating JIT record", userId);
@@ -245,7 +251,7 @@ public class SeatLockService {
             com.ticketrush.model.entity.Ticket ticket = new com.ticketrush.model.entity.Ticket();
             ticket.setOrder(order);
             ticket.setSeat(seat);
-            ticket.setQrCode("https://suvvqekfdveuionhrsou.supabase.co/storage/v1/object/public/qr/qr_for_all.png"); // Use fixed Supabase QR link
+            ticket.setQrCode(qrBaseUrl + "?order=" + order.getId() + "&seat=" + seat.getId());
             ticketRepository.save(ticket);
         }
 
@@ -260,7 +266,7 @@ public class SeatLockService {
             Map<String, String> payload = new HashMap<>();
             payload.put("seatId", seatId.toString());
             payload.put("status", "SOLD");
-            messagingTemplate.convertAndSend("/topic/events/showtimes/" + showtimeId + "/seats", payload);
+            realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
         }
 
         return true;

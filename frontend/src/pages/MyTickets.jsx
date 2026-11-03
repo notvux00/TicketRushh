@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  MoreVertical, X, 
-  Ticket, 
-  ArrowRight, 
-  Timer, 
-  Check, 
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  MoreVertical, X,
+  Ticket,
+  ArrowRight,
+  Timer,
+  Check,
   Filter,
   ChevronRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { eventApi } from "../api/eventApi";
+import { DEFAULT_QR_URL } from "../lib/mediaUrl";
 
 export default function MyTickets() {
-  const [activeTab, setActiveTab] = useState("all");
   const [activeFilter, setActiveFilter] = useState("upcoming");
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,17 +53,17 @@ export default function MyTickets() {
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
       <main className="pt-32 pb-12 px-4 sm:px-6 max-w-5xl mx-auto">
-        
+
         {/* Filter Tabs Container */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
           <div className="flex border-b border-slate-50">
-            <button 
+            <button
               onClick={() => setActiveFilter("upcoming")}
               className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "upcoming" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-400 hover:text-slate-600"}`}
             >
               Sắp diễn ra
             </button>
-            <button 
+            <button
               onClick={() => setActiveFilter("past")}
               className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "past" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-400 hover:text-slate-600"}`}
             >
@@ -108,7 +108,7 @@ export default function MyTickets() {
                           </button>
                         </div>
                         <p className="text-sm text-slate-500 mb-4">Mã đơn hàng: #{order.id.substring(0, 8).toUpperCase()}</p>
-                        
+
                         <div className="flex flex-wrap gap-8 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-slate-400" />
@@ -135,7 +135,7 @@ export default function MyTickets() {
                               <p className="text-[#1e293b] font-bold text-lg">{ticket.zoneName} - {ticket.seatLabel}</p>
                             </div>
                           </div>
-                          <button 
+                          <button
                             onClick={() => openTicketModal(order, ticket)}
                             className="text-[#2563eb] text-sm font-bold flex items-center gap-1 hover:gap-2 transition-all"
                           >
@@ -154,15 +154,15 @@ export default function MyTickets() {
 
         {/* Ticket Detail Modal */}
         {isModalOpen && selectedTicket && (
-          <div 
+          <div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300"
             onClick={() => setIsModalOpen(false)}
           >
-            <div 
+            <div
               className="bg-white w-full max-w-[320px] rounded-[28px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="absolute top-3 right-3 p-1.5 hover:bg-black/10 rounded-full transition-colors z-20 text-white/80"
               >
@@ -174,11 +174,11 @@ export default function MyTickets() {
                 <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
                   <div className="absolute top-[-50%] left-[-20%] w-[140%] h-[200%] bg-white rotate-[15deg] rounded-[80px]"></div>
                 </div>
-                
+
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 relative z-10 backdrop-blur-md border border-white/30">
                   <Ticket size={20} className="text-white" />
                 </div>
-                
+
                 <h2 className="text-lg font-black text-white leading-tight mb-1 relative z-10 line-clamp-2">{selectedTicket.eventName}</h2>
                 <p className="text-blue-100 text-[9px] font-black uppercase tracking-[0.2em] relative z-10">Vé chính thức</p>
               </div>
@@ -188,7 +188,7 @@ export default function MyTickets() {
                 {/* Punch Holes Effect */}
                 <div className="absolute top-0 left-[-12px] w-6 h-6 bg-slate-900/80 rounded-full z-10"></div>
                 <div className="absolute top-0 right-[-12px] w-6 h-6 bg-slate-900/80 rounded-full z-10"></div>
-                
+
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-6">
                   <div>
                     <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Thời gian</p>
@@ -216,8 +216,8 @@ export default function MyTickets() {
                 {/* QR Code Section */}
                 <div className="flex flex-col items-center pt-6 border-t border-dashed border-slate-100">
                   <div className="p-3 bg-white border border-slate-100 rounded-2xl shadow-md mb-3 hover:scale-105 transition-transform duration-500">
-                    <img 
-                      src="https://suvvqekfdveuionhrsou.supabase.co/storage/v1/object/public/qr/qr_for_all.png" 
+                    <img
+                      src={DEFAULT_QR_URL}
                       alt="Ticket QR Code"
                       className="w-28 h-28 object-contain"
                     />

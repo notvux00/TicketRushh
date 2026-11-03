@@ -1,7 +1,11 @@
 package com.ticketrush.config;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -10,19 +14,32 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @Value("${app.websocket.allowed-origin-patterns:http://localhost:5173}")
+    private String[] allowedOriginPatterns;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Topic cho phép các client (Frontend) subscribe vào
-        config.enableSimpleBroker("/topic");
-        // Prefix dành cho các tin nhắn được gửi từ client lên server
+        config.enableSimpleBroker("/topic")
+                .setHeartbeatValue(new long[]{10_000, 10_000})
+                .setTaskScheduler(webSocketHeartbeatScheduler());
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint để client kết nối WebSocket, cho phép mọi domain CORS (vì dev)
+        // Native WebSocket only. SockJS fallback adds XHR polling/sticky-session
+        // complexity when running behind CloudFront and an ALB.
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns(allowedOriginPatterns);
+    }
+
+    @Bean(name = "taskScheduler")
+    @Primary
+    public ThreadPoolTaskScheduler webSocketHeartbeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("ws-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
     }
 }

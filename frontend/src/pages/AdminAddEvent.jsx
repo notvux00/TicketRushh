@@ -19,7 +19,7 @@ import {
   Grid,
 } from "lucide-react";
 import axiosClient from "../api/axiosClient";
-import { supabase } from "../lib/supabaseClient";
+import { uploadMedia } from "../api/mediaApi";
 import { Resizable } from "re-resizable";
 
 import { ZONE_COLORS, CANVAS_W, CANVAS_H } from "../constants/zoneColors";
@@ -163,33 +163,11 @@ function AdminAddEvent() {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `event-covers/${fileName}`;
-
-      // Upload lên bucket 'ticket-rush' (hoặc bucket bạn đã tạo)
-      const { error: uploadError } = await supabase.storage
-        .from("event-covers")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Lấy Public URL
-      const publicUrlResponse = supabase.getPublicUrl
-        ? supabase.storage.from("event-covers").getPublicUrl(filePath)
-        : {
-            data: {
-              publicUrl: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/event-covers/${filePath}`,
-            },
-          };
-
-      // Lưu ý: Tùy phiên bản SDK, syntax có thể khác chút
-      const publicUrl = publicUrlResponse.data.publicUrl;
-
+      const publicUrl = await uploadMedia(file, "event-cover");
       handleInputChange("coverImage", publicUrl);
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Lỗi tải ảnh lên Supabase: " + error.message);
+      alert("Lỗi tải ảnh lên S3: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -215,23 +193,11 @@ function AdminAddEvent() {
 
     setUploadingVideo(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `trailers/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("event-trailers")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = supabase.storage
-        .from("event-trailers")
-        .getPublicUrl(filePath).data.publicUrl;
+      const publicUrl = await uploadMedia(file, "trailer");
       handleInputChange("trailerUrl", publicUrl);
     } catch (error) {
       console.error("Video upload error:", error);
-      alert("Lỗi tải video lên Supabase: " + error.message);
+      alert("Lỗi tải video lên S3: " + error.message);
     } finally {
       setUploadingVideo(false);
     }

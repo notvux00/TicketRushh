@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { 
   HelpCircle, User, AlertTriangle, Play, 
   Clock, ShoppingCart, ShieldCheck, ArrowLeft,
   X, LogOut, Settings, Ticket
 } from "lucide-react";
-import SockJS from "sockjs-client";
+import { getWsUrl } from "../lib/wsUrl";
 import { Client } from "@stomp/stompjs";
 import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
@@ -20,15 +20,13 @@ export default function WaitingRoomPage() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
-  const [error, setError] = useState(null);
 
   // WebSocket connection
   useEffect(() => {
     if (!showtimeId || !user) return;
 
-    const socketUrl = "http://localhost:8080/ws";
     const client = new Client({
-      webSocketFactory: () => new SockJS(socketUrl),
+      brokerURL: getWsUrl(),
       reconnectDelay: 2000, // Thử lại nhanh hơn (2s)
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

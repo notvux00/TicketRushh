@@ -1,28 +1,48 @@
 package com.ticketrush.service;
 
+import com.ticketrush.realtime.RealtimePublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.listener.KeyExpirationEventMessageListener;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
+@Slf4j
 public class RedisKeyExpirationListener extends KeyExpirationEventMessageListener {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    /**
+     * Decrements the active queue counter exactly once for an expired pass.
+     * Every application instance receives the keyspace event, so a dedupe key
+     * prevents the counter from being decremented N times.
+     */
+    private static final DefaultRedisScript<Long> EXPIRE_PASS_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('SET', KEYS[1], '1', 'NX', 'EX', ARGV[1]) then
+              local current = redis.call('DECR', KEYS[2])
+              if current < 0 then
+                redis.call('SET', KEYS[2], '0')
+              end
+              return 1
+            end
+            return 0
+            """, Long.class);
+
+    private final RealtimePublisher realtimePublisher;
     private final StringRedisTemplate redisTemplate;
 
     public RedisKeyExpirationListener(
             RedisMessageListenerContainer listenerContainer,
-            SimpMessagingTemplate messagingTemplate,
+            RealtimePublisher realtimePublisher,
             StringRedisTemplate redisTemplate) {
         super(listenerContainer);
-        this.messagingTemplate = messagingTemplate;
+        this.realtimePublisher = realtimePublisher;
         this.redisTemplate = redisTemplate;
     }
 
@@ -30,39 +50,54 @@ public class RedisKeyExpirationListener extends KeyExpirationEventMessageListene
     public void onMessage(Message message, byte[] pattern) {
         String expiredKey = message.toString();
 
-        // Kiểm tra xem key hết hạn có phải là key khóa ghế không (VD: lock:seat:showtime_id:seat_id)
         if (expiredKey.startsWith("lock:seat:")) {
-            // Tách showtimeId và seatId từ key: lock:seat:{showtimeId}:{seatId}
-            String[] parts = expiredKey.split(":");
-            if (parts.length >= 4) {
-                String showtimeId = parts[2];
-                String seatId = parts[3];
-
-                // Gửi thông báo WebSocket cho mọi client đang xem showtime này
-                Map<String, String> payload = new HashMap<>();
-                payload.put("seatId", seatId);
-                payload.put("status", "AVAILABLE"); // Ghế đã trống trở lại
-
-                messagingTemplate.convertAndSend("/topic/events/showtimes/" + showtimeId + "/seats", payload);
-                System.out.println("Seat lock expired and broadcasted: " + seatId);
-            }
+            handleSeatLockExpiry(expiredKey);
         }
 
-        // Xử lý thẻ vào cửa Virtual Queue hết hạn: queue:pass:{showtimeId}:{userId}
         if (expiredKey.startsWith("queue:pass:")) {
-            String[] parts = expiredKey.split(":");
-            if (parts.length >= 4) {
-                String showtimeId = parts[2];
-                String activeKey = "queue:active:" + showtimeId;
-
-                // Giảm active count khi thẻ hết hạn
-                Long currentCount = redisTemplate.opsForValue().decrement(activeKey);
-                if (currentCount != null && currentCount < 0) {
-                    redisTemplate.opsForValue().set(activeKey, "0");
-                }
-
-                System.out.println("Queue pass expired for showtime: " + showtimeId + ", active count decremented");
-            }
+            handleQueuePassExpiry(expiredKey);
         }
+    }
+
+    private void handleSeatLockExpiry(String expiredKey) {
+        String[] parts = expiredKey.split(":");
+        if (parts.length < 4) {
+            return;
+        }
+
+        String showtimeId = parts[2];
+        String seatId = parts[3];
+        String dedupeKey = "expiry:seat:" + showtimeId + ":" + seatId;
+
+        Boolean first = redisTemplate.opsForValue()
+                .setIfAbsent(dedupeKey, "1", Duration.ofSeconds(30));
+        if (!Boolean.TRUE.equals(first)) {
+            return;
+        }
+
+        Map<String, String> payload = new HashMap<>();
+        payload.put("seatId", seatId);
+        payload.put("status", "AVAILABLE");
+        realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
+        log.debug("Seat lock expired: {}", seatId);
+    }
+
+    private void handleQueuePassExpiry(String expiredKey) {
+        String[] parts = expiredKey.split(":");
+        if (parts.length < 4) {
+            return;
+        }
+
+        String showtimeId = parts[2];
+        String userId = parts[3];
+        String dedupeKey = "expiry:pass:" + showtimeId + ":" + userId;
+        String activeKey = "queue:active:" + showtimeId;
+
+        redisTemplate.execute(
+                EXPIRE_PASS_SCRIPT,
+                List.of(dedupeKey, activeKey),
+                "30");
+
+        log.debug("Queue pass expired for showtime={} user={}", showtimeId, userId);
     }
 }
