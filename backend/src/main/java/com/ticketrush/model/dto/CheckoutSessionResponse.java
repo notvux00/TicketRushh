@@ -12,6 +12,11 @@ public class CheckoutSessionResponse {
     private UUID showtimeId;
     private String status;
     private Double totalPrice;
+    private Double originalPrice;
+    private Double discountAmount;
+    private String voucherCode;
+    private String voucherDescription;
+    private String qrCodeUrl;
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
     private EventSummary event;

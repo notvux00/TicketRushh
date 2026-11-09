@@ -2,20 +2,25 @@ package com.ticketrush.service;
 
 import com.ticketrush.model.dto.CheckoutSessionResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
+import com.ticketrush.model.dto.VoucherResponse;
 import com.ticketrush.model.entity.Order;
 import com.ticketrush.model.entity.Seat;
 import com.ticketrush.model.entity.Ticket;
 import com.ticketrush.model.entity.User;
+import com.ticketrush.model.entity.Voucher;
 import com.ticketrush.repository.OrderRepository;
 import com.ticketrush.repository.SeatRepository;
 import com.ticketrush.repository.TicketRepository;
 import com.ticketrush.repository.UserRepository;
+import com.ticketrush.repository.VoucherRepository;
 import com.ticketrush.realtime.RealtimePublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +44,7 @@ public class CheckoutService {
     private final RealtimePublisher realtimePublisher;
     private final VirtualQueueService virtualQueueService;
     private final TicketSignatureService ticketSignatureService;
+    private final VoucherRepository voucherRepository;
 
     @Transactional
     public CheckoutSessionResponse createSession(LockSeatRequest request, String userId) {
@@ -71,11 +77,23 @@ public class CheckoutService {
             }
         }
 
+        // Dọn dẹp bất kỳ vé nháp nào còn sót lại từ các đơn hàng chưa hoàn tất/đã hủy
+        List<Ticket> staleTickets = ticketRepository.findBySeatIdIn(request.getSeatIds());
+        for (Ticket staleTicket : staleTickets) {
+            if (staleTicket.getOrder() != null && !"COMPLETED".equalsIgnoreCase(staleTicket.getOrder().getStatus())) {
+                ticketRepository.delete(staleTicket);
+            }
+        }
+        ticketRepository.flush();
+
+        double total = calculateTotal(seats);
         User user = getOrCreateUser(userId);
         Order order = new Order();
         order.setUser(user);
         order.setStatus("PENDING");
-        order.setTotalPrice(calculateTotal(seats));
+        order.setOriginalPrice(total);
+        order.setDiscountAmount(0.0);
+        order.setTotalPrice(total);
         order.setExpiresAt(LocalDateTime.now().plusMinutes(CHECKOUT_TTL_MINUTES));
         order = orderRepository.save(order);
 
@@ -138,6 +156,12 @@ public class CheckoutService {
         order.setExpiresAt(null);
         orderRepository.save(order);
 
+        if (order.getVoucher() != null) {
+            Voucher voucher = order.getVoucher();
+            voucher.setUsedQuantity(voucher.getUsedQuantity() != null ? voucher.getUsedQuantity() + 1 : 1);
+            voucherRepository.save(voucher);
+        }
+
         seatLockService.unlockSeats(showtimeId, seatIds, userId);
         for (UUID seatId : seatIds) {
             Map<String, String> payload = new HashMap<>();
@@ -161,6 +185,124 @@ public class CheckoutService {
         expireSession(order, userId);
     }
 
+    @Transactional
+    public CheckoutSessionResponse applyVoucher(UUID orderId, String voucherCode, String userId) {
+        Order order = getUserOrder(orderId, userId);
+        if (!"PENDING".equalsIgnoreCase(order.getStatus())) {
+            throw new RuntimeException("Đơn hàng không ở trạng thái chờ thanh toán");
+        }
+        if (voucherCode == null || voucherCode.trim().isEmpty()) {
+            throw new RuntimeException("Mã giảm giá không được để trống");
+        }
+
+        Voucher voucher = voucherRepository.findByCodeIgnoreCaseAndActiveTrue(voucherCode.trim())
+                .orElseThrow(() -> new RuntimeException("Mã giảm giá không tồn tại hoặc đã hết hiệu lực"));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (voucher.getStartDate() != null && now.isBefore(voucher.getStartDate())) {
+            throw new RuntimeException("Mã giảm giá chưa đến thời gian áp dụng");
+        }
+        if (voucher.getEndDate() != null && now.isAfter(voucher.getEndDate())) {
+            throw new RuntimeException("Mã giảm giá đã hết hạn sử dụng");
+        }
+
+        if (voucher.getUsedQuantity() != null && voucher.getTotalQuantity() != null
+                && voucher.getUsedQuantity() >= voucher.getTotalQuantity()) {
+            throw new RuntimeException("Mã giảm giá đã hết lượt sử dụng");
+        }
+
+        List<Ticket> tickets = ticketRepository.findByOrderId(order.getId());
+        if (tickets.isEmpty()) {
+            throw new RuntimeException("Đơn hàng không có ghế nào");
+        }
+
+        if (voucher.getEvent() != null) {
+            UUID eventId = tickets.get(0).getSeat().getZone().getShowtime().getEvent().getId();
+            if (!voucher.getEvent().getId().equals(eventId)) {
+                throw new RuntimeException("Mã giảm giá chỉ áp dụng cho sự kiện: " + voucher.getEvent().getEventName());
+            }
+        }
+
+        double originalPrice = order.getOriginalPrice() != null ? order.getOriginalPrice() : order.getTotalPrice();
+        if (voucher.getMinOrderPrice() != null && originalPrice < voucher.getMinOrderPrice()) {
+            throw new RuntimeException(String.format("Đơn hàng tối thiểu phải từ %,.0f đ để áp dụng mã này", voucher.getMinOrderPrice()));
+        }
+
+        double discount = 0.0;
+        if ("PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType())) {
+            double rawDiscount = originalPrice * (voucher.getDiscountValue() / 100.0);
+            if (voucher.getMaxDiscount() != null && voucher.getMaxDiscount() > 0) {
+                discount = Math.min(rawDiscount, voucher.getMaxDiscount());
+            } else {
+                discount = rawDiscount;
+            }
+        } else {
+            discount = Math.min(voucher.getDiscountValue(), originalPrice);
+        }
+
+        double finalPrice = Math.max(0.0, originalPrice - discount);
+
+        order.setVoucher(voucher);
+        order.setDiscountAmount(discount);
+        order.setTotalPrice(finalPrice);
+        orderRepository.save(order);
+
+        return mapSession(order);
+    }
+
+    @Transactional
+    public CheckoutSessionResponse removeVoucher(UUID orderId, String userId) {
+        Order order = getUserOrder(orderId, userId);
+        if (!"PENDING".equalsIgnoreCase(order.getStatus())) {
+            throw new RuntimeException("Đơn hàng không ở trạng thái chờ thanh toán");
+        }
+
+        order.setVoucher(null);
+        order.setDiscountAmount(0.0);
+        order.setTotalPrice(order.getOriginalPrice() != null ? order.getOriginalPrice() : order.getTotalPrice());
+        orderRepository.save(order);
+
+        return mapSession(order);
+    }
+
+    public String buildVietQrUrl(UUID orderId, Double amount) {
+        long roundAmount = Math.round(amount != null ? amount : 0.0);
+        String orderCode = orderId.toString().replace("-", "").substring(0, 8).toUpperCase();
+        String content = "ORDER " + orderCode;
+        try {
+            String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
+            String encodedAccountName = URLEncoder.encode("CONG TY TICKETRUSH", StandardCharsets.UTF_8);
+            return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
+                    "MB", "190088886666", roundAmount, encodedContent, encodedAccountName);
+        } catch (Exception e) {
+            return qrBaseUrl;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<VoucherResponse> getActiveVouchers() {
+        return voucherRepository.findByActiveTrueOrderByMinOrderPriceAsc().stream().map(v -> {
+            VoucherResponse res = new VoucherResponse();
+            res.setId(v.getId());
+            res.setCode(v.getCode());
+            res.setDescription(v.getDescription());
+            res.setDiscountType(v.getDiscountType());
+            res.setDiscountValue(v.getDiscountValue());
+            res.setMaxDiscount(v.getMaxDiscount());
+            res.setMinOrderPrice(v.getMinOrderPrice());
+            res.setTotalQuantity(v.getTotalQuantity());
+            res.setUsedQuantity(v.getUsedQuantity());
+            res.setStartDate(v.getStartDate());
+            res.setEndDate(v.getEndDate());
+            res.setActive(v.getActive());
+            if (v.getEvent() != null) {
+                res.setEventId(v.getEvent().getId());
+                res.setEventName(v.getEvent().getEventName());
+            }
+            return res;
+        }).collect(Collectors.toList());
+    }
+
     private void expireSession(Order order, String userId) {
         List<Ticket> tickets = ticketRepository.findByOrderId(order.getId());
         UUID showtimeId = null;
@@ -168,6 +310,8 @@ public class CheckoutService {
             showtimeId = tickets.get(0).getSeat().getZone().getShowtime().getId();
             List<UUID> seatIds = tickets.stream().map(ticket -> ticket.getSeat().getId()).collect(Collectors.toList());
             seatLockService.unlockSeats(showtimeId, seatIds, userId);
+            ticketRepository.deleteAll(tickets);
+            ticketRepository.flush();
         }
         order.setStatus("EXPIRED");
         orderRepository.save(order);
@@ -226,6 +370,13 @@ public class CheckoutService {
         response.setShowtimeId(showtime.getId());
         response.setStatus(order.getStatus());
         response.setTotalPrice(order.getTotalPrice());
+        response.setOriginalPrice(order.getOriginalPrice() != null ? order.getOriginalPrice() : order.getTotalPrice());
+        response.setDiscountAmount(order.getDiscountAmount() != null ? order.getDiscountAmount() : 0.0);
+        if (order.getVoucher() != null) {
+            response.setVoucherCode(order.getVoucher().getCode());
+            response.setVoucherDescription(order.getVoucher().getDescription());
+        }
+        response.setQrCodeUrl(buildVietQrUrl(order.getId(), order.getTotalPrice()));
         response.setCreatedAt(order.getCreatedAt());
         response.setExpiresAt(order.getExpiresAt());
 

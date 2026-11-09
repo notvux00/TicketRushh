@@ -2,7 +2,9 @@ package com.ticketrush.controller;
 
 import com.ticketrush.model.entity.Order;
 import com.ticketrush.model.entity.Ticket;
+import com.ticketrush.model.dto.ApplyVoucherRequest;
 import com.ticketrush.model.dto.CheckoutSessionResponse;
+import com.ticketrush.model.dto.VoucherResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
 import com.ticketrush.repository.OrderRepository;
 import com.ticketrush.service.CheckoutService;
@@ -43,6 +45,23 @@ public class OrderController {
     public ResponseEntity<Void> cancelCheckout(@PathVariable UUID orderId, Authentication authentication) {
         checkoutService.cancelSession(orderId, authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/checkout/{orderId}/apply-voucher")
+    public CheckoutSessionResponse applyVoucher(@PathVariable UUID orderId,
+                                                @RequestBody ApplyVoucherRequest request,
+                                                Authentication authentication) {
+        return checkoutService.applyVoucher(orderId, request.getCode(), authentication.getName());
+    }
+
+    @PostMapping("/checkout/{orderId}/remove-voucher")
+    public CheckoutSessionResponse removeVoucher(@PathVariable UUID orderId, Authentication authentication) {
+        return checkoutService.removeVoucher(orderId, authentication.getName());
+    }
+
+    @GetMapping("/vouchers")
+    public List<VoucherResponse> getActiveVouchers() {
+        return checkoutService.getActiveVouchers();
     }
 
     @GetMapping("/my-tickets")

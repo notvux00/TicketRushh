@@ -15,6 +15,8 @@ public class Order {
     private UUID id;
 
     private Double totalPrice;
+    private Double originalPrice;
+    private Double discountAmount = 0.0;
     private String status; // "PENDING", "COMPLETED", "EXPIRED"
     
     @Column(updatable = false)
@@ -25,6 +27,10 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id")
+    private Voucher voucher;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<Ticket> tickets;

@@ -69,6 +69,23 @@ export const eventApi = {
     return response.data;
   },
 
+  applyVoucher: async (orderId, code) => {
+    const response = await axiosClient.post(`/orders/checkout/${orderId}/apply-voucher`, {
+      code,
+    });
+    return response.data;
+  },
+
+  removeVoucher: async (orderId) => {
+    const response = await axiosClient.post(`/orders/checkout/${orderId}/remove-voucher`);
+    return response.data;
+  },
+
+  getVouchers: async () => {
+    const response = await axiosClient.get("/orders/vouchers");
+    return response.data;
+  },
+
   getMyTickets: async () => {
     const response = await axiosClient.get(`/orders/my-tickets`);
     return response.data;
