@@ -76,9 +76,16 @@ public class OrderController {
                 for (Ticket ticket : order.getTickets()) {
                     Map<String, Object> t = new HashMap<>();
                     t.put("id", ticket.getId().toString());
+                    t.put("ticketId", ticket.getId().toString());
+                    t.put("seatId", ticket.getSeat().getId().toString());
                     t.put("seatLabel", ticket.getSeat().getSeatLabel());
                     t.put("zoneName", ticket.getSeat().getZone().getName());
-                    t.put("qrCode", ticket.getQrCode());
+                    t.put("price", ticket.getSeat().getZone().getPrice());
+                    String qr = ticket.getQrPayload() != null ? ticket.getQrPayload() : ticket.getQrCode();
+                    t.put("qrCode", qr);
+                    t.put("qrPayload", qr);
+                    t.put("status", ticket.getStatus() != null ? ticket.getStatus() : "ACTIVE");
+                    t.put("checkedInAt", ticket.getCheckedInAt());
                     ticketList.add(t);
                 }
             }

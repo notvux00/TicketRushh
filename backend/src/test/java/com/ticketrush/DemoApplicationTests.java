@@ -1,5 +1,6 @@
 package com.ticketrush;
 
+import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -13,6 +14,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @SpringBootTest
 class DemoApplicationTests {
+
+    static {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+    }
 
     @Container
     @ServiceConnection

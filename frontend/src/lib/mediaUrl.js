@@ -12,4 +12,4 @@ export function mediaUrl(path) {
   return `${configuredBase}${normalized}`;
 }
 
-export const DEFAULT_QR_URL = mediaUrl("/media/qr/qr_for_all.png");
+export const DEFAULT_QR_URL = "/media/qr/qr_for_all.png";

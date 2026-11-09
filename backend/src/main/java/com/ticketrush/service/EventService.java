@@ -32,12 +32,14 @@ public class EventService {
     private final ZoneService zoneService;
     private final ZoneRepository zoneRepository;
 
+    @Transactional(readOnly = true)
     public List<EventResponse> getAllEvents() {
         return eventRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public EventResponse getEventById(UUID id) {
         return eventRepository.findById(id)
                 .map(this::mapToResponse)

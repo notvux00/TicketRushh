@@ -74,6 +74,14 @@ export const eventApi = {
     return response.data;
   },
 
+  checkinTicket: async (qrPayload, gateName = "Main Gate") => {
+    const response = await axiosClient.post("/checkin/scan", {
+      qrPayload,
+      gateName,
+    });
+    return response.data;
+  },
+
   // ═══════════════════════════════════════════
   // Virtual Queue APIs (User)
   // ═══════════════════════════════════════════

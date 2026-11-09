@@ -38,6 +38,7 @@ public class CheckoutService {
     private final SeatLockService seatLockService;
     private final RealtimePublisher realtimePublisher;
     private final VirtualQueueService virtualQueueService;
+    private final TicketSignatureService ticketSignatureService;
 
     @Transactional
     public CheckoutSessionResponse createSession(LockSeatRequest request, String userId) {
@@ -88,7 +89,14 @@ public class CheckoutService {
             Ticket ticket = new Ticket();
             ticket.setOrder(order);
             ticket.setSeat(seat);
-            ticket.setQrCode(qrBaseUrl + "?order=" + order.getId() + "&seat=" + seat.getId());
+            ticket.setStatus("ACTIVE");
+            ticket = ticketRepository.saveAndFlush(ticket);
+
+            String signature = ticketSignatureService.generateSignature(ticket.getId(), seat.getId());
+            String payload = ticketSignatureService.buildPayload(ticket.getId(), seat.getId());
+            ticket.setQrSignature(signature);
+            ticket.setQrPayload(payload);
+            ticket.setQrCode(payload);
             ticketRepository.save(ticket);
         }
 

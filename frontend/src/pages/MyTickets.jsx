@@ -9,11 +9,16 @@ import {
   Timer,
   Check,
   Filter,
-  ChevronRight
+  ChevronRight,
+  Download,
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { eventApi } from "../api/eventApi";
-import { DEFAULT_QR_URL } from "../lib/mediaUrl";
+import QRCodeRenderer from "../components/ticket/QRCodeRenderer";
+import { downloadETicketCard } from "../utils/ticketExporter";
 
 export default function MyTickets() {
   const [activeFilter, setActiveFilter] = useState("upcoming");
@@ -23,7 +28,13 @@ export default function MyTickets() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const openTicketModal = (order, ticket) => {
-    setSelectedTicket({ ...ticket, eventName: order.eventName, startTime: order.startTime, venueName: order.venueName, orderId: order.id });
+    setSelectedTicket({
+      ...ticket,
+      eventName: order.eventName,
+      startTime: order.startTime,
+      venueName: order.venueName,
+      orderId: order.id,
+    });
     setIsModalOpen(true);
   };
 
@@ -159,7 +170,7 @@ export default function MyTickets() {
             onClick={() => setIsModalOpen(false)}
           >
             <div
-              className="bg-white w-full max-w-[320px] rounded-[28px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col"
+              className="bg-white w-full max-w-[360px] rounded-[28px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -189,7 +200,7 @@ export default function MyTickets() {
                 <div className="absolute top-0 left-[-12px] w-6 h-6 bg-slate-900/80 rounded-full z-10"></div>
                 <div className="absolute top-0 right-[-12px] w-6 h-6 bg-slate-900/80 rounded-full z-10"></div>
 
-                <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-6">
+                <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-4">
                   <div>
                     <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Thời gian</p>
                     <p className="text-slate-900 font-black text-xs">
@@ -209,22 +220,53 @@ export default function MyTickets() {
                   </div>
                   <div className="text-right">
                     <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Mã đơn</p>
-                    <p className="text-slate-900 font-mono font-bold text-[11px]">#{selectedTicket.orderId.substring(0, 6).toUpperCase()}</p>
+                    <p className="text-slate-900 font-mono font-bold text-[11px]">#{selectedTicket.orderId ? selectedTicket.orderId.substring(0, 6).toUpperCase() : ""}</p>
                   </div>
                 </div>
 
+                {/* Status Badge */}
+                <div className="flex justify-center mb-3">
+                  {selectedTicket.status === "CHECKED_IN" ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                      <CheckCircle2 size={13} /> ĐÃ QUA CỔNG SOÁT VÉ
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      <ShieldCheck size={13} /> VÉ HỢP LỆ (ACTIVE)
+                    </span>
+                  )}
+                </div>
+
                 {/* QR Code Section */}
-                <div className="flex flex-col items-center pt-6 border-t border-dashed border-slate-100">
-                  <div className="p-3 bg-white border border-slate-100 rounded-2xl shadow-md mb-3 hover:scale-105 transition-transform duration-500">
-                    <img
-                      src={DEFAULT_QR_URL}
-                      alt="Ticket QR Code"
-                      className="w-28 h-28 object-contain"
-                    />
-                  </div>
-                  <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.15em] mb-4 text-center max-w-[160px] leading-relaxed">
-                    Vui lòng xuất trình mã này tại cổng soát vé
+                <div className="flex flex-col items-center pt-3 border-t border-dashed border-slate-200">
+                  <QRCodeRenderer
+                    value={selectedTicket.qrPayload || selectedTicket.qrCode || `TKRUSH:v1:${selectedTicket.id || selectedTicket.ticketId}`}
+                    id="my-ticket-qr-canvas"
+                    size={150}
+                  />
+
+                  <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[200px]">
+                    Mã định danh riêng ghế {selectedTicket.seatLabel}
                   </p>
+
+                  {/* Action Buttons */}
+                  <div className="w-full mt-4 pt-3 border-t border-slate-100">
+                    <button
+                      onClick={() =>
+                        downloadETicketCard(selectedTicket, {
+                          eventName: selectedTicket.eventName,
+                          venueName: selectedTicket.venueName,
+                          startTime: selectedTicket.startTime,
+                          customerName: selectedTicket.customerName || "Khách hàng",
+                          orderId: selectedTicket.orderId,
+                          canvasId: "my-ticket-qr-canvas",
+                        })
+                      }
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20"
+                    >
+                      <Download size={16} /> Tải Vé Về Máy
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

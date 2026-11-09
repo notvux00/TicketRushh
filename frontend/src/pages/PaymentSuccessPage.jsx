@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, CheckCircle, MapPin, Info, Ticket } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
-import { DEFAULT_QR_URL } from "../lib/mediaUrl";
+import QRCodeRenderer from "../components/ticket/QRCodeRenderer";
 
 export default function PaymentSuccessPage() {
   const location = useLocation();
@@ -87,11 +87,10 @@ export default function PaymentSuccessPage() {
 
                 {/* QR Code Section */}
                 <div className="w-full md:w-52 bg-slate-50/30 p-8 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
-                  <div className="p-4 bg-white shadow-sm rounded-xl mb-4">
-                    <img
-                      src={DEFAULT_QR_URL}
-                      alt="Ticket QR Code"
-                      className="w-24 h-24 object-contain"
+                  <div className="mb-4">
+                    <QRCodeRenderer
+                      value={seat.qrPayload || `TKRUSH:v1:seat:${seat.id}`}
+                      size={96}
                     />
                   </div>
                   <span className="text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Mã cửa vào</span>
