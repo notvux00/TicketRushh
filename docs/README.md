@@ -22,13 +22,7 @@ Thư mục chứa toàn bộ tài liệu kiến trúc kỹ thuật, đặc tả 
    * Phản hồi kết quả scan < 1 giây với 3 trạng thái: HỢP LỆ / ĐÃ DÙNG / GIẢ MẠO.
    * API thống kê live số người đã vào cổng theo suất diễn.
 
-4. [Giới Hạn Số Vé Mua Thực Tế Trong UI Đặt Chỗ](./MAX_TICKETS_ENFORCEMENT_SPEC.md)
-   * Enforce `maxTicketsPerOrder` đã có trong backend lên giao diện `BookingPage.jsx`.
-   * Disabled visual cho ghế khi đã chọn đủ số lượng tối đa.
-   * Thay hardcode "04 Vé" trong `WaitingRoomPage.jsx` bằng giá trị động từ event data.
-   * Không cần thay đổi backend — toàn bộ logic ở frontend.
-
-5. [Admin Quản Lý Voucher Từ Giao Diện](./ADMIN_VOUCHER_MANAGEMENT_SPEC.md)
+4. [Admin Quản Lý Voucher Từ Giao Diện](./ADMIN_VOUCHER_MANAGEMENT_SPEC.md)
    * CRUD đầy đủ: tạo, bật/tắt, xóa voucher trực tiếp từ giao diện Admin.
    * Database Migration V5 bổ sung `expires_at`, `max_usage`, `created_at` cho bảng `vouchers`.
    * Thống kê usage: số lần dùng và tổng tiền tiết kiệm cho khách theo từng voucher.

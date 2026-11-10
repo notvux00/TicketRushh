@@ -49,6 +49,9 @@ export default function BookingPage() {
     return [];
   });
 
+  const maxTickets = event?.maxTicketsPerOrder ?? 4;
+  const isAtLimit = selectedSeats.length >= maxTickets;
+
   // Lưu giỏ hàng vào localStorage mỗi khi có thay đổi
   useEffect(() => {
     if (showtimeId) {
@@ -245,9 +248,9 @@ export default function BookingPage() {
       }
       setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
     } else {
-      // Check max tickets
-      if (selectedSeats.length >= (event?.maxTicketsPerOrder || 4)) {
-        alert(`Bạn chỉ được chọn tối đa ${event?.maxTicketsPerOrder || 4} vé!`);
+      // Guard: kiểm tra giới hạn số vé
+      if (selectedSeats.length >= maxTickets) {
+        alert(`Bạn chỉ được chọn tối đa ${maxTickets} vé cho mỗi đơn hàng.`);
         return;
       }
       setSelectedSeats(prev => [...prev, seat]);
@@ -272,16 +275,19 @@ export default function BookingPage() {
       }
     } catch (error) {
       console.error("Lỗi khi gọi API khóa ghế:", error);
+      const serverMsg = error?.response?.data?.message || "";
       // Phân biệt lỗi mạng vs lỗi server
       if (!navigator.onLine) {
         alert("Mất kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.");
       } else if (error?.response?.status === 401) {
         alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      } else if (error?.response?.status === 400 && serverMsg.toLowerCase().includes("max tickets")) {
+        alert(`Vượt quá giới hạn ${maxTickets} vé/đơn hàng. Vui lòng bỏ bớt ghế.`);
       } else if (error?.response?.status === 409) {
         alert("Một hoặc nhiều ghế vừa bị người khác đặt. Vui lòng chọn ghế khác.");
         setSelectedSeats([]);
       } else {
-        alert("Không thể giữ ghế lúc này. Vui lòng thử lại.");
+        alert(serverMsg || "Không thể giữ ghế lúc này. Vui lòng thử lại.");
       }
     }
   };
@@ -456,7 +462,11 @@ export default function BookingPage() {
                       if (isSelected) {
                         seatClass += "bg-primary border-primary text-white shadow-md transform scale-110";
                       } else if (seat.status === "available") {
-                        seatClass += "bg-white border-slate-200 text-slate-500 hover:border-primary hover:text-primary";
+                        if (isAtLimit) {
+                          seatClass += "bg-slate-50 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed";
+                        } else {
+                          seatClass += "bg-white border-slate-200 text-slate-500 hover:border-primary hover:text-primary";
+                        }
                       } else if (seat.status === "locked") {
                         if (seat.lockedByMe) {
                           seatClass += "bg-blue-100 border-blue-400 text-blue-700 hover:bg-blue-200";
@@ -475,7 +485,13 @@ export default function BookingPage() {
                           key={seat.id}
                           onClick={() => handleSeatClick(seat)}
                           className={seatClass}
-                          title={seat.status === "available" ? `Ghế ${seat.label}` : "Không khả dụng"}
+                          title={
+                            isSelected 
+                              ? `Ghế ${seat.label} (Click để bỏ chọn)` 
+                              : isAtLimit && seat.status === "available"
+                                ? `Đã chọn đủ tối đa ${maxTickets} vé`
+                                : seat.status === "available" ? `Ghế ${seat.label}` : "Không khả dụng"
+                          }
                         >
                           {content}
                         </div>
@@ -555,8 +571,10 @@ export default function BookingPage() {
                 <div className="flex items-center gap-2 text-primary font-black text-[10px] tracking-widest uppercase">
                   <Ticket size={14} /> Ghế Đã Chọn
                 </div>
-                <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black rounded uppercase">
-                  {selectedSeats.length} / {event?.maxTicketsPerOrder || 4}
+                <span className={`px-2 py-0.5 text-[10px] font-black rounded uppercase transition-colors ${
+                  isAtLimit ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-primary/10 text-primary"
+                }`}>
+                  {selectedSeats.length} / {maxTickets}
                 </span>
               </div>
               
@@ -586,7 +604,7 @@ export default function BookingPage() {
           </div>
 
           {/* Checkout Section Bottom */}
-          <div className="bg-white border-t border-slate-200 p-6 flex flex-col gap-4 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+          <div className="bg-white border-t border-slate-200 p-6 flex flex-col gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
             {/* Total */}
             <div className="flex justify-between items-end">
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Tổng cộng</span>
@@ -595,11 +613,25 @@ export default function BookingPage() {
               </span>
             </div>
 
+            {/* Max Tickets Info Badge */}
+            <div className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+              isAtLimit
+                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                : "bg-slate-50 text-slate-500 border border-slate-200"
+            }`}>
+              <Ticket size={14} />
+              <span>
+                {isAtLimit
+                  ? `Đã chọn đủ ${selectedSeats.length}/${maxTickets} vé`
+                  : `Tối đa ${maxTickets} vé / đơn hàng`}
+              </span>
+            </div>
+
             {/* Checkout Btn */}
             <button 
               onClick={handleCheckout}
               disabled={selectedSeats.length === 0}
-              className="w-full bg-primary hover:bg-primary/90 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black tracking-widest uppercase text-sm shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all active:scale-[0.98] mt-2 flex justify-center items-center gap-2"
+              className="w-full bg-primary hover:bg-primary/90 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black tracking-widest uppercase text-sm shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all active:scale-[0.98] mt-1 flex justify-center items-center gap-2"
             >
               Thanh Toán
             </button>

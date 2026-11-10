@@ -238,7 +238,7 @@ export default function WaitingRoomPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { icon: Clock, label: "Thời gian chờ", value: `~ ${Math.ceil((status?.estimatedWaitSeconds || 0) / 60)} Phút` },
-                { icon: ShoppingCart, label: "Giới hạn vé", value: "04 Vé" },
+                { icon: ShoppingCart, label: "Giới hạn vé", value: `${String(event?.maxTicketsPerOrder ?? 4).padStart(2, '0')} Vé` },
                 { icon: ShieldCheck, label: "Giao dịch", value: "Bảo mật" }
               ].map((item, index) => (
                 <motion.div 
