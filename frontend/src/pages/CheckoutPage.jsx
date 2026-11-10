@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { QRCodeCanvas } from "qrcode.react";
 import {
   Calendar,
   Clock,
@@ -603,11 +604,15 @@ export default function CheckoutPage() {
 
               <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
                 <div className="w-56 h-56 sm:w-64 sm:h-64 bg-white p-3 rounded-2xl border border-blue-100 shadow-sm shrink-0 flex items-center justify-center">
-                  <img
-                    src={!qrError && checkout?.qrCodeUrl ? checkout.qrCodeUrl : PAYMENT_QR}
-                    alt="Payment QR Code"
-                    className="w-full h-full object-contain"
-                    onError={() => setQrError(true)}
+                  <QRCodeCanvas
+                    value={
+                      checkout?.qrCodeUrl ||
+                      `Đây là QR thanh toán giả lập của hệ thống TicketRush.\nMã đơn hàng: ORDER ${orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}\nSố tiền: ${new Intl.NumberFormat("vi-VN").format(checkout?.totalPrice ?? totalPrice)} đ\n(Demo Only - Vui lòng bấm 'Xác nhận đã chuyển' trên màn hình)`
+                    }
+                    size={220}
+                    level="M"
+                    includeMargin={true}
+                    className="rounded-xl w-full h-auto max-w-[220px]"
                   />
                 </div>
 

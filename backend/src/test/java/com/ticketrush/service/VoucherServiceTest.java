@@ -119,7 +119,7 @@ class VoucherServiceTest {
         assertEquals(1000000.0, response.getOriginalPrice());
         assertEquals(100000.0, response.getDiscountAmount());
         assertEquals("RUSH100", response.getVoucherCode());
-        assertTrue(response.getQrCodeUrl().contains("amount=900000"));
+        assertTrue(response.getQrCodeUrl().contains("900,000") || response.getQrCodeUrl().contains("900000"));
     }
 
     @Test
@@ -218,6 +218,6 @@ class VoucherServiceTest {
         assertEquals(1000000.0, response.getTotalPrice());
         assertEquals(0.0, response.getDiscountAmount());
         assertNull(response.getVoucherCode());
-        assertTrue(response.getQrCodeUrl().contains("amount=1000000"));
+        assertTrue(response.getQrCodeUrl().contains("1,000,000") || response.getQrCodeUrl().contains("1000000"));
     }
 }

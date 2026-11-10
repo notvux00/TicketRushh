@@ -268,15 +268,8 @@ public class CheckoutService {
     public String buildVietQrUrl(UUID orderId, Double amount) {
         long roundAmount = Math.round(amount != null ? amount : 0.0);
         String orderCode = orderId.toString().replace("-", "").substring(0, 8).toUpperCase();
-        String content = "ORDER " + orderCode;
-        try {
-            String encodedContent = URLEncoder.encode(content, StandardCharsets.UTF_8);
-            String encodedAccountName = URLEncoder.encode("CONG TY TICKETRUSH", StandardCharsets.UTF_8);
-            return String.format("https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
-                    "MB", "190088886666", roundAmount, encodedContent, encodedAccountName);
-        } catch (Exception e) {
-            return qrBaseUrl;
-        }
+        return String.format("Đây là QR thanh toán giả lập của hệ thống TicketRush.\nMã đơn hàng: ORDER %s\nSố tiền: %,d đ\n(Demo Only - Vui lòng bấm 'Xác nhận đã chuyển' trên màn hình)",
+                orderCode, roundAmount);
     }
 
     @Transactional(readOnly = true)
