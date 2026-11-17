@@ -64,9 +64,7 @@ public class EventController {
         String userId = authentication.getName(); 
         
         // Queue guard: kiểm tra thẻ vào cửa nếu queue đang hoạt động
-        int activeCount = virtualQueueService.getActiveCount(request.getShowtimeId());
-        int threshold = virtualQueueService.getThreshold(request.getShowtimeId());
-        if (activeCount >= threshold && !virtualQueueService.hasValidPass(request.getShowtimeId(), userId)) {
+        if (!virtualQueueService.canBook(request.getShowtimeId(), userId)) {
             return new com.ticketrush.model.dto.LockSeatResponse(false, "QUEUE_ACCESS_REQUIRED", null);
         }
 
@@ -91,18 +89,15 @@ public class EventController {
         return new com.ticketrush.model.dto.LockSeatResponse(true, "Seats unlocked", null);
     }
 
+    @Autowired
+    private com.ticketrush.service.CheckoutService checkoutService;
+
     @PostMapping("/seats/confirm")
     public com.ticketrush.model.dto.LockSeatResponse confirmSeats(
             @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
             org.springframework.security.core.Authentication authentication) {
-        
-        String userId = authentication.getName();
-        boolean success = seatLockService.confirmSeats(request.getShowtimeId(), request.getSeatIds(), userId);
-        
-        if (success) {
-            return new com.ticketrush.model.dto.LockSeatResponse(true, "Payment confirmed and seats sold", null);
-        } else {
-            return new com.ticketrush.model.dto.LockSeatResponse(false, "Failed to confirm payment. Lock may have expired.", null);
-        }
+        var session = checkoutService.createAndConfirmSession(request, authentication.getName());
+        return new com.ticketrush.model.dto.LockSeatResponse(
+                "COMPLETED".equals(session.getStatus()), "Booking confirmed", null, session.getOrderId());
     }
 }

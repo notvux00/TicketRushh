@@ -42,6 +42,8 @@ public class RedisKeyExpirationListener extends KeyExpirationEventMessageListene
             RealtimePublisher realtimePublisher,
             StringRedisTemplate redisTemplate) {
         super(listenerContainer);
+        // ElastiCache forbids CONFIG. Notifications are configured on the server.
+        setKeyspaceNotificationsConfigParameter("");
         this.realtimePublisher = realtimePublisher;
         this.redisTemplate = redisTemplate;
     }

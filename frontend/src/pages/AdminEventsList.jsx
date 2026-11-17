@@ -28,6 +28,7 @@ import { useState, useEffect } from "react";
 import axiosClient from "../api/axiosClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { ZONE_COLORS, CANVAS_W, CANVAS_H } from "../constants/zoneColors";
+import { toEventDateTimeLocal } from "../utils/eventTime";
 import { isEventExpired } from "../utils/eventUtils";
 import { uploadMedia } from "../api/mediaApi";
 import { eventApi } from "../api/eventApi";
@@ -44,11 +45,6 @@ const formatCurrency = (value = 0) =>
   }).format(value);
 
 const formatNumber = (value = 0) => new Intl.NumberFormat("vi-VN").format(value);
-
-const toDateTimeLocalValue = (value) => {
-  if (!value) return "";
-  return value.length >= 16 ? value.slice(0, 16) : value;
-};
 
 const cloneShowtimes = (showtimes = []) => showtimes.map((showtime) => ({ ...showtime }));
 const cloneZones = (zones = []) => zones.map((zone) => ({ ...zone }));
@@ -1232,16 +1228,17 @@ function AdminEventsList() {
                                 placeholder="Tên suất diễn"
                               />
                             </div>
+                            <p className="mb-2 text-xs text-slate-500">Giờ Việt Nam (UTC+7)</p>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               <input
                                 type="datetime-local"
-                                value={toDateTimeLocalValue(st.startTime)}
+                                value={toEventDateTimeLocal(st.startTime)}
                                 onChange={(e) => updateDraftShowtime(idx, "startTime", e.target.value)}
                                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                               />
                               <input
                                 type="datetime-local"
-                                value={toDateTimeLocalValue(st.endTime)}
+                                value={toEventDateTimeLocal(st.endTime)}
                                 onChange={(e) => updateDraftShowtime(idx, "endTime", e.target.value)}
                                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
                               />
@@ -1270,10 +1267,10 @@ function AdminEventsList() {
                                 {st.name}
                               </p>
                               <p className={`text-sm font-bold ${isActive ? "text-white/75" : "text-slate-500"}`}>
-                                {new Date(st.startTime).toLocaleString("vi-VN")}{" "}
+                                {new Date(st.startTime).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}{" "}
                                 -{" "}
                                 {new Date(st.endTime).toLocaleTimeString(
-                                  "vi-VN",
+                                  "vi-VN", { timeZone: "Asia/Ho_Chi_Minh" },
                                 )}
                               </p>
                             </div>

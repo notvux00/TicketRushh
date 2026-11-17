@@ -24,7 +24,9 @@ public class EventCreateRequest {
     @Data
     public static class ShowtimeRequest {
         private String name;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.ticketrush.util.EventDateTimeDeserializer.class)
         private LocalDateTime startTime;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.ticketrush.util.EventDateTimeDeserializer.class)
         private LocalDateTime endTime;
     }
 }

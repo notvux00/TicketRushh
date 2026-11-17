@@ -97,7 +97,7 @@ class CheckoutMaxTicketsTest {
         request.setShowtimeId(showtimeId);
         request.setSeatIds(seatIds);
 
-        when(seatRepository.findAllById(seatIds)).thenReturn(seats);
+        when(seatRepository.findForBooking(seatIds)).thenReturn(seats);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 checkoutService.createSession(request, UUID.randomUUID().toString())
@@ -117,7 +117,7 @@ class CheckoutMaxTicketsTest {
         request.setShowtimeId(showtimeId);
         request.setSeatIds(seatIds);
 
-        when(seatRepository.findAllById(seatIds)).thenReturn(seats);
+        when(seatRepository.findForBooking(seatIds)).thenReturn(seats);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 checkoutService.createSession(request, UUID.randomUUID().toString())
@@ -137,7 +137,7 @@ class CheckoutMaxTicketsTest {
         request.setShowtimeId(showtimeId);
         request.setSeatIds(seatIds);
 
-        when(seatRepository.findAllById(seatIds)).thenReturn(seats);
+        when(seatRepository.findForBooking(seatIds)).thenReturn(seats);
         when(ticketRepository.findBySeatIdIn(seatIds)).thenReturn(List.of());
 
         User user = new User();

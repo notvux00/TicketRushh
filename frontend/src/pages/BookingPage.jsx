@@ -541,7 +541,7 @@ export default function BookingPage() {
                 <h2 className="text-xl font-black text-slate-800 leading-tight mb-2">{event?.eventName || "Loading..."}</h2>
                 <div className="text-xs text-slate-500 space-y-1 font-medium">
                   <p>📍 {event?.venueName}</p>
-                  <p>🗓️ {showtime ? new Date(showtime.startTime).toLocaleString('vi-VN', { 
+                  <p>🗓️ {showtime ? new Date(showtime.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh",
                     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
                   }) : "N/A"}</p>
                 </div>

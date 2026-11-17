@@ -62,7 +62,6 @@ export default function CheckoutPage() {
   const [voucherMessage, setVoucherMessage] = useState(null);
   const [availableVouchers, setAvailableVouchers] = useState(DEFAULT_VOUCHERS);
   const [copiedField, setCopiedField] = useState(null);
-  const [qrError, setQrError] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -163,7 +162,6 @@ export default function CheckoutPage() {
       const updated = await eventApi.applyVoucher(orderId, code);
       setCheckout(updated);
       setVoucherCodeInput("");
-      setQrError(false);
       setVoucherMessage({
         type: "success",
         text: `Áp dụng mã ${updated.voucherCode} thành công! Đã giảm ${new Intl.NumberFormat("vi-VN").format(updated.discountAmount)} đ.`,
@@ -182,7 +180,6 @@ export default function CheckoutPage() {
     try {
       const updated = await eventApi.removeVoucher(orderId);
       setCheckout(updated);
-      setQrError(false);
       setVoucherMessage({ type: "success", text: "Đã hủy áp dụng mã giảm giá thành công." });
     } catch (error) {
       const msg = error.response?.data?.message || error.message || "Không thể hủy mã giảm giá.";
@@ -237,7 +234,7 @@ export default function CheckoutPage() {
       if (response && (response.status === "COMPLETED" || response.status === "PAID")) {
         localStorage.removeItem(`cart_${checkout.showtimeId}`);
         localStorage.removeItem(`checkout_order_${checkout.showtimeId}`);
-        navigate("/payment-success", {
+        navigate(`/payment-success?orderId=${orderId}`, {
           state: {
             selectedSeats,
             event,
@@ -265,7 +262,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!checkout || selectedSeats.length === 0) return null;
+  if (!checkout) return null;
 
   if (checkout.status === "COMPLETED" || checkout.status === "PAID") {
     return (
@@ -276,7 +273,7 @@ export default function CheckoutPage() {
             <h1 className="text-xl font-black text-blue-800 uppercase">Thanh toán đã hoàn tất</h1>
             <p className="text-sm text-slate-500">Đơn hàng của bạn đã được thanh toán thành công trước đó.</p>
             <button
-              onClick={() => navigate("/payment-success", { state: { selectedSeats, event, showtime, orderId } })}
+              onClick={() => navigate(`/payment-success?orderId=${orderId}`, { state: { selectedSeats, event, showtime, orderId } })}
               className="px-6 py-3 bg-primary text-white rounded-xl font-black uppercase text-xs tracking-widest"
             >
               Xem vé của bạn
@@ -296,7 +293,7 @@ export default function CheckoutPage() {
             <h1 className="text-xl font-black text-slate-800 uppercase mb-3">Phiên thanh toán đã kết thúc</h1>
             <p className="text-sm text-slate-500 mb-6">Trang thanh toán này không còn khả dụng hoặc đã hết hạn.</p>
             <button
-              onClick={() => navigate(`/event/${event?.id || ""}`)}
+              onClick={() => navigate(event?.id ? `/event/${event.id}` : "/")}
               className="px-6 py-3 bg-primary text-white rounded-xl font-black uppercase text-xs tracking-widest"
             >
               Quay lại sự kiện
@@ -343,7 +340,7 @@ export default function CheckoutPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Thời gian</p>
                   <p className="text-sm font-semibold text-slate-900">
                     {showtime?.startTime
-                      ? new Date(showtime.startTime).toLocaleString("vi-VN", {
+                      ? new Date(showtime.startTime).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh",
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",
@@ -382,7 +379,7 @@ export default function CheckoutPage() {
                         <p className="text-xs text-slate-500 uppercase tracking-wider">{seat.zoneName}</p>
                       </div>
                     </div>
-                    <span className="font-mono text-sm font-semibold">{new Intl.NumberFormat("vi-VN").format(seat.price)} đ</span>
+                    <span className="font-mono text-sm font-semibold">{seat.price == null ? "Chưa xác định giá gốc" : `${new Intl.NumberFormat("vi-VN").format(seat.price)} đ`}</span>
                   </div>
                 ))}
               </div>

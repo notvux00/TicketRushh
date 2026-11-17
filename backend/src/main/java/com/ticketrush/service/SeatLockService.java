@@ -2,12 +2,10 @@ package com.ticketrush.service;
 
 import com.ticketrush.realtime.RealtimePublisher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,11 +23,18 @@ public class SeatLockService {
     @Autowired
     private RealtimePublisher realtimePublisher;
 
-    @Value("${app.qr.base-url:/media/qr/qr_for_all.png}")
-    private String qrBaseUrl;
+    @Autowired
+    private VirtualQueueService virtualQueueService;
 
     private static final int LOCK_TTL_SECONDS = 600; // 10 minutes
     private static final long LOCK_TTL_MILLIS = LOCK_TTL_SECONDS * 1000L;
+
+    private static final DefaultRedisScript<Long> UNLOCK_SEAT_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then
+              return redis.call('DEL', KEYS[1])
+            end
+            return 0
+            """, Long.class);
 
     /**
      * Acquire all seat locks or none. Existing locks owned by the same user are
@@ -56,14 +61,37 @@ public class SeatLockService {
     /**
      * Lock multiple seats for a user
      */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public boolean lockSeats(UUID showtimeId, List<UUID> seatIds, String userId) {
         return lockSeats(showtimeId, seatIds, userId, null);
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public boolean lockSeats(UUID showtimeId, List<UUID> seatIds, String userId, UUID orderId) {
         if (seatIds == null || seatIds.isEmpty()) {
             return false;
         }
+
+        List<com.ticketrush.model.entity.Seat> seats = seatRepository.findAllById(seatIds);
+        if (seats.size() != seatIds.size()) {
+            throw new IllegalArgumentException("Some seats were not found or repeated");
+        }
+        for (var seat : seats) {
+            if (!seat.getZone().getShowtime().getId().equals(showtimeId)) {
+                throw new IllegalArgumentException("Seats do not belong to this showtime");
+            }
+            if (!"AVAILABLE".equalsIgnoreCase(seat.getStatus()) && !"LOCKED".equalsIgnoreCase(seat.getStatus())) {
+                throw new IllegalArgumentException("Seat is not bookable");
+            }
+        }
+        com.ticketrush.util.EventTime.requireSalesOpen(seats.get(0).getZone().getShowtime().getStartTime());
+        Integer configuredLimit = seats.get(0).getZone().getShowtime().getEvent().getMaxTicketsPerOrder();
+        int limit = configuredLimit != null && configuredLimit > 0 ? configuredLimit : 4;
+        if (seats.size() > limit) {
+            throw new IllegalArgumentException("Max tickets per order exceeded");
+        }
+        // Membership is established before the caller's showtime ID is used for admission or Redis keys.
+        virtualQueueService.requireBookingAccess(seats.get(0).getZone().getShowtime().getId(), userId);
 
         String lockValue = orderId == null ? userId : userId + ":" + orderId;
         List<String> keys = seatIds.stream()
@@ -101,7 +129,10 @@ public class SeatLockService {
             String locker = redisTemplate.opsForValue().get(key);
             
             if (isOwnedByUser(locker, userId)) {
-                redisTemplate.delete(key);
+                Long deleted = redisTemplate.execute(UNLOCK_SEAT_SCRIPT, List.of(key), locker);
+                if (!Long.valueOf(1).equals(deleted)) {
+                    continue;
+                }
                 
                 // Broadcast AVAILABLE
                 Map<String, String> payload = new HashMap<>();
@@ -192,83 +223,4 @@ public class SeatLockService {
     @Autowired
     private com.ticketrush.repository.SeatRepository seatRepository;
 
-    @Autowired
-    private com.ticketrush.repository.OrderRepository orderRepository;
-
-    @Autowired
-    private com.ticketrush.repository.TicketRepository ticketRepository;
-
-    @Autowired
-    private com.ticketrush.repository.UserRepository userRepository;
-
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SeatLockService.class);
-
-    /**
-     * Confirm booking: Create Order & Tickets, Update DB to SOLD, clear Redis lock, and broadcast
-     */
-    @jakarta.transaction.Transactional
-    public boolean confirmSeats(UUID showtimeId, List<UUID> seatIds, String userId) {
-        log.info("Confirming seats for user: {}", userId);
-        // 1. Verify user owns all locks in Redis
-        for (UUID seatId : seatIds) {
-            String key = "lock:seat:" + showtimeId + ":" + seatId;
-            String locker = redisTemplate.opsForValue().get(key);
-            if (!isOwnedByUser(locker, userId)) {
-                return false; 
-            }
-        }
-
-        // 2. Fetch User from DB (JWT subject = userId). If not exists, create a JIT record.
-        com.ticketrush.model.entity.User user = userRepository.findById(UUID.fromString(userId))
-                .orElseGet(() -> {
-                    log.info("User {} not found in local DB, creating JIT record", userId);
-                    com.ticketrush.model.entity.User newUser = new com.ticketrush.model.entity.User();
-                    newUser.setId(UUID.fromString(userId));
-                    newUser.setEmail("user-" + userId + "@example.com"); // Placeholder email
-                    newUser.setRole("USER");
-                    return userRepository.save(newUser);
-                });
-
-        // 3. Fetch Seats and calculate total price
-        List<com.ticketrush.model.entity.Seat> seats = seatRepository.findAllById(seatIds);
-        double total = 0;
-        for (com.ticketrush.model.entity.Seat seat : seats) {
-            if (seat.getZone() != null) {
-                total += seat.getZone().getPrice();
-            }
-            seat.setStatus("SOLD");
-        }
-
-        // 4. Create and Save Order
-        com.ticketrush.model.entity.Order order = new com.ticketrush.model.entity.Order();
-        order.setUser(user);
-        order.setTotalPrice(total);
-        order.setStatus("COMPLETED");
-        order = orderRepository.save(order);
-
-        // 5. Create and Save Tickets
-        for (com.ticketrush.model.entity.Seat seat : seats) {
-            com.ticketrush.model.entity.Ticket ticket = new com.ticketrush.model.entity.Ticket();
-            ticket.setOrder(order);
-            ticket.setSeat(seat);
-            ticket.setQrCode(qrBaseUrl + "?order=" + order.getId() + "&seat=" + seat.getId());
-            ticketRepository.save(ticket);
-        }
-
-        // 6. Update Seat status in DB
-        seatRepository.saveAll(seats);
-
-        // 7. Clear Redis and Broadcast SOLD status
-        for (UUID seatId : seatIds) {
-            String key = "lock:seat:" + showtimeId + ":" + seatId;
-            redisTemplate.delete(key);
-
-            Map<String, String> payload = new HashMap<>();
-            payload.put("seatId", seatId.toString());
-            payload.put("status", "SOLD");
-            realtimePublisher.publish("/topic/events/showtimes/" + showtimeId + "/seats", payload);
-        }
-
-        return true;
-    }
 }

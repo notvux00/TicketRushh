@@ -39,17 +39,19 @@ export default function MyTickets() {
   };
 
   useEffect(() => {
+    let active = true;
     const fetchTickets = async () => {
       try {
         const data = await eventApi.getMyTickets();
-        setTickets(data);
+        if (active) setTickets(data);
       } catch (error) {
         console.error("Failed to fetch tickets:", error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchTickets();
+    return () => { active = false; };
   }, []);
 
   if (loading) {
@@ -123,7 +125,7 @@ export default function MyTickets() {
                         <div className="flex flex-wrap gap-8 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-slate-400" />
-                            <span>{new Date(order.startTime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                            <span>{new Date(order.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'long', year: 'numeric' })}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <MapPin size={16} className="text-slate-400" />
@@ -204,10 +206,10 @@ export default function MyTickets() {
                   <div>
                     <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Thời gian</p>
                     <p className="text-slate-900 font-black text-xs">
-                      {new Date(selectedTicket.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(selectedTicket.startTime).toLocaleTimeString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit' })}
                     </p>
                     <p className="text-slate-500 font-bold text-[10px]">
-                      {new Date(selectedTicket.startTime).toLocaleDateString('vi-VN')}
+                      {new Date(selectedTicket.startTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
                     </p>
                   </div>
                   <div className="text-right">

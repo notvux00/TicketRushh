@@ -10,6 +10,10 @@ import java.util.UUID;
 
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, UUID> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Seat s where s.id in :ids order by s.id")
+    List<Seat> findForBooking(@Param("ids") List<UUID> ids);
+
     List<Seat> findByZoneId(UUID zoneId);
 
     @Query("""

@@ -1,5 +1,7 @@
 package com.ticketrush.service;
 
+import com.ticketrush.util.PriceValidation;
+import com.ticketrush.util.EventTime;
 import com.ticketrush.model.dto.CheckoutSessionResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
 import com.ticketrush.model.dto.VoucherResponse;
@@ -52,7 +54,9 @@ public class CheckoutService {
             throw new RuntimeException("No seats selected");
         }
 
-        List<Seat> seats = seatRepository.findAllById(request.getSeatIds());
+        virtualQueueService.requireBookingAccess(request.getShowtimeId(), userId);
+
+        List<Seat> seats = seatRepository.findForBooking(request.getSeatIds());
         if (seats.size() != request.getSeatIds().size()) {
             throw new RuntimeException("Some seats were not found");
         }
@@ -61,6 +65,8 @@ public class CheckoutService {
         if (!showtime.getId().equals(request.getShowtimeId())) {
             throw new RuntimeException("Seats do not belong to this showtime");
         }
+
+        EventTime.requireSalesOpen(showtime.getStartTime());
 
         Integer maxTickets = showtime.getEvent().getMaxTicketsPerOrder();
         int limit = maxTickets != null && maxTickets > 0 ? maxTickets : 4;
@@ -80,9 +86,14 @@ public class CheckoutService {
         // Dọn dẹp bất kỳ vé nháp nào còn sót lại từ các đơn hàng chưa hoàn tất/đã hủy
         List<Ticket> staleTickets = ticketRepository.findBySeatIdIn(request.getSeatIds());
         for (Ticket staleTicket : staleTickets) {
-            if (staleTicket.getOrder() != null && !"COMPLETED".equalsIgnoreCase(staleTicket.getOrder().getStatus())) {
-                ticketRepository.delete(staleTicket);
+            Order existing = staleTicket.getOrder();
+            if (existing == null || "COMPLETED".equalsIgnoreCase(existing.getStatus())) {
+                throw new IllegalStateException("Seats are already booked");
             }
+            if ("PENDING".equalsIgnoreCase(existing.getStatus()) && !isExpired(existing)) {
+                throw new IllegalStateException("Seats already belong to an active checkout");
+            }
+            ticketRepository.delete(staleTicket);
         }
         ticketRepository.flush();
 
@@ -94,7 +105,11 @@ public class CheckoutService {
         order.setOriginalPrice(total);
         order.setDiscountAmount(0.0);
         order.setTotalPrice(total);
-        order.setExpiresAt(LocalDateTime.now().plusMinutes(CHECKOUT_TTL_MINUTES));
+        LocalDateTime expiresAt = LocalDateTime.now(EventTime.ZONE).plusMinutes(CHECKOUT_TTL_MINUTES);
+        if (showtime.getStartTime() != null && showtime.getStartTime().isBefore(expiresAt)) {
+            expiresAt = showtime.getStartTime();
+        }
+        order.setExpiresAt(expiresAt);
         order = orderRepository.save(order);
 
         boolean locked = seatLockService.lockSeats(request.getShowtimeId(), request.getSeatIds(), userId, order.getId());
@@ -107,6 +122,7 @@ public class CheckoutService {
             Ticket ticket = new Ticket();
             ticket.setOrder(order);
             ticket.setSeat(seat);
+            ticket.setUnitPrice(PriceValidation.requireValid(seat.getZone().getPrice()));
             ticket.setStatus("ACTIVE");
             ticket = ticketRepository.saveAndFlush(ticket);
 
@@ -119,6 +135,12 @@ public class CheckoutService {
         }
 
         return mapSession(orderRepository.findById(order.getId()).orElseThrow());
+    }
+
+    @Transactional
+    public CheckoutSessionResponse createAndConfirmSession(LockSeatRequest request, String userId) {
+        CheckoutSessionResponse session = createSession(request, userId);
+        return confirmSession(session.getOrderId(), userId);
     }
 
     @Transactional
@@ -135,16 +157,28 @@ public class CheckoutService {
         }
         if (isExpired(order)) {
             expireSession(order, userId);
-            throw new RuntimeException("Checkout session expired");
+            return mapSession(order);
         }
 
         List<Ticket> tickets = ticketRepository.findByOrderId(orderId);
         List<Seat> seats = tickets.stream().map(Ticket::getSeat).collect(Collectors.toList());
-        UUID showtimeId = seats.get(0).getZone().getShowtime().getId();
+        var showtime = seats.get(0).getZone().getShowtime();
+        if (EventTime.salesClosed(showtime.getStartTime())) {
+            expireSession(order, userId);
+            return mapSession(order);
+        }
+        UUID showtimeId = showtime.getId();
         List<UUID> seatIds = seats.stream().map(Seat::getId).collect(Collectors.toList());
 
         if (!seatLockService.ownsAllLocks(showtimeId, seatIds, userId, orderId)) {
             throw new RuntimeException("Seat lock expired");
+        }
+
+        PriceValidation.requireValid(order.getTotalPrice());
+
+        if (order.getVoucher() != null
+                && voucherRepository.consumeAvailableUse(order.getVoucher().getId(), LocalDateTime.now()) != 1) {
+            throw new IllegalStateException("Voucher is no longer available. Remove it or choose another voucher.");
         }
 
         for (Seat seat : seats) {
@@ -155,12 +189,6 @@ public class CheckoutService {
         order.setStatus("COMPLETED");
         order.setExpiresAt(null);
         orderRepository.save(order);
-
-        if (order.getVoucher() != null) {
-            Voucher voucher = order.getVoucher();
-            voucher.setUsedQuantity(voucher.getUsedQuantity() != null ? voucher.getUsedQuantity() + 1 : 1);
-            voucherRepository.save(voucher);
-        }
 
         seatLockService.unlockSeats(showtimeId, seatIds, userId);
         for (UUID seatId : seatIds) {
@@ -188,6 +216,9 @@ public class CheckoutService {
     @Transactional
     public CheckoutSessionResponse applyVoucher(UUID orderId, String voucherCode, String userId) {
         Order order = getUserOrder(orderId, userId);
+        if ("EXPIRED".equalsIgnoreCase(order.getStatus())) {
+            return mapSession(order);
+        }
         if (!"PENDING".equalsIgnoreCase(order.getStatus())) {
             throw new RuntimeException("Đơn hàng không ở trạng thái chờ thanh toán");
         }
@@ -253,6 +284,9 @@ public class CheckoutService {
     @Transactional
     public CheckoutSessionResponse removeVoucher(UUID orderId, String userId) {
         Order order = getUserOrder(orderId, userId);
+        if ("EXPIRED".equalsIgnoreCase(order.getStatus())) {
+            return mapSession(order);
+        }
         if (!"PENDING".equalsIgnoreCase(order.getStatus())) {
             throw new RuntimeException("Đơn hàng không ở trạng thái chờ thanh toán");
         }
@@ -297,6 +331,10 @@ public class CheckoutService {
     }
 
     private void expireSession(Order order, String userId) {
+        // Publish the terminal DB state before deleting drafts; the database
+        // protects issued tickets and live checkouts from accidental deletion.
+        order.setStatus("EXPIRED");
+        orderRepository.saveAndFlush(order);
         List<Ticket> tickets = ticketRepository.findByOrderId(order.getId());
         UUID showtimeId = null;
         if (!tickets.isEmpty()) {
@@ -306,9 +344,6 @@ public class CheckoutService {
             ticketRepository.deleteAll(tickets);
             ticketRepository.flush();
         }
-        order.setStatus("EXPIRED");
-        orderRepository.save(order);
-
         // Giải phóng slot trong virtual queue
         if (showtimeId != null) {
             virtualQueueService.releaseSlot(showtimeId, userId);
@@ -316,7 +351,7 @@ public class CheckoutService {
     }
 
     private Order getUserOrder(UUID orderId, String userId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findForCheckout(orderId)
                 .orElseThrow(() -> new RuntimeException("Checkout session not found"));
         if (!order.getUser().getId().equals(UUID.fromString(userId))) {
             throw new RuntimeException("Checkout session does not belong to current user");
@@ -343,24 +378,16 @@ public class CheckoutService {
     }
 
     private double calculateTotal(List<Seat> seats) {
-        return seats.stream()
-                .mapToDouble(seat -> seat.getZone() != null && seat.getZone().getPrice() != null ? seat.getZone().getPrice() : 0.0)
+        double total = seats.stream()
+                .mapToDouble(seat -> PriceValidation.requireValid(seat.getZone().getPrice()))
                 .sum();
+        return PriceValidation.requireValid(total);
     }
 
     private CheckoutSessionResponse mapSession(Order order) {
         List<Ticket> tickets = ticketRepository.findByOrderId(order.getId());
-        if (tickets.isEmpty()) {
-            throw new RuntimeException("Checkout session has no seats");
-        }
-
-        Seat firstSeat = tickets.get(0).getSeat();
-        var showtime = firstSeat.getZone().getShowtime();
-        var event = showtime.getEvent();
-
         CheckoutSessionResponse response = new CheckoutSessionResponse();
         response.setOrderId(order.getId());
-        response.setShowtimeId(showtime.getId());
         response.setStatus(order.getStatus());
         response.setTotalPrice(order.getTotalPrice());
         response.setOriginalPrice(order.getOriginalPrice() != null ? order.getOriginalPrice() : order.getTotalPrice());
@@ -371,7 +398,20 @@ public class CheckoutService {
         }
         response.setQrCodeUrl(buildVietQrUrl(order.getId(), order.getTotalPrice()));
         response.setCreatedAt(order.getCreatedAt());
-        response.setExpiresAt(order.getExpiresAt());
+        response.setExpiresAt(order.getExpiresAt() == null ? null : order.getExpiresAt()
+                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toOffsetDateTime());
+
+        if (tickets.isEmpty()) {
+            if (!"EXPIRED".equalsIgnoreCase(order.getStatus())) {
+                throw new IllegalStateException("Checkout session has no seats");
+            }
+            response.setSelectedSeats(List.of());
+            return response;
+        }
+        Seat firstSeat = tickets.get(0).getSeat();
+        var showtime = firstSeat.getZone().getShowtime();
+        var event = showtime.getEvent();
+        response.setShowtimeId(showtime.getId());
 
         CheckoutSessionResponse.EventSummary eventSummary = new CheckoutSessionResponse.EventSummary();
         eventSummary.setId(event.getId());
@@ -384,18 +424,22 @@ public class CheckoutService {
         CheckoutSessionResponse.ShowtimeSummary showtimeSummary = new CheckoutSessionResponse.ShowtimeSummary();
         showtimeSummary.setId(showtime.getId());
         showtimeSummary.setName(showtime.getName());
-        showtimeSummary.setStartTime(showtime.getStartTime());
-        showtimeSummary.setEndTime(showtime.getEndTime());
+        showtimeSummary.setStartTime(EventTime.toOffset(showtime.getStartTime()));
+        showtimeSummary.setEndTime(EventTime.toOffset(showtime.getEndTime()));
         response.setShowtime(showtimeSummary);
 
         response.setSelectedSeats(tickets.stream().map(ticket -> {
             Seat seat = ticket.getSeat();
             CheckoutSessionResponse.SeatSummary seatSummary = new CheckoutSessionResponse.SeatSummary();
             seatSummary.setId(seat.getId());
+            seatSummary.setTicketId(ticket.getId());
+            if ("COMPLETED".equalsIgnoreCase(order.getStatus())) {
+                seatSummary.setQrPayload(ticket.getQrPayload());
+            }
             seatSummary.setLabel(seat.getSeatLabel());
             seatSummary.setSeatLabel(seat.getSeatLabel());
             seatSummary.setZoneName(seat.getZone().getName());
-            seatSummary.setPrice(seat.getZone().getPrice());
+            seatSummary.setPrice(ticket.getUnitPrice());
             seatSummary.setRow(seat.getGridRow());
             seatSummary.setCol(seat.getGridCol());
             seatSummary.setGridRow(seat.getGridRow());

@@ -1,4 +1,7 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { eventApi } from "../api/eventApi";
+import { useAuth } from "../hooks/useAuth";
 import { Home, CheckCircle, MapPin, Info, Ticket } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import QRCodeRenderer from "../components/ticket/QRCodeRenderer";
@@ -7,8 +10,21 @@ export default function PaymentSuccessPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Lấy dữ liệu vé từ state truyền qua
-  const { selectedSeats, event, showtime } = location.state || {};
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("orderId") || location.state?.orderId;
+  const { loading: authLoading, isAuthenticated, user } = useAuth();
+  const enabled = !authLoading && isAuthenticated && !!orderId;
+  const { data, isPending } = useQuery({
+    queryKey: ["issued-checkout", user?.id, orderId],
+    queryFn: () => eventApi.getCheckout(orderId),
+    enabled,
+    retry: false,
+  });
+  const checkout = enabled && data?.status === "COMPLETED" ? data : null;
+  const { selectedSeats, event, showtime } = checkout || {};
+  if (authLoading || (enabled && isPending)) {
+    return <div className="min-h-screen flex items-center justify-center">Đang tải vé...</div>;
+  }
 
   if (!selectedSeats || !event) {
     return (
@@ -66,7 +82,7 @@ export default function PaymentSuccessPage() {
                       <div>
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Thời gian</p>
                         <p className="text-lg font-bold text-slate-900">
-                          {showtime ? new Date(showtime.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "N/A"}, {showtime ? new Date(showtime.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: 'long' }) : "N/A"}
+                          {showtime ? new Date(showtime.startTime).toLocaleTimeString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit' }) : "N/A"}, {showtime ? new Date(showtime.startTime).toLocaleDateString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", day: '2-digit', month: 'long' }) : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -89,7 +105,7 @@ export default function PaymentSuccessPage() {
                 <div className="w-full md:w-52 bg-slate-50/30 p-8 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
                   <div className="mb-4">
                     <QRCodeRenderer
-                      value={seat.qrPayload || `TKRUSH:v1:seat:${seat.id}`}
+                      value={seat.qrPayload}
                       size={96}
                     />
                   </div>

@@ -9,11 +9,29 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.*;
 
 @Service
 public class VirtualQueueService {
+
+    private static final org.springframework.data.redis.core.script.DefaultRedisScript<Long> GRANT_PASS =
+            new org.springframework.data.redis.core.script.DefaultRedisScript<>("""
+                    if redis.call('SET', KEYS[1], '1', 'NX', 'EX', ARGV[1]) then
+                      redis.call('INCR', KEYS[2])
+                      return 1
+                    end
+                    return 0
+                    """, Long.class);
+
+    private static final org.springframework.data.redis.core.script.DefaultRedisScript<Long> RELEASE_PASS =
+            new org.springframework.data.redis.core.script.DefaultRedisScript<>("""
+                    if redis.call('DEL', KEYS[1]) == 1 then
+                      local remaining = redis.call('DECR', KEYS[2])
+                      if remaining < 0 then redis.call('SET', KEYS[2], '0') end
+                      return 1
+                    end
+                    return 0
+                    """, Long.class);
 
     @Autowired
     private StringRedisTemplate redisTemplate;
@@ -165,6 +183,8 @@ public class VirtualQueueService {
         // Trong chế độ "Drip Entry", chúng ta luôn cho phép batchSize người vào 
         // nếu chưa chạm trần Max Capacity cực lớn.
         int toGrant = Math.min(availableSlots, batchSize);
+        // Protect against legacy or externally written invalid Redis configuration.
+        if (toGrant <= 0) return 0;
         String waitKey = waitingKey(showtimeId);
 
         // Lấy top N users từ Sorted Set (FIFO — score nhỏ nhất = vào trước)
@@ -211,27 +231,31 @@ public class VirtualQueueService {
         return Boolean.TRUE.equals(redisTemplate.hasKey(passKey(showtimeId, userId)));
     }
 
+    public boolean canBook(UUID showtimeId, String userId) {
+        return getActiveCount(showtimeId) < getThreshold(showtimeId) || hasValidPass(showtimeId, userId);
+    }
+
+    public void requireBookingAccess(UUID showtimeId, String userId) {
+        if (!canBook(showtimeId, userId)) {
+            throw new IllegalStateException("QUEUE_ACCESS_REQUIRED");
+        }
+    }
+
     /**
      * Cấp thẻ vào cửa + tăng active count
      */
     private void grantPass(UUID showtimeId, String userId) {
-        redisTemplate.opsForValue().set(passKey(showtimeId, userId), "1", Duration.ofSeconds(PASS_TTL_SECONDS));
-        redisTemplate.opsForValue().increment(activeKey(showtimeId));
+        redisTemplate.execute(GRANT_PASS, List.of(passKey(showtimeId, userId), activeKey(showtimeId)),
+                Integer.toString(PASS_TTL_SECONDS));
     }
 
     /**
      * Giảm active count (khi user rời booking: checkout xong, hủy, close tab, thẻ hết hạn)
      */
     public void releaseSlot(UUID showtimeId, String userId) {
-        String pass = passKey(showtimeId, userId);
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(pass))) {
-            redisTemplate.delete(pass);
-        }
-        Long currentCount = redisTemplate.opsForValue().decrement(activeKey(showtimeId));
-        // Tránh counter âm
-        if (currentCount != null && currentCount < 0) {
-            redisTemplate.opsForValue().set(activeKey(showtimeId), "0");
-        }
+        // DEL returns zero after expiration too; the expiration listener owns
+        // that decrement. Explicit deletion does not emit an expired event.
+        redisTemplate.execute(RELEASE_PASS, List.of(passKey(showtimeId, userId), activeKey(showtimeId)));
     }
 
     /**
@@ -256,6 +280,7 @@ public class VirtualQueueService {
      * Đặt số người được vào mỗi đợt cho showtime
      */
     public void setBatchSize(UUID showtimeId, int batchSize) {
+        if (batchSize <= 0) throw new IllegalArgumentException("Batch size must be positive");
         redisTemplate.opsForValue().set(batchSizeKey(showtimeId), String.valueOf(batchSize));
     }
 

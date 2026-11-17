@@ -151,7 +151,7 @@ resource "aws_cloudfront_response_headers_policy" "security" {
         "style-src 'self' 'unsafe-inline'",
         "script-src 'self'",
         "media-src 'self' blob:",
-        "connect-src 'self' https://${local.app_fqdn} wss://${local.app_fqdn}",
+        "connect-src 'self' https://${local.app_fqdn} wss://${local.app_fqdn} https://${aws_s3_bucket.media.bucket_regional_domain_name}",
       ])
       override = true
     }

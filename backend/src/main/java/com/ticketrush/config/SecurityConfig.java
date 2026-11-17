@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/events/seats/lock", "/api/events/seats/unlock",
                                 "/api/events/seats/confirm").authenticated()
                         .requestMatchers("/api/admin/**", "/api/queue/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/checkin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
 
                         .anyRequest().authenticated())

@@ -25,7 +25,7 @@ public class EventResponse {
     public static class ShowtimeResponse {
         private UUID id;
         private String name;
-        private java.time.LocalDateTime startTime;
-        private java.time.LocalDateTime endTime;
+        private java.time.OffsetDateTime startTime;
+        private java.time.OffsetDateTime endTime;
     }
 }

@@ -93,7 +93,7 @@ class VoucherServiceTest {
         mockTicket.setOrder(mockOrder);
         mockTicket.setSeat(seat);
 
-        lenient().when(orderRepository.findById(orderId)).thenReturn(Optional.of(mockOrder));
+        lenient().when(orderRepository.findForCheckout(orderId)).thenReturn(Optional.of(mockOrder));
         lenient().when(ticketRepository.findByOrderId(orderId)).thenReturn(List.of(mockTicket));
     }
 

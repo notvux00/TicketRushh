@@ -1,5 +1,8 @@
 package com.ticketrush.service;
 
+import com.ticketrush.repository.TicketRepository;
+import com.ticketrush.util.PriceValidation;
+import java.time.LocalDateTime;
 import com.ticketrush.model.dto.ZonePositionUpdate;
 import com.ticketrush.model.dto.ZoneRequest;
 import com.ticketrush.model.dto.ZoneResponse;
@@ -24,6 +27,7 @@ public class ZoneService {
     private final ZoneRepository zoneRepository;
     private final SeatRepository seatRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final TicketRepository ticketRepository;
 
     // 1. Lấy danh sách Zone theo Showtime
     public List<ZoneResponse> getZonesByShowtime(UUID showtimeId) {
@@ -45,6 +49,7 @@ public class ZoneService {
     // 2. Tạo Zone và TỰ ĐỘNG SINH GHẾ
     @Transactional
     public void createZone(UUID showtimeId, ZoneRequest request) {
+        PriceValidation.requireValid(request.getPrice());
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy suất diễn"));
 
@@ -89,6 +94,7 @@ public class ZoneService {
         
         for (Showtime showtime : showtimes) {
             for (ZoneRequest request : zoneRequests) {
+                PriceValidation.requireValid(request.getPrice());
                 Zone zone = new Zone();
                 zone.setName(request.getName());
                 zone.setMatrixRow(request.getMatrixRow());
@@ -124,6 +130,9 @@ public class ZoneService {
     public void deleteZone(UUID zoneId) {
         if (!zoneRepository.existsById(zoneId)) {
             throw new RuntimeException("Khu vực không tồn tại!");
+        }
+        if (ticketRepository.protectedTicketsForZone(zoneId, LocalDateTime.now()) > 0) {
+            throw new IllegalStateException("Cannot delete a zone with issued tickets or active checkouts");
         }
         zoneRepository.deleteById(zoneId);
     }

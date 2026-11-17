@@ -18,7 +18,7 @@ public class CheckoutSessionResponse {
     private String voucherDescription;
     private String qrCodeUrl;
     private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
+    private java.time.OffsetDateTime expiresAt;
     private EventSummary event;
     private ShowtimeSummary showtime;
     private List<SeatSummary> selectedSeats;
@@ -36,13 +36,15 @@ public class CheckoutSessionResponse {
     public static class ShowtimeSummary {
         private UUID id;
         private String name;
-        private LocalDateTime startTime;
-        private LocalDateTime endTime;
+        private java.time.OffsetDateTime startTime;
+        private java.time.OffsetDateTime endTime;
     }
 
     @Data
     public static class SeatSummary {
         private UUID id;
+        private UUID ticketId;
+        private String qrPayload;
         private String label;
         private String seatLabel;
         private String zoneName;

@@ -110,14 +110,29 @@ cd infra/terraform/envs/demo
 cp terraform.tfvars.example terraform.tfvars
 # Set admin_email and alarm_email (and domain/subdomain if needed).
 
-# Optional: enable remote state.
-cp ../../backend.tf.example backend.tf
-# Fill in bucket/key/dynamodb_table, then:
-terraform init -migrate-state
+# Both environments declare an S3 backend. Supply bootstrap outputs at init:
+terraform init -backend-config="bucket=YOUR-STATE-BUCKET" \
+  -backend-config="key=ticketrush/demo/terraform.tfstate" \
+  -backend-config="region=ap-southeast-1" \
+  -backend-config="dynamodb_table=YOUR-LOCK-TABLE"
+# If this environment already has local state, use -migrate-state during the
+# one-time migration, check the target account/key and preserve a state backup.
 
-# Without remote state:
+# Validation only, without accessing the state backend:
 terraform init -backend=false
 ```
+
+The manual Terraform workflow requires these GitHub environment variables in
+each selected environment: `ADMIN_EMAIL`, `ALARM_EMAIL`, `AWS_REGION`,
+`AWS_TERRAFORM_ROLE_ARN`, `TF_STATE_BUCKET`, and `TF_LOCK_TABLE`.
+`TF_STATE_REGION` is optional and falls back to `AWS_REGION`.
+The bootstrap stack provides the bucket and DynamoDB lock table. State keys
+are `ticketrush/demo/terraform.tfstate` and `ticketrush/prod/terraform.tfstate`.
+For an existing deployment, configure the workflow to use its existing state
+location and migrate/import state before the first workflow apply; do not start
+with an empty backend for already-managed resources. The workflow checks required
+configuration, passes Terraform inputs explicitly, uses state locking, and
+serializes runs per environment. Keep `DEPLOY_ENABLED` gated as before.
 
 ## 3. Create the Route 53 zone first (DNS delegation)
 
@@ -199,7 +214,7 @@ about five minutes; push an image and refresh the ASG.
 cd "$(git rev-parse --show-toplevel)"
 
 ECR_URL=$(terraform -chdir=infra/terraform/envs/demo output -raw ecr_repository_url)
-TAG=$(git rev-parse --short HEAD)
+TAG="$(git rev-parse --short HEAD)-$(date +%s)"
 
 aws ecr get-login-password --region ap-southeast-1 \
   | docker login --username AWS --password-stdin "${ECR_URL%%/*}"
@@ -207,19 +222,44 @@ aws ecr get-login-password --region ap-southeast-1 \
 docker build -t "$ECR_URL:$TAG" ./backend
 docker push "$ECR_URL:$TAG"
 
-aws ssm put-parameter \
-  --name "$(terraform -chdir=infra/terraform/envs/demo output -raw image_tag_parameter_name)" \
-  --value "$TAG" \
-  --overwrite
-
-aws autoscaling start-instance-refresh \
-  --auto-scaling-group-name "$(terraform -chdir=infra/terraform/envs/demo output -raw autoscaling_group_name)" \
-  --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":120}'
+export IMAGE_TAG="$TAG"
+export PARAMETER_NAME=$(terraform -chdir=infra/terraform/envs/demo output -raw image_tag_parameter_name)
+export ASG_NAME=$(terraform -chdir=infra/terraform/envs/demo output -raw autoscaling_group_name)
+export AWS_DEFAULT_REGION=ap-southeast-1
+python scripts/deploy_backend.py
 ```
 
 New instances read the tag from SSM at boot, fetch DB/Redis/JWT/admin secrets
 from Secrets Manager, log in to ECR, and start the container with the `awslogs`
 driver. The image must listen on port 8080.
+
+The deployment helper waits for the refresh to reach `Successful`. It rejects
+an already-running refresh before changing the SSM tag. On rollout failure it
+restores the previous tag, cancels an in-flight refresh if needed, and refreshes
+again with that restored tag. Failed deployments still exit nonzero even if
+recovery succeeds. Recovery requires the previous image to remain in ECR and
+working AWS permissions/connectivity; failed recovery must be handled manually.
+If a start response is lost, the helper queries the ASG and waits for refreshes
+whose ownership is unknown to finish instead of canceling them. It then refreshes
+with the restored image tag, including when the original refresh already finished.
+SSM tag checks stop recovery if another deployment has taken over. An unknown
+refresh that does not terminate within the timeout requires manual reconciliation.
+Use a distinct image tag for every build. The workflow includes the commit,
+run ID and attempt so rerunning a commit does not overwrite the prior image.
+
+The deploy role needs `ssm:GetParameter`, `ssm:PutParameter`,
+`autoscaling:DescribeInstanceRefreshes`, `autoscaling:StartInstanceRefresh` and
+`autoscaling:CancelInstanceRefresh`, in addition to its ECR push permissions.
+Backend deploy and Terraform workflows share an environment concurrency group.
+Local tests: `python -m unittest discover -s tests -p test_deploy_backend.py -v`.
+
+Redis notifications are configured by the server: Docker Compose enables `Ex`,
+and Terraform's ElastiCache parameter group configures expiry notifications.
+Spring listeners intentionally do not invoke CONFIG, which ElastiCache blocks.
+
+CloudFront CSP permits direct uploads only to the regional hostname of this
+stack's media bucket, derived from the bucket resource. The public WebSocket
+feed supports subscriptions; client-originated application messages are rejected.
 
 ## 6. Deploy the frontend
 

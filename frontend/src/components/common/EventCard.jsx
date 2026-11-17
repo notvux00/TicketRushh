@@ -26,10 +26,10 @@ function EventCard({ event }) {
             event.showtimes.slice(0, 2).map((showtime) => (
               <div key={showtime.id} className="bg-white/90 backdrop-blur px-2 py-1 rounded-lg flex flex-col items-center shadow-sm">
                 <span className="text-[10px] font-bold text-gray-500 uppercase font-sans">
-                  {new Date(showtime.startTime).toLocaleString('vi-VN', { month: 'short' })}
+                  {new Date(showtime.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", month: 'short' })}
                 </span>
                 <span className="text-lg font-bold text-primary leading-none">
-                  {new Date(showtime.startTime).getDate()}
+                  {new Date(showtime.startTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "numeric" })}
                 </span>
               </div>
             ))

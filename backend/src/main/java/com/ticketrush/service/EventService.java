@@ -1,5 +1,11 @@
 package com.ticketrush.service;
 
+import com.ticketrush.repository.TicketRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ticketrush.util.PriceValidation;
+import java.time.LocalDateTime;
 import com.ticketrush.model.dto.EventResponse;
 import com.ticketrush.repository.EventRepository;
 import org.springframework.stereotype.Service;
@@ -27,6 +33,8 @@ import java.util.UUID;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final TicketRepository ticketRepository;
+    private final ObjectMapper objectMapper;
     private final ShowtimeRepository showtimeRepository;
     private final UserRepository userRepository;
     private final ZoneService zoneService;
@@ -80,8 +88,8 @@ public class EventService {
         EventResponse.ShowtimeResponse dto = new EventResponse.ShowtimeResponse();
         dto.setId(showtime.getId());
         dto.setName(showtime.getName());
-        dto.setStartTime(showtime.getStartTime());
-        dto.setEndTime(showtime.getEndTime());
+        dto.setStartTime(com.ticketrush.util.EventTime.toOffset(showtime.getStartTime()));
+        dto.setEndTime(com.ticketrush.util.EventTime.toOffset(showtime.getEndTime()));
         return dto;
     }
 
@@ -97,6 +105,9 @@ public class EventService {
         User admin = userRepository.findById(UUID.fromString(adminId))
                 .orElseThrow(() -> new RuntimeException("Tài khoản Admin không tồn tại!"));
 
+        validateCap(request.getMaxTicketsPerOrder());
+        if (request.getZones() != null) request.getZones().forEach(zone ->
+                PriceValidation.requireValid(zone.getPrice()));
         Event event = new Event();
         event.setEventName(request.getEventName());
         event.setDescription(request.getDescription());
@@ -138,19 +149,45 @@ public class EventService {
 
     @Transactional
     public EventResponse updateEvent(UUID eventId, EventUpdateRequest request) {
-        Event event = eventRepository.findById(eventId)
+        return updateEventInternal(eventId, request, null);
+    }
+
+    @Transactional
+    public EventResponse patchEvent(UUID eventId, JsonNode fields) {
+        if (!fields.isObject()) throw new IllegalArgumentException("Expected an event object");
+        try {
+            return updateEventInternal(eventId, objectMapper.treeToValue(fields, EventUpdateRequest.class), fields);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Invalid event update", e);
+        }
+    }
+
+    private static boolean changes(JsonNode fields, String name) {
+        return fields == null || fields.has(name);
+    }
+
+    private static void validateCap(Integer cap) {
+        if (cap != null && cap < 1) throw new IllegalArgumentException("Ticket limit must be positive");
+    }
+
+    private EventResponse updateEventInternal(UUID eventId, EventUpdateRequest request,
+            JsonNode fields) {
+        validateCap(request.getMaxTicketsPerOrder());
+        Event event = eventRepository.findForUpdate(eventId)
                 .orElseThrow(() -> new RuntimeException("Sự kiện không tồn tại!"));
 
         eventRepository.updateEditableFields(
                 eventId,
-                request.getCoverImage() != null ? request.getCoverImage() : event.getCoverImage(),
-                request.getDescription(),
-                request.getVenueName(),
-                request.getVenueAddress(),
-                request.getMaxTicketsPerOrder());
+                changes(fields, "coverImage") ? request.getCoverImage() : event.getCoverImage(),
+                changes(fields, "description") ? request.getDescription() : event.getDescription(),
+                changes(fields, "venueName") ? request.getVenueName() : event.getVenueName(),
+                changes(fields, "venueAddress") ? request.getVenueAddress() : event.getVenueAddress(),
+                changes(fields, "maxTicketsPerOrder") ? request.getMaxTicketsPerOrder() : event.getMaxTicketsPerOrder());
 
         if (request.getShowtimes() != null) {
+            int index = 0;
             for (EventUpdateRequest.ShowtimeUpdateRequest stReq : request.getShowtimes()) {
+                var item = fields == null ? null : fields.path("showtimes").path(index++);
                 if (stReq.getId() == null) {
                     throw new RuntimeException("Thiếu ID suất diễn cần cập nhật!");
                 }
@@ -159,9 +196,9 @@ public class EventService {
                 if (!showtime.getEvent().getId().equals(eventId)) {
                     throw new RuntimeException("Suất diễn không thuộc sự kiện này!");
                 }
-                showtime.setName(stReq.getName());
-                showtime.setStartTime(stReq.getStartTime());
-                showtime.setEndTime(stReq.getEndTime());
+                if (changes(item, "name")) showtime.setName(stReq.getName());
+                if (changes(item, "startTime")) showtime.setStartTime(stReq.getStartTime());
+                if (changes(item, "endTime")) showtime.setEndTime(stReq.getEndTime());
                 showtimeRepository.save(showtime);
             }
         }
@@ -173,7 +210,9 @@ public class EventService {
                 throw new RuntimeException("Suất diễn của phân khu không thuộc sự kiện này!");
             }
 
+            int index = 0;
             for (EventUpdateRequest.ZoneUpdateRequest zoneReq : request.getZones()) {
+                var item = fields == null ? null : fields.path("zones").path(index++);
                 if (zoneReq.getId() == null) {
                     throw new RuntimeException("Thiếu ID phân khu cần cập nhật!");
                 }
@@ -182,8 +221,8 @@ public class EventService {
                 if (!zone.getShowtime().getId().equals(request.getShowtimeIdForZones())) {
                     throw new RuntimeException("Phân khu không thuộc suất diễn đang sửa!");
                 }
-                zone.setName(zoneReq.getName());
-                zone.setPrice(zoneReq.getPrice());
+                if (changes(item, "name")) zone.setName(zoneReq.getName());
+                if (changes(item, "price")) zone.setPrice(PriceValidation.requireValid(zoneReq.getPrice()));
                 zoneRepository.save(zone);
             }
         }
@@ -193,8 +232,9 @@ public class EventService {
 
     @Transactional
     public void deleteEvent(UUID id) {
-        if (!eventRepository.existsById(id)) {
-            throw new RuntimeException("Sự kiện không tồn tại!");
+        eventRepository.findForUpdate(id).orElseThrow(() -> new IllegalArgumentException("Event not found"));
+        if (ticketRepository.protectedTicketsForEvent(id, LocalDateTime.now()) > 0) {
+            throw new IllegalStateException("Cannot delete an event with issued tickets or an active checkout");
         }
 
         eventRepository.deleteTicketsByEventId(id);

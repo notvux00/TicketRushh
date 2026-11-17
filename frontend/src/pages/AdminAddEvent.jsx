@@ -616,7 +616,7 @@ function AdminAddEvent() {
                       <Calendar size={16} />
                     </div>
                     <span className="text-base font-bold text-slate-800">
-                      Lịch diễn
+                      Lịch diễn (giờ Việt Nam)
                     </span>
                     <span className="ml-1 px-2.5 py-1 bg-blue-50 text-blue-600 text-xs font-black rounded-lg border border-blue-100">
                       {formData.showtimes.length}

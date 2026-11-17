@@ -177,3 +177,23 @@ module "observability" {
 
   tags = local.common_tags
 }
+
+module "maintenance_worker" {
+  source = "../../modules/maintenance_worker"
+
+  depends_on = [module.data, module.security]
+
+  name_prefix = local.name_prefix
+
+  subnet_ids               = module.network.app_subnet_ids
+  lambda_security_group_id = module.security.lambda_security_group_id
+
+  db_secret_name = module.data.db_secret_name
+  db_secret_arn  = module.data.db_secret_arn
+  db_host        = module.data.db_address
+  db_port        = module.data.db_port
+
+  log_retention_days = var.log_retention_days
+
+  tags = local.common_tags
+}

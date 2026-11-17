@@ -80,8 +80,8 @@ export function downloadETicketCard(ticket, options = {}) {
 
   // 6. Thông tin sự kiện (Thời gian & Địa điểm)
   const dateObj = new Date(startTime);
-  const timeStr = dateObj.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-  const dateStr = dateObj.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const timeStr = dateObj.toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" });
+  const dateStr = dateObj.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric" });
 
   ctx.fillStyle = "#94a3b8";
   ctx.font = "13px sans-serif";

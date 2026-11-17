@@ -17,16 +17,50 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: ticketrush-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
 jobs:
   plan-apply:
     if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == 'apply'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    env:
+      TF_INPUT: "false"
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_admin_email: ${{ vars.ADMIN_EMAIL }}
+      TF_VAR_alarm_email: ${{ vars.ALARM_EMAIL }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_KEY: ticketrush/${{ inputs.environment }}/terraform.tfstate
+      TF_STATE_REGION: ${{ vars.TF_STATE_REGION || vars.AWS_REGION }}
+      TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
     defaults:
       run:
         working-directory: infra/terraform/envs/${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          for name in TF_VAR_admin_email TF_VAR_alarm_email TF_VAR_aws_region TF_STATE_BUCKET TF_STATE_REGION TF_LOCK_TABLE; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing deployment configuration: $name"
+              exit 1
+            fi
+          done
+
+      - uses: actions/setup-python@v5
+        if: inputs.environment == 'demo'
+        with:
+          python-version: "3.12"
+
+      - name: Build maintenance worker package
+        if: inputs.environment == 'demo'
+        working-directory: ${{ github.workspace }}
+        run: python infra/lambda/maintenance/build.py
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -38,10 +72,15 @@ jobs:
           terraform_version: "1.16.6"
 
       - name: Init
-        run: terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=$TF_STATE_KEY" \
+            -backend-config="region=$TF_STATE_REGION" \
+            -backend-config="dynamodb_table=$TF_LOCK_TABLE"
 
       - name: Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
 
       - name: Apply
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -input=false -auto-approve tfplan

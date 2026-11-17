@@ -1,5 +1,6 @@
 package com.ticketrush.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.ticketrush.model.dto.EventCreateRequest;
 import com.ticketrush.model.dto.EventAnalyticsResponse;
 import com.ticketrush.model.dto.EventResponse;
@@ -32,8 +33,8 @@ public class AdminEventController {
     @PatchMapping("/{eventId}")
     public ResponseEntity<EventResponse> updateEvent(
             @PathVariable UUID eventId,
-            @RequestBody EventUpdateRequest request) {
-        return ResponseEntity.ok(eventService.updateEvent(eventId, request));
+            @RequestBody JsonNode request) {
+        return ResponseEntity.ok(eventService.patchEvent(eventId, request));
     }
 
     @PutMapping("/{eventId}")

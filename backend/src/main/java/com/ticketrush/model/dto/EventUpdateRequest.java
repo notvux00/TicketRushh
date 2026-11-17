@@ -20,7 +20,9 @@ public class EventUpdateRequest {
     public static class ShowtimeUpdateRequest {
         private UUID id;
         private String name;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.ticketrush.util.EventDateTimeDeserializer.class)
         private LocalDateTime startTime;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.ticketrush.util.EventDateTimeDeserializer.class)
         private LocalDateTime endTime;
     }
 

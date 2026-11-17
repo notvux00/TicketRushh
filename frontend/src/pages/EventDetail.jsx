@@ -80,7 +80,7 @@ export default function EventDetail() {
   const formatDate = (dateString) => {
     if (!dateString) return "TBA";
     const date = new Date(dateString);
-    return date.toLocaleString("vi-VN", {
+    return date.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -440,10 +440,10 @@ export default function EventDetail() {
                         rEvent.showtimes.slice(0, 1).map((showtime) => (
                           <div key={showtime.id} className="bg-surface/90 backdrop-blur px-2 py-1 rounded-lg flex flex-col items-center shadow-sm min-w-[36px] border border-border">
                             <span className="text-[8px] font-bold text-muted uppercase">
-                              {new Date(showtime.startTime).toLocaleString('vi-VN', { month: 'short' })}
+                              {new Date(showtime.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", month: 'short' })}
                             </span>
                             <span className="text-sm font-bold text-primary leading-none">
-                              {new Date(showtime.startTime).getDate()}
+                              {new Date(showtime.startTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "numeric" })}
                             </span>
                           </div>
                         ))

@@ -39,8 +39,22 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Test SPA routing
+        run: node --test ../tests/spa_fallback.test.cjs
+      - name: Test event time across timezones
+        run: node --test ../tests/event_time.test.cjs
       - name: Build
         run: npm run build
+
+  deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test rollout and recovery
+        run: python -m unittest discover -s tests -p test_deploy_backend.py -v
 
   terraform:
     runs-on: ubuntu-latest

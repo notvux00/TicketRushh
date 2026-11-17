@@ -90,7 +90,7 @@ public class OrderController {
                 orderMap.put("eventName", event.getEventName());
                 orderMap.put("eventImage", event.getCoverImage());
                 orderMap.put("venueName", event.getVenueName());
-                orderMap.put("startTime", showtime.getStartTime());
+                orderMap.put("startTime", com.ticketrush.util.EventTime.toOffset(showtime.getStartTime()));
                 
                 for (Ticket ticket : order.getTickets()) {
                     Map<String, Object> t = new HashMap<>();
@@ -99,7 +99,7 @@ public class OrderController {
                     t.put("seatId", ticket.getSeat().getId().toString());
                     t.put("seatLabel", ticket.getSeat().getSeatLabel());
                     t.put("zoneName", ticket.getSeat().getZone().getName());
-                    t.put("price", ticket.getSeat().getZone().getPrice());
+                    t.put("price", ticket.getUnitPrice());
                     String qr = ticket.getQrPayload() != null ? ticket.getQrPayload() : ticket.getQrCode();
                     t.put("qrCode", qr);
                     t.put("qrPayload", qr);

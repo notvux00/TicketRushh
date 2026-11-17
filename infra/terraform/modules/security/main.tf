@@ -368,3 +368,60 @@ resource "aws_iam_instance_profile" "app" {
 
   tags = local.tags
 }
+
+# ── Lambda maintenance worker ─────────────────────────────────────
+
+resource "aws_security_group" "lambda" {
+  name        = "${var.name_prefix}-lambda"
+  description = "Lambda maintenance worker"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-lambda"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_to_db" {
+  security_group_id            = aws_security_group.lambda.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_https" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "HTTPS for Secrets Manager API calls"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over TCP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over UDP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_lambda" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}

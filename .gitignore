@@ -14,3 +14,8 @@ crash.log
 
 # Local runtime
 frontend/dist/
+
+# Lambda build artifacts and Python caches
+**/.build/
+**/__pycache__/
+*.pyc

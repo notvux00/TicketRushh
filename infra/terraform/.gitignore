@@ -11,3 +11,5 @@ override.tf.json
 terraform.tfvars
 !terraform.tfvars.example
 backend.tf
+!envs/demo/backend.tf
+!envs/prod/backend.tf

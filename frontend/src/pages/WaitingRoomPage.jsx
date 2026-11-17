@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 import { 
   HelpCircle, User, AlertTriangle, Play, 
   Clock, ShoppingCart, ShieldCheck, ArrowLeft,
@@ -138,7 +138,7 @@ export default function WaitingRoomPage() {
         <div className="flex flex-col lg:flex-row h-full gap-12 relative z-10">
           {/* Left Side: Queue Progress & Info */}
           <div className="w-full lg:w-2/5 flex flex-col justify-between">
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
@@ -161,7 +161,7 @@ export default function WaitingRoomPage() {
                     cx="50%" cy="50%" fill="transparent" r="45%" 
                     stroke="currentColor" strokeWidth="8"
                   ></circle>
-                  <motion.circle 
+                  <Motion.circle
                     className="text-primary" 
                     cx="50%" cy="50%" fill="transparent" r="45%" 
                     stroke="currentColor" strokeWidth="12"
@@ -170,24 +170,24 @@ export default function WaitingRoomPage() {
                     animate={{ strokeDashoffset: progressOffset }}
                     strokeLinecap="round"
                     transition={{ duration: 1.5, ease: "easeOut" }}
-                  ></motion.circle>
+                  ></Motion.circle>
                 </svg>
                 <div className="text-center">
-                  <motion.div 
+                  <Motion.div
                     key={status?.position}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-7xl font-black tracking-tighter text-primary"
                   >
                     {status?.position || "..."}
-                  </motion.div>
+                  </Motion.div>
                   <div className="text-[10px] font-black text-muted tracking-[0.3em] uppercase mt-1">VỊ TRÍ HIỆN TẠI</div>
                 </div>
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Alert Panel */}
-            <motion.div 
+            <Motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -198,7 +198,7 @@ export default function WaitingRoomPage() {
                 <h4 className="font-bold text-on-surface">Đừng làm mới trình duyệt</h4>
                 <p className="text-sm text-muted mt-1 leading-snug">Vị trí sẽ tự động cập nhật. Việc tải lại trang có thể khiến bạn mất lượt chờ.</p>
               </div>
-            </motion.div>
+            </Motion.div>
 
             <button 
               onClick={handleLeaveQueue}
@@ -211,7 +211,7 @@ export default function WaitingRoomPage() {
           {/* Right Side: Content & Media */}
           <div className="w-full lg:w-3/5 flex flex-col gap-8">
             {/* Video Section */}
-            <motion.div 
+            <Motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
@@ -232,7 +232,7 @@ export default function WaitingRoomPage() {
                 <span>Trailer Chính Thức</span>
                 <span>04:12</span>
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Stats & Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -241,7 +241,7 @@ export default function WaitingRoomPage() {
                 { icon: ShoppingCart, label: "Giới hạn vé", value: `${String(event?.maxTicketsPerOrder ?? 4).padStart(2, '0')} Vé` },
                 { icon: ShieldCheck, label: "Giao dịch", value: "Bảo mật" }
               ].map((item, index) => (
-                <motion.div 
+                <Motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -255,7 +255,7 @@ export default function WaitingRoomPage() {
                     <span className="text-[10px] font-black tracking-widest text-muted uppercase">{item.label}</span>
                   </div>
                   <div className="text-xl font-bold text-on-surface">{item.value}</div>
-                </motion.div>
+                </Motion.div>
               ))}
             </div>
           </div>

@@ -77,3 +77,8 @@ output "autoscaling_group_name" {
   description = "ASG name."
   value       = module.compute.autoscaling_group_name
 }
+
+output "maintenance_worker_function_name" {
+  description = "Lambda function name for the maintenance worker."
+  value       = module.maintenance_worker.function_name
+}

@@ -38,4 +38,8 @@ public class Ticket {
     @OneToOne
     @JoinColumn(name = "seat_id", nullable = false)
     private Seat seat;
+
+    // Gross price captured when the checkout is created; null for unknown legacy prices.
+    @Column(name = "unit_price", updatable = false)
+    private Double unitPrice;
 }

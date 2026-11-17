@@ -37,12 +37,21 @@ public class CheckinService {
                     .build();
         }
 
-        Ticket ticket = ticketRepository.findById(parsed.ticketId()).orElse(null);
+        Ticket ticket = ticketRepository.findForCheckin(parsed.ticketId()).orElse(null);
         if (ticket == null) {
             return CheckinResponse.builder()
                     .success(false)
                     .status("TICKET_NOT_FOUND")
                     .message("Không tìm thấy thông tin vé trong hệ thống!")
+                    .build();
+        }
+
+        if (ticket.getOrder() == null || !"COMPLETED".equalsIgnoreCase(ticket.getOrder().getStatus())) {
+            recordCheckin(ticket, gate, request.getDeviceId(), staffEmail, "ORDER_NOT_COMPLETED");
+            return CheckinResponse.builder()
+                    .success(false)
+                    .status("ORDER_NOT_COMPLETED")
+                    .message("Đơn hàng chưa hoàn tất hoặc đã hết hạn.")
                     .build();
         }
 

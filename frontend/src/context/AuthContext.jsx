@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { authApi } from "../api/authApi";
 import { profileApi } from "../api/profileApi";
 import { AuthContext } from "./AuthContextValue";
@@ -10,50 +10,61 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  const lifecycle = useRef({ mounted: false, identity: null, profileVersion: 0, authVersion: 0 });
+
   const fetchProfile = useCallback(async () => {
+    const state = lifecycle.current;
+    const owner = state.identity;
+    const version = ++state.profileVersion;
+    if (!owner) return;
+    const current = () => state.mounted && state.identity === owner && state.profileVersion === version;
     try {
       const data = await profileApi.getProfile();
-      setProfile(data);
+      if (current()) setProfile(data);
     } catch (error) {
-      console.error("Failed to fetch profile", error);
-      setProfile(null);
+      if (current()) {
+        console.error("Failed to fetch profile", error);
+        setProfile(null);
+      }
     }
   }, []);
 
-  // Sync auth state with Supabase
-  useEffect(() => {
-    // 1. Initial check
-    authApi.getCurrentSession().then((currentSession) => {
-      setSession(currentSession);
-      const currentUser = currentSession?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) fetchProfile();
-      setLoading(false);
-    });
-
-    // 2. Listen for changes
-    const unsubscribe = authApi.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      const newUser = newSession?.user ?? null;
-      setUser(newUser);
-      if (newUser) {
-        fetchProfile();
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
+  const applySession = useCallback((nextSession) => {
+    const state = lifecycle.current;
+    ++state.profileVersion;
+    state.identity = nextSession?.user?.id ?? null;
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setProfile(null);
+    if (state.identity) fetchProfile();
+    setLoading(false);
   }, [fetchProfile]);
+
+  useEffect(() => {
+    const state = lifecycle.current;
+    state.mounted = true;
+    const version = ++state.authVersion;
+    authApi.getCurrentSession().then((currentSession) => {
+      if (state.mounted && state.authVersion === version) applySession(currentSession);
+    });
+    const unsubscribe = authApi.onAuthStateChange((_event, nextSession) => {
+      ++state.authVersion;
+      applySession(nextSession);
+    });
+    return () => {
+      state.mounted = false;
+      state.identity = null;
+      ++state.profileVersion;
+      ++state.authVersion;
+      unsubscribe();
+    };
+  }, [applySession]);
 
   const openAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);
 
   const logout = useCallback(async () => {
     await authApi.logout();
-    setUser(null);
-    setSession(null);
   }, []);
 
   const value = {

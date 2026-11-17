@@ -32,3 +32,8 @@ output "instance_role_arn" {
   description = "EC2 instance role ARN."
   value       = aws_iam_role.app.arn
 }
+
+output "lambda_security_group_id" {
+  description = "Security group for the Lambda maintenance worker."
+  value       = aws_security_group.lambda.id
+}

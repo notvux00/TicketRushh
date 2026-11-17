@@ -11,13 +11,26 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: ticketrush-deploy-demo
+  cancel-in-progress: false
+
 jobs:
   deploy:
     if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == 'deploy'
     runs-on: ubuntu-latest
     environment: demo
+    env:
+      IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test deployment orchestration
+        run: python -m unittest discover -s tests -p test_deploy_backend.py -v
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,23 +44,12 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           REPOSITORY: ${{ vars.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t "$REGISTRY/$REPOSITORY:$IMAGE_TAG" backend
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
-      - name: Publish image tag
+      - name: Deploy and await instance refresh
         env:
-          IMAGE_TAG: ${{ github.sha }}
           PARAMETER_NAME: ${{ vars.IMAGE_TAG_PARAMETER }}
-        run: |
-          aws ssm put-parameter --name "$PARAMETER_NAME" --type String --overwrite --value "$IMAGE_TAG"
-
-      - name: Rolling refresh
-        env:
           ASG_NAME: ${{ vars.ASG_NAME }}
-        run: |
-          aws autoscaling start-instance-refresh \
-            --auto-rollback \
-            --auto-scaling-group-name "$ASG_NAME" \
-            --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":180}'
+        run: python scripts/deploy_backend.py

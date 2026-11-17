@@ -8,6 +8,6 @@ import java.util.UUID;
 public class ShowtimeResponse {
     private UUID id;
     private String name;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private java.time.OffsetDateTime startTime;
+    private java.time.OffsetDateTime endTime;
 }

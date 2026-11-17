@@ -1,4 +1,6 @@
-import { Routes, Route, Outlet } from "react-router-dom"; // Thêm Outlet ở đây
+import { Fragment } from "react";
+import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "./hooks/useAuth";
 import Home from "./pages/Home";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -15,6 +17,14 @@ import CheckoutPage from "./pages/CheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import WaitingRoomPage from "./pages/WaitingRoomPage";
 
+
+function AccountRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/" replace />;
+  // Reset all account-specific state, including QR modals, on identity change.
+  return <Fragment key={user.id}>{children}</Fragment>;
+}
 
 const UserLayout = () => (
   <>
@@ -33,8 +43,8 @@ function App() {
         {/* LUỒNG USER */}
         <Route element={<UserLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/my-tickets" element={<MyTickets />} />
+          <Route path="/profile" element={<AccountRoute><Profile /></AccountRoute>} />
+          <Route path="/my-tickets" element={<AccountRoute><MyTickets /></AccountRoute>} />
           <Route path="/event/:id" element={<EventDetail />} />
         </Route>
 
