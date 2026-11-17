@@ -17,5 +17,6 @@ public class CheckinRequest {
 
     private String gateName;
     private String deviceId;
+    private java.util.UUID showtimeId;
 }
 

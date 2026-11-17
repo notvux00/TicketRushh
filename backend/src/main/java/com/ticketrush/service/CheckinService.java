@@ -65,6 +65,12 @@ public class CheckinService {
                     .build();
         }
 
+        if (request.getShowtimeId() != null && !request.getShowtimeId().equals(ticket.getSeat().getZone().getShowtime().getId())) {
+            recordCheckin(ticket, gate, request.getDeviceId(), staffEmail, "WRONG_SHOWTIME");
+            return CheckinResponse.builder().success(false).status("WRONG_SHOWTIME")
+                    .message("Vé không thuộc suất diễn đang soát").build();
+        }
+
         // Kiểm tra xem vé đã được check-in trước đó chưa
         if ("CHECKED_IN".equalsIgnoreCase(ticket.getStatus())) {
             recordCheckin(ticket, gate, request.getDeviceId(), staffEmail, "ALREADY_CHECKED_IN");

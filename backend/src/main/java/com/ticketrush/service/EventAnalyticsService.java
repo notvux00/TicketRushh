@@ -108,7 +108,7 @@ public class EventAnalyticsService {
 
     private List<EventAnalyticsResponse.RevenuePoint> getRevenueTimeline(UUID eventId) {
         List<Object[]> rows = entityManager.createNativeQuery("""
-                SELECT DATE(o.created_at) AS revenue_day, COALESCE(SUM(o.total_price), 0) AS revenue
+                SELECT DATE((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh') AS revenue_day, COALESCE(SUM(o.total_price), 0) AS revenue
                 FROM orders o
                 WHERE o.status = :status
                   AND EXISTS (
@@ -119,7 +119,7 @@ public class EventAnalyticsService {
                     JOIN showtimes st ON st.id = z.showtime_id
                     WHERE t.order_id = o.id AND st.event_id = :eventId
                   )
-                GROUP BY DATE(o.created_at)
+                GROUP BY DATE((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh')
                 ORDER BY revenue_day
                 """)
                 .setParameter("status", COMPLETED_STATUS)
@@ -297,7 +297,7 @@ public class EventAnalyticsService {
 
     private List<EventAnalyticsResponse.RevenuePoint> getShowtimeRevenueTimeline(UUID showtimeId) {
         List<Object[]> rows = entityManager.createNativeQuery("""
-                SELECT DATE(o.created_at) AS revenue_day, COALESCE(SUM(o.total_price), 0) AS revenue
+                SELECT DATE((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh') AS revenue_day, COALESCE(SUM(o.total_price), 0) AS revenue
                 FROM orders o
                 WHERE o.status = :status
                   AND EXISTS (
@@ -307,7 +307,7 @@ public class EventAnalyticsService {
                     JOIN zones z ON z.id = s.zone_id
                     WHERE t.order_id = o.id AND z.showtime_id = :showtimeId
                   )
-                GROUP BY DATE(o.created_at)
+                GROUP BY DATE((o.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Ho_Chi_Minh')
                 ORDER BY revenue_day
                 """)
                 .setParameter("status", COMPLETED_STATUS)

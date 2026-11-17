@@ -28,7 +28,9 @@ Python 3.12/x86_64, independent of the host OS and Python version, following
 Boto3 is provided by the Lambda runtime.
 
 Supply the existing bootstrap backend values and Terraform inputs as described
-in `infra/terraform/README.md`. For local validation only, use `init -backend=false`.
+in the [deployment guide](../../../docs/AWS_DEPLOY.md) and [Terraform README](../../terraform/README.md).
+For local validation only, use `init -backend=false`. The worker is wired into
+the demo environment; the prod reference profile does not currently instantiate it.
 
 Module callers may instead provide `psycopg2_layer_arn` for a compatible
 Python 3.12/x86_64 layer in the same region; in that case Terraform packages only

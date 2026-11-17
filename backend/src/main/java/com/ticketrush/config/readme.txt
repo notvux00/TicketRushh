@@ -1,3 +1,1 @@
-Công dụng: Chứa các class cấu hình hệ thống.
-
-Nội dung: Cấu hình CORS (để React gọi được API), cấu hình bảo mật (Security), cấu hình Swagger (tài liệu API), hoặc các Bean dùng chung cho toàn dự án.
+Cấu hình Spring Security/CORS, Redis, STOMP WebSocket, S3, scheduler/ShedLock và seed voucher. Không có cấu hình Swagger trong dự án hiện tại.

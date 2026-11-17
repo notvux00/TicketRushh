@@ -1,3 +1,1 @@
-Công dụng: Chứa các hàm tiện ích (Helper) dùng chung cho cả dự án. (Optional)
-
-Nội dung: Các hàm xử lý chuỗi, định dạng ngày tháng, mã hóa mật khẩu hoặc các hằng số (Constants) dùng đi dùng lại nhiều lần.
+Tiện ích hiện có: JwtTokenProvider ký/xác minh JWT, EventTime/EventDateTimeDeserializer xử lý giờ Việt Nam và PriceValidation kiểm tra giá hữu hạn không âm. BCrypt được cấu hình qua Spring Security.

@@ -10,6 +10,9 @@ import java.util.UUID;
 
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, UUID> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select v from Voucher v where v.id=:id")
+    Optional<Voucher> findForUpdate(@org.springframework.data.repository.query.Param("id") UUID id);
     @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @org.springframework.data.jpa.repository.Query("""
             update Voucher v set v.usedQuantity = coalesce(v.usedQuantity, 0) + 1

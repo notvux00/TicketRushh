@@ -1,29 +1,20 @@
-# TicketRush System Documentation
+# Tài liệu TicketRush
 
-Thư mục chứa toàn bộ tài liệu kiến trúc kỹ thuật, đặc tả tính năng và hướng dẫn triển khai nâng cao cho hệ thống **TicketRush**.
+Tài liệu mô tả mã nguồn hiện có. Hệ thống đã được kiểm thử local; chưa deploy/apply AWS trong phiên làm việc này.
 
-## Danh mục tài liệu kỹ thuật đang lên kế hoạch triển khai
+| Tài liệu | Nội dung |
+| --- | --- |
+| [ARCHITECTURE](ARCHITECTURE.md) | Thành phần, luồng booking/queue, admin API, schema và giới hạn |
+| [LOCAL_DEV](LOCAL_DEV.md) | Khởi động local, biến môi trường và lệnh kiểm thử |
+| [AWS_DEPLOY](AWS_DEPLOY.md) | Bootstrap, DNS, worker package, image và triển khai demo |
+| [RUNBOOK](RUNBOOK.md) | Health, log, xử lý sự cố, rollback và destroy |
+| [DEMO_SCRIPT](DEMO_SCRIPT.md) | Kịch bản theo chức năng đã có |
+| [COST](COST.md) | Các nguồn chi phí và cách lập dự toán |
+| [Terraform](../infra/terraform/README.md) | Module, profile, state và validation |
+| [Bootstrap](../infra/terraform/bootstrap/README.md) | State backend và GitHub OIDC trust |
+| [Worker](../infra/lambda/maintenance/README.md) | SQL jobs, đóng gói, test và vận hành Lambda |
+| [Diagrams](../diagrams/README.md) | Sơ đồ minh họa và khác biệt so với Terraform |
 
-1. [Khóa Ghế Nguyên Tử Với Redis Lua Script (Atomic Multi-Seat Locking Engine)](./ATOMIC_SEAT_LOCK_LUA_SPEC.md)
-   * Phân tích lỗ hổng Race Condition và lãng phí Network Round-trip của vòng lặp Java hiện tại.
-   * Thuật toán Redis Lua Script 2 pha (Pha 1: Verification, Pha 2: Atomic Commit).
-   * Triệt tiêu 100% tình trạng "Ghế ma" (Zombie Locks) và khóa dở dang khi JVM crash.
-   * Ma trận kiểm thử 100 Virtual Threads tranh chấp đồng thời và bảng so sánh Benchmark.
+Admin có các route `/admin`, `/admin/events`, `/admin/add-event`, `/admin/vouchers`, `/admin/checkin`. Backend check-in hỗ trợ ADMIN/STAFF; giao diện admin hiện chỉ dành cho ADMIN.
 
-2. [Admin Dashboard Overview — Kết Nối Dữ Liệu Thật Toàn Hệ Thống](./ADMIN_DASHBOARD_OVERVIEW_SPEC.md)
-   * Thay thế toàn bộ hardcode trong `AdminDashboard.jsx` bằng dữ liệu thật từ DB.
-   * Endpoint `GET /api/admin/overview` tổng hợp KPI: doanh thu, vé bán, user đăng ký.
-   * Top 3 sự kiện bán chạy nhất và bảng thống kê hiệu quả voucher.
-   * Tự động làm mới dữ liệu mỗi 30 giây (refetchInterval).
-
-3. [Web QR Scanner Check-in Cho Admin](./ADMIN_QR_CHECKIN_SCANNER_SPEC.md)
-   * Giao diện soát vé QR trực tiếp từ trình duyệt, không cần app riêng.
-   * Sử dụng thư viện `jsQR` + Web Camera API, hỗ trợ cả desktop và mobile.
-   * Phản hồi kết quả scan < 1 giây với 3 trạng thái: HỢP LỆ / ĐÃ DÙNG / GIẢ MẠO.
-   * API thống kê live số người đã vào cổng theo suất diễn.
-
-4. [Admin Quản Lý Voucher Từ Giao Diện](./ADMIN_VOUCHER_MANAGEMENT_SPEC.md)
-   * CRUD đầy đủ: tạo, bật/tắt, xóa voucher trực tiếp từ giao diện Admin.
-   * Database Migration V5 bổ sung `expires_at`, `max_usage`, `created_at` cho bảng `vouchers`.
-   * Thống kê usage: số lần dùng và tổng tiền tiết kiệm cho khách theo từng voucher.
-   * Voucher bị tắt tự động ẩn khỏi danh sách hiển thị cho customer.
+Spec đã hoàn tất và các báo cáo review không còn được giữ trong thư mục này. Các hành vi cần bảo vệ được lưu bằng regression tests.

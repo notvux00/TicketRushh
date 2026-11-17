@@ -1,50 +1,23 @@
-# TicketRush architecture diagrams
+# Sơ đồ kiến trúc TicketRush
 
-Generated with [drawio-ai-kit](https://github.com/sparklabx/drawio-ai-kit).
+Sơ đồ do drawio-ai-kit tạo để minh họa demo và hướng phát triển production. Terraform và [kiến trúc hiện tại](../docs/ARCHITECTURE.md) là nguồn đối chiếu cấu hình thực tế.
 
-## Outputs
+## Phạm vi
 
-Both diagrams are written to `../../docs/architecture/`:
+- Demo: 1 NAT, ALB public có origin protection, EC2 private/ASG 2–4, RDS Multi-AZ và Redis 2 nodes.
+- Production tham chiếu: ALB private/VPC Origin, WAF, RDS Proxy, ASG 3–10.
+- Các hình production còn minh họa Shield Advanced, Backup, CloudTrail, GuardDuty, Config và DR. Các mục đó không tương đương tài nguyên đã triển khai; các cờ tương ứng trong Terraform hiện là placeholder.
+- Worker Lambda chỉ được nối trong profile Terraform demo. Xem tài liệu vận hành thay vì suy ra trạng thái deploy từ hình.
 
-| Profile | Source | Output |
-|---|---|---|
-| Demo | `build_demo.mjs` | `TicketRush-AWS-Architecture-Demo.drawio` / `.png` |
-| Production | `build_production.mjs` | `TicketRush-AWS-Architecture-Production.drawio` / `.png` |
-
-The original architecture is preserved at `docs/architecture/legacy/TicketRush-AWS-Architecture-original.drawio`.
-
-## Regenerate
+## Build và validation
 
 ```bash
-cd TicketRushh/diagrams
-npm install
-npm run build            # both profiles
+cd diagrams
+npm ci
+npm run build
 npm run validate
-npm run render           # requires draw.io desktop CLI
 ```
 
-Per profile:
+Script hiện ghi tới ../../docs/architecture tính từ thư mục diagrams; trong layout repo này đó là thư mục docs cạnh TicketRushh, không phải TicketRushh/docs. Kiểm tra đường dẫn đích trước khi regenerate. Không tự di chuyển hoặc ghi đè tài liệu bên ngoài workspace.
 
-```bash
-npm run build:demo
-npm run build:prod
-npm run validate:demo
-npm run validate:prod
-npm run render:demo
-npm run render:prod
-```
-
-Render on Linux with an extracted/AppImage draw.io binary:
-
-```bash
-DRAWIO_CLI=/path/to/drawio npm run render
-```
-
-## Demo vs Production
-
-- **Demo**: 1 NAT, no WAF (Shield Standard only), public ALB + `X-Origin-Verify`, ASG 2–4, RDS Multi-AZ, Redis 2 nodes.
-- **Production**: WAF + Shield Advanced, 2 NAT, private ALB + CloudFront VPC Origin, RDS Proxy, ASG 3–10, backup/security services, optional cross-region DR.
-
-Both use the same order: `Users → Route 53 → CloudFront → (WAF) → ALB → App → Cache/Redis → RDS`. In the data subnet Redis sits above RDS; production adds RDS Proxy between app and RDS.
-
-The build scripts have no hardcoded coordinates; `drawio-ai-kit` computes the layout from the declared tree.
+Hai nguồn là build_demo.mjs và build_production.mjs; mỗi nguồn sinh file TicketRush-AWS-Architecture-<Profile>.drawio. Các npm scripts render có sẵn nhưng không cần cho kiểm tra mã nguồn/tài liệu; không chạy render hoặc kiểm tra ảnh trong quy trình hiện tại.

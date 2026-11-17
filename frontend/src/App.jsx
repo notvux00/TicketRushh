@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 import Home from "./pages/Home";
 import Navbar from "./components/layout/Navbar";
@@ -12,6 +12,9 @@ import { AuthProvider } from "./context/AuthContext";
 import AdminAddEvent from "./pages/AdminAddEvent";
 import AdminLayout from "./components/layout/AdminLayout";
 import AdminEventsList from "./pages/AdminEventsList";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminVouchers from "./pages/AdminVouchers";
+import AdminCheckin from "./pages/AdminCheckin";
 import BookingPage from "./pages/BookingPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
@@ -20,10 +23,11 @@ import WaitingRoomPage from "./pages/WaitingRoomPage";
 
 function AccountRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
   if (!user) return <Navigate to="/" replace />;
   // Reset all account-specific state, including QR modals, on identity change.
-  return <Fragment key={user.id}>{children}</Fragment>;
+  return <Fragment key={`${user.id}:${location.pathname}`}>{children}</Fragment>;
 }
 
 const UserLayout = () => (
@@ -49,18 +53,20 @@ function App() {
         </Route>
 
         {/* LUỒNG ADMIN */}
-        <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminEventsList />} />
+        <Route element={<AccountRoute><AdminLayout /></AccountRoute>}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/vouchers" element={<AdminVouchers />} />
+          <Route path="/admin/checkin" element={<AdminCheckin />} />
           <Route path="/admin/add-event" element={<AdminAddEvent />} />
           <Route path="/admin/events" element={<AdminEventsList />} />
 
         </Route>
 
         {/* BOOKING FLOW (FULLSCREEN) */}
-        <Route path="/event/:eventId/queue/:showtimeId" element={<WaitingRoomPage />} />
-        <Route path="/event/:eventId/book/:showtimeId" element={<BookingPage />} />
-        <Route path="/checkout/:orderId" element={<CheckoutPage />} />
-        <Route path="/payment-success" element={<PaymentSuccessPage />} />
+        <Route path="/event/:eventId/queue/:showtimeId" element={<AccountRoute><WaitingRoomPage /></AccountRoute>} />
+        <Route path="/event/:eventId/book/:showtimeId" element={<AccountRoute><BookingPage /></AccountRoute>} />
+        <Route path="/checkout/:orderId" element={<AccountRoute><CheckoutPage /></AccountRoute>} />
+        <Route path="/payment-success" element={<AccountRoute><PaymentSuccessPage /></AccountRoute>} />
       </Routes>
 
       <AuthModal />

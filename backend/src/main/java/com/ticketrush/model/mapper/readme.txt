@@ -1,1 +1,1 @@
-mapper: Chứa logic để chuyển đổi qua lại giữa Entity và DTO (giúp code sạch hơn, không phải viết thủ công nhiều lần).
+Thư mục placeholder, chưa có mapper riêng. Mapping Entity/DTO hiện nằm trong các service và controller.

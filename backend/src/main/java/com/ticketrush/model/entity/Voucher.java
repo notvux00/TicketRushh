@@ -29,7 +29,6 @@ public class Voucher {
 
     private Double minOrderPrice;
 
-    @Column(nullable = false)
     private Integer totalQuantity = 1000;
 
     @Column(nullable = false)
@@ -41,6 +40,12 @@ public class Voucher {
 
     @Column(nullable = false)
     private Boolean active = true;
+
+    @Column(updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now(com.ticketrush.util.EventTime.ZONE);
+
+    @Column(updatable = false, length = 100)
+    private String createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id")

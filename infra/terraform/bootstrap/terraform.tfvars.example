@@ -4,3 +4,6 @@ lock_table_name    = "ticketrush-terraform-locks"
 github_org         = "REPLACE-WITH-GITHUB-OWNER"
 github_repo        = "cloud-proj"
 github_branch      = "main"
+github_environments = ["demo", "prod"]
+# Set this only if GitHub issues immutable OIDC subjects for the repository:
+# github_subject_repository = "OWNER@123456/REPO@456789"

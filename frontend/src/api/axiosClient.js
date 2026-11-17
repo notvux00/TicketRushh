@@ -1,4 +1,5 @@
 import axios from "axios";
+import { requestSession } from "./sessionStore";
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
@@ -7,15 +8,14 @@ const axiosClient = axios.create({
   },
 });
 
-// Interceptor: tự động đính JWT từ localStorage vào mọi request gửi đến Spring Boot
 axiosClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  const path = config.url || "";
+  const signingIn = /^\/auth\/(login|register)$/.test(path);
+  const publicRequest = config.method === "get" && (/^\/events(?:\/|$)/.test(path) || path === "/status");
+  const session = signingIn ? null : requestSession(publicRequest);
+  if (session) config.headers.set("Authorization", `Bearer ${session.access_token}`);
+  else config.headers.delete("Authorization");
   return config;
-});
+}, (error) => { throw error; }, { synchronous: true });
 
 export default axiosClient;

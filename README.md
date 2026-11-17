@@ -1,86 +1,52 @@
 # TicketRush
 
-TicketRush là ứng dụng đặt vé sự kiện (Spring Boot + React) được thiết kế để chạy trên AWS theo mô hình 3-tier, multi-AZ.
+Ứng dụng đặt vé sự kiện với Spring Boot, React, PostgreSQL và Redis. Hạ tầng AWS được mô tả bằng Terraform; chưa xác nhận triển khai thành công trên AWS thật.
 
-## Thành phần
+## Chức năng
 
-| Lớp | Công nghệ |
-|---|---|
-| Frontend | React 19, Vite 8, Tailwind CSS |
-| Backend | Spring Boot 3.5, Java 17, Spring Security + JWT |
-| Dữ liệu | PostgreSQL 16, Redis 7 |
-| Realtime | STOMP WebSocket + Redis Pub/Sub relay |
-| Media | S3 + CloudFront OAC (local: Adobe S3Mock) |
-| Hạ tầng | Terraform, AWS EC2 + ASG + ALB + CloudFront + RDS + ElastiCache |
-| CI/CD | GitHub Actions + GitHub OIDC |
+- Đăng ký/đăng nhập JWT, hồ sơ và vé của tôi.
+- Chọn ghế, giữ ghế bằng Redis Lua, checkout có thời hạn, voucher và QR có chữ ký.
+- Queue admission dùng lease, có đối soát sau khi mất notification/restart.
+- Admin: tổng quan dữ liệu thật, quản lý sự kiện, tạo/bật/tắt/xóa voucher chưa dùng và soát vé bằng camera hoặc nhập QR.
+- Maintenance worker chạy mỗi 15 phút trong profile AWS demo.
+
+Thanh toán hiện là **giả lập**, chưa tích hợp cổng thanh toán hoặc xác nhận chuyển khoản thật. Admin scanner yêu cầu HTTPS hoặc localhost để dùng camera.
+
+## Công nghệ
+
+| Thành phần | Công nghệ |
+| --- | --- |
+| Frontend | React 19, Vite 8, Tailwind CSS, TanStack Query, jsQR |
+| Backend | Java 17, Spring Boot 3.5, Spring Security/JWT |
+| Dữ liệu | PostgreSQL 16, Flyway V1–V8, Redis 7 |
+| Realtime | Native STOMP WebSocket + Redis Pub/Sub |
+| Media | S3/CloudFront OAC; local dùng Adobe S3Mock |
+| Triển khai | Terraform, GitHub Actions OIDC, EC2/ASG/ALB, RDS/ElastiCache, Lambda |
 
 ## Chạy local
 
-Yêu cầu: Docker, Docker Compose, Node 22+. Backend build dùng JDK 17 trong Docker.
+Cần Docker Compose và Node >=22.12. Backend có thể build trong Docker hoặc chạy với JDK 17.
 
 ```bash
 cp .env.example .env
 cp frontend/.env-example.txt frontend/.env
-# Sửa VITE_MEDIA_BASE_URL nếu cần; mặc định trỏ S3Mock local.
-
 docker compose up -d postgres redis s3mock
+docker compose --profile app run --rm --no-deps frontend npm ci
 docker compose --profile app up --build
 ```
 
-Mở:
-
-- Frontend: http://localhost:5173
-- Backend health: http://localhost:8080/actuator/health/readiness
-- S3Mock: http://localhost:9090
-
-Tài khoản admin local (chỉ dùng để test):
-
-```text
-admin@gmail.com / admin123
-```
-
-Không dùng mật khẩu này cho môi trường public. Mật khẩu được truyền qua `.env`/Secrets Manager, không nằm trong source.
-
-### Chạy backend ngoài Docker
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-Cần JDK 17. Nếu máy chỉ có JDK mới hơn, dùng Docker ở trên.
-
-### Chạy frontend ngoài Docker
-
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-Vite proxy `/api` và `/ws` về `http://localhost:8080`.
-
-## Kiểm tra
-
-```bash
-cd backend && ./mvnw -B verify
-cd frontend && npm ci && npm run lint && npm run build
-cd infra/terraform/envs/demo && terraform init -backend=false && terraform validate
-```
+Mở http://localhost:5173. Admin local theo file mẫu: `admin@gmail.com / admin123`; thay thông tin này trước khi public. Xem [LOCAL_DEV](docs/LOCAL_DEV.md) nếu chạy app ngoài Docker.
 
 ## Tài liệu
 
-- [Local development](docs/LOCAL_DEV.md)
-- [AWS deployment](docs/AWS_DEPLOY.md)
-- [Demo script](docs/DEMO_SCRIPT.md)
-- [Runbook / destroy](docs/RUNBOOK.md)
-- [Cost estimate](docs/COST.md)
+- [Mục lục](docs/README.md)
+- [Kiến trúc và API hiện có](docs/ARCHITECTURE.md)
+- [Local development và kiểm thử](docs/LOCAL_DEV.md)
+- [Triển khai AWS demo](docs/AWS_DEPLOY.md)
+- [Runbook và thu hồi tài nguyên](docs/RUNBOOK.md)
+- [Kịch bản demo](docs/DEMO_SCRIPT.md)
+- [Lập dự toán chi phí](docs/COST.md)
 - [Terraform](infra/terraform/README.md)
+- [Maintenance worker](infra/lambda/maintenance/README.md)
 
-## Ghi chú kiến trúc
-
-- WebSocket dùng native STOMP (không còn SockJS) và Redis Pub/Sub để đồng bộ giữa nhiều EC2.
-- `QueueScheduler` dùng ShedLock Redis để chỉ một instance xử lý mỗi chu kỳ.
-- Upload media dùng presigned PUT; bucket private, đọc qua CloudFront OAC.
-- Flyway quản lý schema; Hibernate `ddl-auto=validate`.
-- Actuator readiness chỉ kiểm tra DB, không kiểm tra Redis, để Redis failover không làm ASG loại bỏ toàn bộ instance.
+Các spec đã triển khai và báo cáo review lịch sử đã được thay bằng tài liệu trạng thái hiện tại. Không sửa migration đã áp dụng; thêm migration mới khi đổi schema.

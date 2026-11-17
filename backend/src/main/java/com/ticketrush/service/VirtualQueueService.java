@@ -14,25 +14,6 @@ import java.util.*;
 @Service
 public class VirtualQueueService {
 
-    private static final org.springframework.data.redis.core.script.DefaultRedisScript<Long> GRANT_PASS =
-            new org.springframework.data.redis.core.script.DefaultRedisScript<>("""
-                    if redis.call('SET', KEYS[1], '1', 'NX', 'EX', ARGV[1]) then
-                      redis.call('INCR', KEYS[2])
-                      return 1
-                    end
-                    return 0
-                    """, Long.class);
-
-    private static final org.springframework.data.redis.core.script.DefaultRedisScript<Long> RELEASE_PASS =
-            new org.springframework.data.redis.core.script.DefaultRedisScript<>("""
-                    if redis.call('DEL', KEYS[1]) == 1 then
-                      local remaining = redis.call('DECR', KEYS[2])
-                      if remaining < 0 then redis.call('SET', KEYS[2], '0') end
-                      return 1
-                    end
-                    return 0
-                    """, Long.class);
-
     @Autowired
     private StringRedisTemplate redisTemplate;
 
@@ -42,7 +23,8 @@ public class VirtualQueueService {
     private static final int DEFAULT_ACTIVATION_THRESHOLD = 200;
     private static final int DEFAULT_BATCH_SIZE = 50;
     private static final int DEFAULT_MAX_CAPACITY = 1000000; // Mặc định "không giới hạn"
-    private static final int PASS_TTL_SECONDS = 600; // 10 phút
+    @org.springframework.beans.factory.annotation.Value("${app.queue.pass-ttl-seconds:600}")
+    private int passTtlSeconds = 600; // 10 phút
 
     private String maxCapacityKey(UUID showtimeId) {
         return "queue:maxCapacity:" + showtimeId;
@@ -64,8 +46,16 @@ public class VirtualQueueService {
         return "queue:waiting:" + showtimeId;
     }
 
-    private String activeKey(UUID showtimeId) {
-        return "queue:active:" + showtimeId;
+    private String activeKey(UUID showtimeId) { return "queue:active:" + showtimeId; }
+    private String leaseKey(UUID showtimeId) { return "queue:leases:" + showtimeId; }
+    private String indexedKey(UUID showtimeId) { return "queue:indexed:" + showtimeId; }
+    private String passPrefix(UUID showtimeId) { return "queue:pass:" + showtimeId + ":"; }
+    private List<String> ledgerKeys(UUID showtimeId) {
+        return List.of(leaseKey(showtimeId), activeKey(showtimeId), indexedKey(showtimeId));
+    }
+    private List<String> mutationKeys(UUID showtimeId, String userId) {
+        return List.of(leaseKey(showtimeId), activeKey(showtimeId), indexedKey(showtimeId),
+                passKey(showtimeId, userId), waitingKey(showtimeId));
     }
 
     private String passKey(UUID showtimeId, String userId) {
@@ -100,11 +90,11 @@ public class VirtualQueueService {
         if (queueSize == null) queueSize = 0L;
 
         // 2. Nếu chưa quá tải VÀ không có ai đang chờ → cấp thẻ vào luôn
-        if (activeCount < threshold && queueSize == 0) {
-            grantPass(showtimeId, userId);
+        if (activeCount < threshold && queueSize == 0
+                && grantPass(showtimeId, userId, Math.min(threshold, getMaxCapacity(showtimeId)), true) > 0) {
             response.setNeedQueue(false);
             response.setAccessGranted(true);
-            response.setActiveUsers(activeCount + 1);
+            response.setActiveUsers(getActiveCount(showtimeId));
             response.setMessage("Chào mừng! Đang chuyển vào trang đặt vé...");
             return response;
         }
@@ -193,9 +183,9 @@ public class VirtualQueueService {
 
         int granted = 0;
         for (String userId : topUsers) {
-            grantPass(showtimeId, userId);
-            redisTemplate.opsForZSet().remove(waitKey, userId);
-            granted++;
+            long outcome = grantPass(showtimeId, userId, maxCapacity, false);
+            if (outcome == 0) break;
+            if (outcome == 1) granted++;
 
             // Broadcast ACCESS_GRANTED cho user cụ thể qua WebSocket
             Map<String, Object> payload = new HashMap<>();
@@ -232,7 +222,11 @@ public class VirtualQueueService {
     }
 
     public boolean canBook(UUID showtimeId, String userId) {
-        return getActiveCount(showtimeId) < getThreshold(showtimeId) || hasValidPass(showtimeId, userId);
+        // Direct API clients must reserve the same admission lease as clients
+        // entering through queue/status. Lua checks capacity and waiting users
+        // atomically; an existing holder is allowed without consuming twice.
+        return grantPass(showtimeId, userId,
+                Math.min(getThreshold(showtimeId), getMaxCapacity(showtimeId)), true) > 0;
     }
 
     public void requireBookingAccess(UUID showtimeId, String userId) {
@@ -244,18 +238,18 @@ public class VirtualQueueService {
     /**
      * Cấp thẻ vào cửa + tăng active count
      */
-    private void grantPass(UUID showtimeId, String userId) {
-        redisTemplate.execute(GRANT_PASS, List.of(passKey(showtimeId, userId), activeKey(showtimeId)),
-                Integer.toString(PASS_TTL_SECONDS));
+    private long grantPass(UUID showtimeId, String userId, int limit, boolean respectWaiting) {
+        if (passTtlSeconds <= 0 || passTtlSeconds > 600) throw new IllegalStateException("Pass TTL must be between 1 and 600 seconds");
+        Long result = redisTemplate.execute(QueuePassLedger.GRANT, mutationKeys(showtimeId, userId),
+                passPrefix(showtimeId), Long.toString(passTtlSeconds * 1000L), Integer.toString(limit), respectWaiting ? "1" : "0");
+        return result == null ? 0 : result;
     }
 
     /**
      * Giảm active count (khi user rời booking: checkout xong, hủy, close tab, thẻ hết hạn)
      */
     public void releaseSlot(UUID showtimeId, String userId) {
-        // DEL returns zero after expiration too; the expiration listener owns
-        // that decrement. Explicit deletion does not emit an expired event.
-        redisTemplate.execute(RELEASE_PASS, List.of(passKey(showtimeId, userId), activeKey(showtimeId)));
+        redisTemplate.execute(QueuePassLedger.RELEASE, mutationKeys(showtimeId, userId), passPrefix(showtimeId));
     }
 
     /**
@@ -301,16 +295,9 @@ public class VirtualQueueService {
      * Reset toàn bộ queue cho showtime
      */
     public void resetQueue(UUID showtimeId) {
-        redisTemplate.delete(waitingKey(showtimeId));
-        redisTemplate.delete(activeKey(showtimeId));
-        redisTemplate.delete(thresholdKey(showtimeId));
-        redisTemplate.delete(batchSizeKey(showtimeId));
-
-        // Xóa tất cả thẻ vào cửa (scan pattern)
-        Set<String> passKeys = redisTemplate.keys("queue:pass:" + showtimeId + ":*");
-        if (passKeys != null && !passKeys.isEmpty()) {
-            redisTemplate.delete(passKeys);
-        }
+        redisTemplate.execute(QueuePassLedger.RESET,
+                List.of(waitingKey(showtimeId), activeKey(showtimeId), leaseKey(showtimeId), indexedKey(showtimeId),
+                        thresholdKey(showtimeId), batchSizeKey(showtimeId)), passPrefix(showtimeId));
     }
 
     // ═══════════════════════════════════════════
@@ -318,14 +305,8 @@ public class VirtualQueueService {
     // ═══════════════════════════════════════════
 
     public int getActiveCount(UUID showtimeId) {
-        String val = redisTemplate.opsForValue().get(activeKey(showtimeId));
-        if (val == null) return 0;
-        try {
-            int count = Integer.parseInt(val);
-            return Math.max(count, 0);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        Long count = redisTemplate.execute(QueuePassLedger.COUNT, ledgerKeys(showtimeId), passPrefix(showtimeId));
+        return count == null ? 0 : Math.toIntExact(count);
     }
 
     public int getThreshold(UUID showtimeId) {

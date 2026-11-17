@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { 
@@ -9,6 +9,7 @@ import { getWsUrl } from "../lib/wsUrl";
 import { Client } from "@stomp/stompjs";
 import { eventApi } from "../api/eventApi";
 import Navbar from "../components/layout/Navbar";
+import { readCart, saveCart, rememberCheckout, checkoutReferences, finishCheckout } from "../utils/bookingStorage";
 import { useAuth } from "../hooks/useAuth";
 
 // Hằng số cho Canvas
@@ -28,6 +29,7 @@ const ZONE_COLORS = [
 export default function BookingPage() {
   const { eventId, showtimeId } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const [currentView, setCurrentView] = useState("zone-overview"); // 'zone-overview' | 'seat-picker'
   
@@ -41,28 +43,20 @@ export default function BookingPage() {
   const [seats, setSeats] = useState([]); // Array of seats for the current zone
   
   // Lấy giỏ hàng từ localStorage nếu có (bảo vệ người mua khi F5)
-  const [selectedSeats, setSelectedSeats] = useState(() => {
-    const saved = localStorage.getItem(`cart_${showtimeId}`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return []; }
-    }
-    return [];
-  });
+  const [initialCart] = useState(() => readCart(user.id, showtimeId));
+  const [selectedSeats, setSelectedSeats] = useState(initialCart.seats);
+  const cartRevision = useRef(initialCart.revision);
+  const savedSeats = useRef(initialCart.seats);
+  const creatingCheckout = useRef(false);
 
   const maxTickets = event?.maxTicketsPerOrder ?? 4;
   const isAtLimit = selectedSeats.length >= maxTickets;
 
-  // Lưu giỏ hàng vào localStorage mỗi khi có thay đổi
   useEffect(() => {
-    if (showtimeId) {
-      localStorage.setItem(`cart_${showtimeId}`, JSON.stringify(selectedSeats));
-    }
-  }, [selectedSeats, showtimeId]);
-  
-
-
-  // Auth Hook
-  const { isAuthenticated, loading: authLoading } = useAuth();
+    if (savedSeats.current === selectedSeats || creatingCheckout.current) return;
+    cartRevision.current = saveCart(user.id, showtimeId, selectedSeats, cartRevision.current);
+    savedSeats.current = selectedSeats;
+  }, [selectedSeats, showtimeId, user.id]);
 
   // Redirect back to event detail if not authenticated (protection for manual URL entry)
   useEffect(() => {
@@ -92,27 +86,30 @@ export default function BookingPage() {
   useEffect(() => {
     if (!showtimeId || authLoading || !isAuthenticated) return;
 
-    const pendingOrderId = localStorage.getItem(`checkout_order_${showtimeId}`);
-    if (!pendingOrderId) return;
-
-    let isMounted = true;
-    eventApi.getCheckout(pendingOrderId)
-      .then((data) => {
-        if (!isMounted) return;
-        if (data.status === 'PENDING') {
-          // Redirect về trang thanh toán
-          navigate(`/checkout/${pendingOrderId}`, { replace: true });
-        } else {
-          localStorage.removeItem(`checkout_order_${showtimeId}`);
+    let active = true;
+    const recover = async () => {
+      for (const reference of checkoutReferences(user.id, showtimeId)) {
+        try {
+          const data = await eventApi.getCheckout(reference.orderId);
+          if (!active) return;
+          if (data.status === "PENDING" && data.showtimeId === showtimeId) {
+            if (reference.legacy) rememberCheckout(user.id, showtimeId, reference.orderId);
+            navigate(`/checkout/${reference.orderId}`, { replace: true });
+            return;
+          }
+          if (!reference.legacy && ["EXPIRED", "COMPLETED"].includes(data.status)) {
+            finishCheckout(user.id, showtimeId, reference.orderId);
+          }
+        } catch (error) {
+          // A timeout or a session switch does not prove that an order is gone.
+          console.warn("Could not recover pending checkout; keeping its reference", error);
+          return;
         }
-      })
-      .catch((error) => {
-        console.warn("Could not fetch pending checkout, clearing local storage", error);
-        localStorage.removeItem(`checkout_order_${showtimeId}`);
-      });
-
-    return () => { isMounted = false; };
-  }, [showtimeId, authLoading, isAuthenticated, navigate]);
+      }
+    };
+    recover();
+    return () => { active = false; };
+  }, [showtimeId, authLoading, isAuthenticated, navigate, user.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -173,7 +170,7 @@ export default function BookingPage() {
             );
             // Nếu ghế người dùng đang chọn bị người khác khóa mất thì xóa khỏi giỏ
             if (payload.status === "LOCKED" || payload.status === "SOLD") {
-              setSelectedSeats(prev => prev.filter(s => s.id !== payload.seatId));
+              setSelectedSeats(prev => prev.some(s => s.id === payload.seatId) ? prev.filter(s => s.id !== payload.seatId) : prev);
             }
           }
         });
@@ -262,12 +259,15 @@ export default function BookingPage() {
   };
 
   const handleCheckout = async () => {
-    if (selectedSeats.length === 0) return;
+    if (selectedSeats.length === 0 || creatingCheckout.current) return;
+    creatingCheckout.current = true;
+    const revision = saveCart(user.id, showtimeId, selectedSeats, cartRevision.current);
+    cartRevision.current = revision;
     try {
       const seatIds = selectedSeats.map(s => s.id);
       const response = await eventApi.createCheckout(showtimeId, seatIds);
       if (response.orderId) {
-        localStorage.setItem(`checkout_order_${showtimeId}`, response.orderId);
+        rememberCheckout(user.id, showtimeId, response.orderId, revision);
         navigate(`/checkout/${response.orderId}`);
       } else {
         alert("Lỗi: " + response.message);
@@ -289,6 +289,8 @@ export default function BookingPage() {
       } else {
         alert(serverMsg || "Không thể giữ ghế lúc này. Vui lòng thử lại.");
       }
+    } finally {
+      creatingCheckout.current = false;
     }
   };
 

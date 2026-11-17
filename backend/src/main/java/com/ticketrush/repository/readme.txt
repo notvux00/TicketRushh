@@ -1,3 +1,1 @@
-Công dụng: Tương tác trực tiếp với Database.
-
-Nội dung: Thường là các Interface kế thừa JpaRepository. Bạn không cần viết SQL, Spring Data JPA sẽ tự lo phần đó cho bạn.
+Spring Data JPA repositories cho PostgreSQL; có JPQL/native SQL, pessimistic locks và atomic voucher quota update. Admin overview/voucher/stats còn dùng JdbcTemplate cho truy vấn tổng hợp.

@@ -3,7 +3,11 @@ data "aws_caller_identity" "current" {}
 locals {
   oidc_provider_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : var.existing_github_oidc_provider_arn
 
-  github_subject = "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/${var.github_branch}"
+  github_subject_repository = var.github_subject_repository != "" ? var.github_subject_repository : "${var.github_org}/${var.github_repo}"
+  github_subjects = concat(
+    ["repo:${local.github_subject_repository}:ref:refs/heads/${var.github_branch}"],
+    [for environment in var.github_environments : "repo:${local.github_subject_repository}:environment:${replace(environment, ":", "%3A")}"]
+  )
 
   tags = merge(var.tags, {
     Environment = "bootstrap"
@@ -194,9 +198,9 @@ data "aws_iam_policy_document" "github_assume_role" {
     }
 
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = [local.github_subject]
+      values   = local.github_subjects
     }
   }
 }

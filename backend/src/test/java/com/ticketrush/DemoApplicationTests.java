@@ -68,6 +68,8 @@ class DemoApplicationTests {
 
     @Test
     void contextLoads() {
+        assertTrue(context.getBean(org.flywaydb.core.Flyway.class).getConfiguration().isGroup(),
+                "Pending migrations must be published atomically during rolling upgrades");
         assertThrows(org.springframework.dao.DataAccessException.class, () -> cache.execute(
                 (org.springframework.data.redis.core.RedisCallback<Object>) connection ->
                         connection.serverCommands().getConfig("notify-keyspace-events")));
@@ -75,6 +77,85 @@ class DemoApplicationTests {
 
     record Fixture(String userToken, String staffToken, UUID userId, UUID showtime, List<UUID> seats) {}
     record ApiResult(int code, JsonNode body) {}
+
+    JsonNode adminGet(String path, Fixture f) throws Exception {
+        var response = mvc.perform(get(path).header("Authorization", "Bearer "+admin(f))).andReturn().getResponse();
+        assertEquals(200, response.getStatus(), response.getContentAsString());
+        return json.readTree(response.getContentAsString());
+    }
+
+    @Test
+    void overviewCountsCompletedRevenueOncePerMultiSeatOrder() throws Exception {
+        var f = fixture();
+        var before = adminGet("/api/admin/overview", f);
+        db.update("update zones set price=5000000 where showtime_id=?", f.showtime());
+        var pending = postApi("/api/orders/checkout", f.userToken(), Map.of("showtimeId", f.showtime(), "seatIds", f.seats()));
+        assertEquals(200, pending.code());
+        assertEquals(before.get("totalRevenue"), adminGet("/api/admin/overview", f).get("totalRevenue"));
+        UUID id = UUID.fromString(pending.body().get("orderId").asText());
+        assertEquals(200, confirm(f, id).code());
+        var after = adminGet("/api/admin/overview", f);
+        assertEquals(before.get("totalRevenue").asDouble()+10000000, after.get("totalRevenue").asDouble());
+        assertEquals(before.get("totalTicketsSold").asLong()+2, after.get("totalTicketsSold").asLong());
+        UUID event = db.queryForObject("select event_id from showtimes where id=?", UUID.class, f.showtime());
+        var top = java.util.stream.StreamSupport.stream(after.get("topEvents").spliterator(), false)
+                .filter(e -> e.get("id").asText().equals(event.toString())).findFirst().orElseThrow();
+        assertEquals(10000000, top.get("revenue").asDouble());
+        assertEquals(2, top.get("ticketsSold").asInt());
+        assertEquals(100, top.get("occupancyRate").asDouble());
+        assertEquals(403, mvc.perform(get("/api/admin/overview").header("Authorization", "Bearer "+f.userToken())).andReturn().getResponse().getStatus());
+    }
+
+    @Test
+    void adminVoucherLifecyclePreservesOrderHistoryAndValidatesInputs() throws Exception {
+        var f = fixture();
+        String code = "V"+UUID.randomUUID().toString().replace("-", "").substring(0,12).toUpperCase();
+        var request = Map.of("code",code,"discountType","PERCENT","discountValue",10,"expiresAt","2030-01-01T10:00:00+07:00");
+        assertEquals(403, postApi("/api/admin/vouchers", f.userToken(), request).code());
+        var created = postApi("/api/admin/vouchers", admin(f), request);
+        assertEquals(201, created.code(), created.body().toString());
+        String id = created.body().get("id").asText();
+        assertEquals(403,mvc.perform(get("/api/admin/vouchers").header("Authorization","Bearer "+f.userToken())).andReturn().getResponse().getStatus());
+        assertEquals(403,mvc.perform(patch("/api/admin/vouchers/"+id+"/toggle").header("Authorization","Bearer "+f.userToken())).andReturn().getResponse().getStatus());
+        assertEquals(403,mvc.perform(delete("/api/admin/vouchers/"+id).header("Authorization","Bearer "+f.userToken())).andReturn().getResponse().getStatus());
+        assertTrue(created.body().get("maxUsage").isNull());
+        assertEquals("PERCENTAGE",created.body().get("discountType").asText());
+        assertEquals(f.userId().toString(),created.body().get("createdBy").asText());
+        assertEquals(409,postApi("/api/admin/vouchers",admin(f),request).code());
+        assertEquals(400,postApi("/api/admin/vouchers",admin(f),Map.of("code","lowercase","discountType","PERCENT","discountValue",10)).code());
+        assertEquals(400,postApi("/api/admin/vouchers",admin(f),Map.of("code","BADPERCENT","discountType","PERCENT","discountValue",101)).code());
+        assertEquals(400,postApi("/api/admin/vouchers",admin(f),Map.of("code","BADQUOTA","discountType","FIXED","discountValue",100,"maxUsage",0)).code());
+        assertEquals(400,postApi("/api/admin/vouchers",admin(f),Map.of("code","LONGDESC","discountType","FIXED","discountValue",100,"description","x".repeat(256))).code());
+        assertEquals(400,postApi("/api/admin/vouchers",admin(f),Map.of("code","PASTDATE","discountType","FIXED","discountValue",100,"expiresAt","2000-01-01T00:00:00+07:00")).code());
+        UUID order = checkout(f,0);
+        assertEquals(200,postApi("/api/orders/checkout/"+order+"/apply-voucher",f.userToken(),Map.of("code",code)).code());
+        assertEquals(200,confirm(f,order).code());
+        var summary = java.util.stream.StreamSupport.stream(adminGet("/api/admin/vouchers",f).spliterator(),false)
+                .filter(v -> v.get("id").asText().equals(id)).findFirst().orElseThrow();
+        assertEquals(1,summary.get("usageCount").asInt()); assertEquals(10000,summary.get("totalSaved").asDouble());
+        assertEquals(409,mvc.perform(delete("/api/admin/vouchers/"+id).header("Authorization","Bearer "+admin(f))).andReturn().getResponse().getStatus());
+        assertEquals(200,mvc.perform(patch("/api/admin/vouchers/"+id+"/toggle").header("Authorization","Bearer "+admin(f))).andReturn().getResponse().getStatus());
+        var customer=mvc.perform(get("/api/orders/vouchers").header("Authorization","Bearer "+f.userToken())).andReturn().getResponse();
+        assertFalse(customer.getContentAsString().contains(code));
+        String unused=postApi("/api/admin/vouchers",admin(f),Map.of("code",code+"X","discountType","FIXED","discountValue",1000,"maxUsage",2)).body().get("id").asText();
+        assertEquals(204,mvc.perform(delete("/api/admin/vouchers/"+unused).header("Authorization","Bearer "+admin(f))).andReturn().getResponse().getStatus());
+    }
+
+    @Test
+    void checkinStatsExcludeDraftsAndWrongShowtimeDoesNotConsumeTicket() throws Exception {
+        var f=fixture(); var other=fixture(); UUID order=checkout(f,0);
+        assertEquals(0,adminGet("/api/admin/checkin/stats/"+f.showtime(),f).get("totalTickets").asInt());
+        assertEquals(200,confirm(f,order).code()); String qr=draftQr(order);
+        var wrong=postApi("/api/checkin/scan",admin(f),Map.of("qrPayload",qr,"showtimeId",other.showtime()));
+        assertEquals("WRONG_SHOWTIME",wrong.body().get("status").asText());
+        assertEquals(0,adminGet("/api/admin/checkin/stats/"+f.showtime(),f).get("checkedIn").asInt());
+        assertEquals(200,postApi("/api/checkin/scan",admin(f),Map.of("qrPayload",qr,"showtimeId",f.showtime())).code());
+        var stats=adminGet("/api/admin/checkin/stats/"+f.showtime(),f);
+        assertEquals(1,stats.get("totalTickets").asInt()); assertEquals(1,stats.get("checkedIn").asInt());
+        assertEquals(0,stats.get("pendingEntry").asInt());
+        assertEquals("ALREADY_CHECKED_IN",postApi("/api/checkin/scan",admin(f),Map.of("qrPayload",qr)).body().get("status").asText());
+        assertEquals(403,mvc.perform(get("/api/admin/checkin/stats/"+f.showtime()).header("Authorization","Bearer "+f.userToken())).andReturn().getResponse().getStatus());
+    }
 
     Fixture fixture() {
         UUID userId = UUID.randomUUID(), event = UUID.randomUUID(), showtime = UUID.randomUUID(), zone = UUID.randomUUID();
@@ -136,6 +217,106 @@ class DemoApplicationTests {
 
     UUID zone(Fixture f) {
         return db.queryForObject("select zone_id from seats where id=?", UUID.class, f.seats().get(0));
+    }
+
+    @Test
+    void upgradesExistingV6DatabaseAndPreservesLegacyCancellation() throws Exception {
+        String schema="upgrade_"+UUID.randomUUID().toString().replace("-","");
+        var old=org.flywaydb.core.Flyway.configure()
+                .dataSource(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())
+                .schemas(schema).group(true).target("6").load();
+        try {
+            old.migrate();
+            assertEquals("6",old.info().current().getVersion().toString());
+            var f=fixture();var order=checkout(f,0);
+            db.update("insert into "+schema+".users select * from users where id=?",f.userId());
+            db.update("insert into "+schema+".events select * from events where id=?",event(f));
+            db.update("insert into "+schema+".showtimes select * from showtimes where id=?",f.showtime());
+            db.update("insert into "+schema+".zones select * from zones where id=?",zone(f));
+            db.update("insert into "+schema+".seats select * from seats where id=?",f.seats().get(0));
+            db.update("insert into "+schema+".orders select * from orders where id=?",order);
+            db.update("insert into "+schema+".tickets select * from tickets where order_id=?",order);
+            var upgraded=org.flywaydb.core.Flyway.configure()
+                    .dataSource(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())
+                    .schemas(schema).group(true).load();
+            upgraded.migrate();upgraded.validate();
+            assertEquals("8",upgraded.info().current().getVersion().toString());
+            try(var connection=java.sql.DriverManager.getConnection(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())) {
+                connection.setSchema(schema);connection.setAutoCommit(false);
+                try(var statement=connection.prepareStatement("delete from tickets where order_id=?")) {
+                    statement.setObject(1,order);assertEquals(1,statement.executeUpdate());
+                }
+                try(var statement=connection.prepareStatement("update orders set status='EXPIRED' where id=?")) {
+                    statement.setObject(1,order);statement.executeUpdate();
+                }
+                connection.commit();
+            }
+            assertEquals("EXPIRED",db.queryForObject("select status from "+schema+".orders where id=?",String.class,order));
+        } finally {
+            db.execute("drop schema if exists "+schema+" cascade");
+        }
+    }
+
+    @Test
+    void legacyDeleteThenExpireCommitsWithoutWeakeningLiveCheckoutProtection() throws Exception {
+        var f=fixture(); var order=checkout(f,0);
+        db.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) connection -> {
+            connection.setAutoCommit(false);
+            try {
+                try(var delete=connection.prepareStatement("delete from tickets where order_id=?")) {
+                    delete.setObject(1,order); assertEquals(1,delete.executeUpdate());
+                }
+                try(var expire=connection.prepareStatement("update orders set status='EXPIRED' where id=?")) {
+                    expire.setObject(1,order); assertEquals(1,expire.executeUpdate());
+                }
+                connection.commit();
+            } finally { connection.rollback(); connection.setAutoCommit(true); }
+            return null;
+        });
+        assertEquals("EXPIRED",db.queryForObject("select status from orders where id=?",String.class,order));
+        assertEquals(0,db.queryForObject("select count(*) from tickets where order_id=?",Integer.class,order));
+        var second=checkout(f,1);
+        assertThrows(org.springframework.dao.DataAccessException.class,()->db.update("delete from tickets where order_id=?",second));
+        assertEquals(1,db.queryForObject("select count(*) from tickets where order_id=?",Integer.class,second));
+    }
+
+    @Test
+    void deferredDeleteCannotCommitAnOrderAsPaidWithoutTickets() throws Exception {
+        var f=fixture(); var order=checkout(f,0);
+        db.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) connection -> {
+            connection.setAutoCommit(false);
+            try {
+                try(var statement=connection.prepareStatement("delete from tickets where order_id=?")) {
+                    statement.setObject(1,order); statement.executeUpdate();
+                }
+                try(var statement=connection.prepareStatement("update orders set status='COMPLETED' where id=?")) {
+                    statement.setObject(1,order); statement.executeUpdate();
+                }
+                var failure=assertThrows(java.sql.SQLException.class,connection::commit);
+                assertEquals("23514",failure.getSQLState());
+            } finally { connection.rollback(); connection.setAutoCommit(true); }
+            return null;
+        });
+        assertEquals("PENDING",db.queryForObject("select status from orders where id=?",String.class,order));
+        assertEquals(1,db.queryForObject("select count(*) from tickets where order_id=?",Integer.class,order));
+        assertEquals(200,confirm(f,order).code());
+        assertThrows(org.springframework.dao.DataAccessException.class,()->db.update("delete from tickets where order_id=?",order));
+    }
+
+    @Test
+    void revenueTimelineUsesVietnamMidnightForEventAndShowtime() throws Exception {
+        var f=fixture(); var first=checkout(f,0);var second=checkout(f,1);
+        assertEquals(200,confirm(f,first).code());assertEquals(200,confirm(f,second).code());
+        db.update("update orders set created_at=TIMESTAMP '2026-11-16 16:59:59' where id=?",first);
+        db.update("update orders set created_at=TIMESTAMP '2026-11-16 17:00:00' where id=?",second);
+        for(String path:List.of("/api/admin/events/"+event(f)+"/analytics","/api/admin/events/showtimes/"+f.showtime()+"/analytics")) {
+            var response=mvc.perform(get(path).header("Authorization","Bearer "+admin(f))).andReturn().getResponse();
+            assertEquals(200,response.getStatus());var result=json.readTree(response.getContentAsString());
+            assertEquals(200000.0,result.get("totalRevenue").asDouble());
+            var points=result.get("revenueTimeline");assertEquals(2,points.size());
+            assertEquals("16/11",points.get(0).get("label").asText());assertEquals("17/11",points.get(1).get("label").asText());
+            assertEquals(100000.0,points.get(0).get("revenue").asDouble());assertEquals(100000.0,points.get(1).get("revenue").asDouble());
+        }
     }
 
     @Test
@@ -473,6 +654,37 @@ class DemoApplicationTests {
         assertEquals(200,postApi("/api/orders/checkout",f.userToken(),body).code());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings={"checkout", "lock", "confirm"})
+    void directBookingReservesAdmissionAndRejectsNextUserAtThreshold(String operation) throws Exception {
+        var first = fixture();
+        var second = fixture();
+        queues.setThreshold(first.showtime(), 1);
+        UUID order = checkout(first, 0); // No queue/status request before checkout.
+        assertEquals(1, queues.getActiveCount(first.showtime()));
+        assertTrue(queues.hasValidPass(first.showtime(), first.userId().toString()));
+        assertEquals(200, postApi("/api/events/seats/lock", first.userToken(),
+                Map.of("showtimeId", first.showtime(), "seatIds", List.of(first.seats().get(0)))).code());
+        assertEquals(1, queues.getActiveCount(first.showtime()), "Retries cannot reserve a second slot");
+
+        String path = operation.equals("checkout") ? "/api/orders/checkout" : "/api/events/seats/"+operation;
+        var rejected = postApi(path, second.userToken(),
+                Map.of("showtimeId", first.showtime(), "seatIds", List.of(first.seats().get(1))));
+        if (operation.equals("lock")) {
+            assertEquals(200, rejected.code());
+            assertFalse(rejected.body().get("success").asBoolean());
+            assertEquals("QUEUE_ACCESS_REQUIRED", rejected.body().get("message").asText());
+        } else {
+            assertEquals(400, rejected.code());
+            assertTrue(rejected.body().get("message").asText().contains("QUEUE_ACCESS_REQUIRED"));
+        }
+        assertFalse(queues.hasValidPass(first.showtime(), second.userId().toString()));
+        assertFalse(Boolean.TRUE.equals(cache.hasKey("lock:seat:"+first.showtime()+":"+first.seats().get(1))));
+        assertEquals(0, db.queryForObject("select count(*) from orders where user_id=?", Integer.class, second.userId()));
+        assertEquals(204, postApi("/api/orders/checkout/"+order+"/cancel", first.userToken(), Map.of()).code());
+        assertEquals(0, queues.getActiveCount(first.showtime()));
+    }
+
     @Test
     void legacyBookingRejectsWrongShowtimeQuotaAndBlockedSeats() throws Exception {
         var f=fixture();
@@ -536,6 +748,7 @@ class DemoApplicationTests {
     @Test
     void releaseAfterExpirationDoesNotDecrementTwice() {
         var f=fixture();
+        for (String other : List.of("other-a", "other-b")) cache.opsForValue().set("queue:pass:"+f.showtime()+":"+other,"1");
         cache.opsForValue().set("queue:active:"+f.showtime(),"3");
         cache.opsForValue().set("queue:pass:"+f.showtime()+":"+f.userId(),"1",java.time.Duration.ofMillis(100));
         org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() ->

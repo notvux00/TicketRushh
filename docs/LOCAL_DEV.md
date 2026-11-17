@@ -1,77 +1,91 @@
 # Local development
 
-## 1. Chuẩn bị
+## Yêu cầu
+
+Docker Compose; Node >=22.12 cho frontend. Chạy backend ngoài Docker cần JDK 17. Các lệnh Bash dùng `./mvnw`; PowerShell dùng `.\\mvnw.cmd`.
+
+## Docker Compose
+
+Chạy từ thư mục gốc:
 
 ```bash
 cp .env.example .env
 cp frontend/.env-example.txt frontend/.env
-```
-
-`.env` và `frontend/.env` đã nằm trong `.gitignore`.
-
-## 2. Chạy hạ tầng
-
-```bash
 docker compose up -d postgres redis s3mock
-```
-
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
-- S3Mock: `localhost:9090` (S3 API), bucket `ticketrush-media`
-
-S3Mock thay cho MinIO vì registry hiện tại không tải được image MinIO. API tương thích S3 và hỗ trợ presigned PUT + CORS.
-
-## 3. Chạy app
-
-```bash
+docker compose --profile app run --rm --no-deps frontend npm ci
 docker compose --profile app up --build
 ```
 
-Hoặc chạy riêng:
+Lệnh npm ci cài dependency vào volume frontend trước lần khởi động đầu, và chạy lại khi lockfile đổi.
 
-```bash
-cd backend && ./mvnw spring-boot:run
-cd frontend && npm ci && npm run dev
+| Dịch vụ | Địa chỉ |
+| --- | --- |
+| Frontend | http://localhost:5173 |
+| Backend readiness | http://localhost:8080/actuator/health/readiness |
+| PostgreSQL | localhost:5432, DB ticketrush, postgres/postgres |
+| Redis | localhost:6379, expiry notifications Ex |
+| Adobe S3Mock | http://localhost:9090, bucket ticketrush-media |
+
+Admin local đọc ADMIN_EMAIL/ADMIN_PASSWORD từ .env; mẫu là admin@gmail.com/admin123. Không dùng tài khoản mẫu khi public.
+
+## Chạy app ngoài Docker
+
+Giữ PostgreSQL/Redis/S3Mock trong Compose. Backend đọc .env theo working directory; đặt biến môi trường trong shell hoặc tạo backend/.env, không commit secret.
+
+```powershell
+$env:APP_BOOTSTRAP_ADMIN = "true"
+$env:ADMIN_EMAIL = "admin@gmail.com"
+$env:ADMIN_PASSWORD = "admin123"
+$env:JWT_SECRET = "replace-with-a-random-secret-at-least-32-bytes"
+$env:MEDIA_ENDPOINT = "http://localhost:9090"
+$env:MEDIA_PUBLIC_ENDPOINT = "http://localhost:9090"
+$env:MEDIA_PUBLIC_BASE_URL = "http://localhost:9090/ticketrush-media"
+$env:MEDIA_PATH_STYLE = "true"
+$env:AWS_ACCESS_KEY_ID = "test"
+$env:AWS_SECRET_ACCESS_KEY = "test"
+cd backend
+.\\mvnw.cmd spring-boot:run
 ```
 
-## 4. Biến môi trường quan trọng
+Trong terminal khác, chạy npm ci và npm run dev tại frontend. Vite proxy /api và /ws về localhost:8080. Khi chạy frontend ngoài Compose, đặt VITE_MEDIA_BASE_URL=http://localhost:9090/ticketrush-media trong frontend/.env.
 
-| Biến | Ý nghĩa |
-|---|---|
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL |
-| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_SSL` | Redis/ElastiCache |
-| `JWT_SECRET` | Phải đủ mạnh khi deploy |
-| `MEDIA_BUCKET`, `MEDIA_REGION` | S3 bucket |
-| `MEDIA_ENDPOINT`, `MEDIA_PUBLIC_ENDPOINT` | Chỉ dùng local |
-| `MEDIA_PUBLIC_BASE_URL` | Local: `http://localhost:9090/ticketrush-media`; production để trống |
-| `APP_BOOTSTRAP_ADMIN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Tạo/promote admin local |
-| `CORS_ALLOWED_ORIGINS`, `WS_ALLOWED_ORIGINS` | Origin frontend |
+## Biến môi trường
 
-## 5. Kiểm tra nhanh
+| Biến | Công dụng |
+| --- | --- |
+| DB_URL, DB_USERNAME, DB_PASSWORD | PostgreSQL |
+| REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_SSL | Redis; ElastiCache dùng TLS |
+| JWT_SECRET | Ký JWT và ticket QR; cần giữ ổn định giữa instance/restart |
+| MEDIA_BUCKET, MEDIA_REGION | S3 bucket/region |
+| MEDIA_ENDPOINT, MEDIA_PUBLIC_ENDPOINT, MEDIA_PATH_STYLE | Local S3-compatible endpoint |
+| MEDIA_PUBLIC_BASE_URL | Local URL ở trên; AWS dùng URL CloudFront do Terraform truyền |
+| APP_BOOTSTRAP_ADMIN, ADMIN_EMAIL, ADMIN_PASSWORD | Bootstrap admin |
+| ADMIN_RESET_PASSWORD | Chỉ bật khi chủ động reset mật khẩu admin |
+| CORS_ALLOWED_ORIGINS, WS_ALLOWED_ORIGINS | Danh sách origin frontend |
 
-```bash
-curl http://localhost:8080/actuator/health/readiness
-curl -X POST http://localhost:8080/api/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"admin@gmail.com","password":"admin123"}'
-```
+## Kiểm thử
 
-Upload thử media:
-
-1. Lấy token từ login.
-2. Gọi `POST /api/uploads/presign` với `kind=event-cover`.
-3. `PUT` file lên `uploadUrl`.
-4. Mở `publicUrl` để kiểm tra.
-
-## 6. Test WebSocket nhiều instance
-
-Chạy hai backend cùng DB/Redis, ví dụ port `8080` và `8081`. Kết nối một client STOMP vào `ws://localhost:8081/ws`, sau đó gọi lock ghế qua `8080`; client phải nhận message `LOCKED`.
-
-## 7. Reset dữ liệu local
+Từ thư mục gốc, chạy từng nhóm trong thư mục được chỉ định:
 
 ```bash
-docker compose down -v
-docker compose up -d postgres redis s3mock
+(cd backend && ./mvnw -B verify)
+(cd frontend && npm ci && npm run lint && npm run build)
+(cd frontend && npx playwright install chromium && npm run test:browser)
+node --test tests/*.test.cjs
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Flyway sẽ chạy lại `V1` + `V2` khi backend start.
+Backend integration dùng Testcontainers, cần Docker. Playwright dùng server riêng port 18088; không chạy dev/preview khác trên port đó. Có thể đặt PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH nếu đã có Chromium. Kiểm tra browser dùng DOM/network, screenshot/video/trace tắt.
+
+Test worker cần dependency host và MAINTENANCE_TEST_DSN: xem [worker README](../infra/lambda/maintenance/README.md). Test schema upgrade kiểm tra cả DB cũ và nâng cấp lên migration hiện tại.
+
+## Kiểm tra chức năng
+
+- Vào /admin để xem dashboard, /admin/vouchers để quản lý ưu đãi.
+- /admin/checkin: chọn suất, bật camera hoặc nhập payload. Camera thật cần cấp quyền; nhập mã vẫn hoạt động khi từ chối camera.
+- Hai backend cùng DB/Redis, ports 8080/8081: client STOMP ở một backend nhận update ghế do backend còn lại phát.
+- API /api/status chỉ chứng minh app trả lời; readiness kiểm tra DB, không chứng minh Redis đang khỏe.
+
+## Reset dữ liệu
+
+docker compose down -v xóa toàn bộ dữ liệu local trong volume. Chỉ dùng khi không cần dữ liệu đó. Sau khi tạo lại hạ tầng và start backend, Flyway áp dụng V1–V8.

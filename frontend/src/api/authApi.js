@@ -1,16 +1,8 @@
 import axiosClient from "./axiosClient";
 
-const listeners = [];
+import { readSession, sameSession, saveSession, subscribeSession, SessionChangedError } from "./sessionStore";
 
-function notifyListeners(event, session) {
-  listeners.forEach((callback) => {
-    try {
-      callback(event, session);
-    } catch (e) {
-      console.error("Error in auth listener:", e);
-    }
-  });
-}
+let authAttempt = 0;
 
 function formatUser(rawUser) {
   if (!rawUser) return null;
@@ -35,6 +27,8 @@ export const authApi = {
    * Đăng ký tài khoản mới bằng Email + Password.
    */
   async registerWithEmail(email, password, fullName, dateOfBirth, gender, phoneNumber) {
+    const attempt = ++authAttempt;
+    const before = readSession();
     try {
       const response = await axiosClient.post("/auth/register", {
         email,
@@ -49,10 +43,8 @@ export const authApi = {
       const formattedUser = formatUser(user);
       const session = { access_token: token, user: formattedUser };
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(formattedUser));
-
-      notifyListeners("SIGNED_IN", session);
+      if (attempt !== authAttempt || !sameSession(before, readSession())) throw new SessionChangedError();
+      saveSession(session);
       return formattedUser;
     } catch (error) {
       const message = error.response?.data?.message || error.response?.data || error.message || "Đăng ký thất bại";
@@ -64,6 +56,8 @@ export const authApi = {
    * Đăng nhập bằng Email + Password.
    */
   async loginWithEmail(email, password) {
+    const attempt = ++authAttempt;
+    const before = readSession();
     try {
       const response = await axiosClient.post("/auth/login", {
         email,
@@ -74,10 +68,8 @@ export const authApi = {
       const formattedUser = formatUser(user);
       const session = { access_token: token, user: formattedUser };
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(formattedUser));
-
-      notifyListeners("SIGNED_IN", session);
+      if (attempt !== authAttempt || !sameSession(before, readSession())) throw new SessionChangedError();
+      saveSession(session);
       return session;
     } catch (error) {
       const message = error.response?.data?.message || error.response?.data || error.message || "Đăng nhập thất bại";
@@ -96,24 +88,7 @@ export const authApi = {
    * Lấy session hiện tại từ localStorage.
    */
   async getCurrentSession() {
-    const token = localStorage.getItem("token");
-    const rawUserStr = localStorage.getItem("user");
-
-    if (!token || !rawUserStr) {
-      return null;
-    }
-
-    try {
-      const formattedUser = JSON.parse(rawUserStr);
-      return {
-        access_token: token,
-        user: formattedUser,
-      };
-    } catch {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      return null;
-    }
+    return readSession();
   },
 
   /**
@@ -128,21 +103,14 @@ export const authApi = {
    * Đăng xuất.
    */
   async logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    notifyListeners("SIGNED_OUT", null);
+    ++authAttempt;
+    saveSession(null);
   },
 
   /**
    * Đăng ký listener lắng nghe sự kiện auth.
    */
   onAuthStateChange(callback) {
-    listeners.push(callback);
-    return () => {
-      const index = listeners.indexOf(callback);
-      if (index !== -1) {
-        listeners.splice(index, 1);
-      }
-    };
+    return subscribeSession(callback);
   },
 };

@@ -36,6 +36,25 @@ The GitHub Workflow assumes the deploy role through OIDC:
 role-to-assume: arn:aws:iam::<account-id>:role/ticketrush-github-deploy
 ```
 
+The role trusts exact subjects for `github_environments` (default `demo` and
+`prod`), plus `github_branch` for jobs without an environment. A job that sets
+`environment: demo` uses an environment subject even when it runs on `main`.
+Configure allowed deployment branches and required reviewers on each GitHub
+Environment: the branch subject does not restrict an environment subject.
+
+For repositories using immutable OIDC subjects, set
+`github_subject_repository = "OWNER@OWNER_ID/REPO@REPO_ID"` with the actual numeric
+IDs from GitHub. Otherwise leave it empty to use `github_org/github_repo`.
+No repository or environment wildcard is needed. Environment colons are encoded
+as `%3A`, following GitHub's subject format.
+
+Existing installations need a separate manual bootstrap `terraform plan` and
+`terraform apply` with operator credentials to update the role's trust policy;
+the environment stacks do not manage this role. Review the policy before apply.
+Until that bootstrap update is applied, GitHub Actions can still fail to assume
+the role. Local verification uses `terraform init -backend=false` followed by
+`terraform test`; it does not update IAM.
+
 ## If the GitHub OIDC provider already exists
 
 An AWS account can only have one provider for
@@ -50,13 +69,17 @@ terraform import aws_iam_openid_connect_provider.github \
 
 ## Enable the S3 backend
 
-For each environment:
+Both environment stacks already declare an S3 backend. Supply the bootstrap
+outputs with init backend-config arguments, following the [deployment guide](../../../docs/AWS_DEPLOY.md).
+For an existing local-state environment, use -migrate-state only after verifying
+the destination account/key and saving a state backup.
 
 ```bash
 cd ../envs/demo
-cp ../../backend.tf.example backend.tf
-# Fill in bucket, key and dynamodb_table.
-terraform init -migrate-state
+terraform init -backend-config="bucket=YOUR-STATE-BUCKET" \
+  -backend-config="key=ticketrush/demo/terraform.tfstate" \
+  -backend-config="region=ap-southeast-1" \
+  -backend-config="dynamodb_table=YOUR-LOCK-TABLE"
 ```
 
 Do the same for `envs/prod` with a different state key.

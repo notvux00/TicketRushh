@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
+import { acknowledgeSession } from "../api/sessionStore";
 import { authApi } from "../api/authApi";
 import { profileApi } from "../api/profileApi";
 import { AuthContext } from "./AuthContextValue";
@@ -36,9 +37,8 @@ export function AuthProvider({ children }) {
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
     setProfile(null);
-    if (state.identity) fetchProfile();
     setLoading(false);
-  }, [fetchProfile]);
+  }, []);
 
   useEffect(() => {
     const state = lifecycle.current;
@@ -59,6 +59,17 @@ export function AuthProvider({ children }) {
       unsubscribe();
     };
   }, [applySession]);
+
+  useLayoutEffect(() => {
+    acknowledgeSession(session);
+    return () => acknowledgeSession(null);
+  }, [session]);
+
+  useEffect(() => {
+    let active = true;
+    if (session?.user) queueMicrotask(() => { if (active) fetchProfile(); });
+    return () => { active = false; };
+  }, [session, fetchProfile]);
 
   const openAuthModal = useCallback(() => setIsAuthModalOpen(true), []);
   const closeAuthModal = useCallback(() => setIsAuthModalOpen(false), []);

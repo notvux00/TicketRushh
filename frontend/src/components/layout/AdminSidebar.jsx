@@ -3,6 +3,7 @@ import {
   PlusCircle,
   LogOut,
   User as UserIcon,
+  LayoutDashboard, Tags, ScanLine,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -13,6 +14,9 @@ function AdminSidebar() {
   const navigate = useNavigate();
 
   const menuItems = [
+    { name: "Tổng quan", path: "/admin", icon: <LayoutDashboard size={20} /> },
+    { name: "Voucher", path: "/admin/vouchers", icon: <Tags size={20} /> },
+    { name: "Soát vé", path: "/admin/checkin", icon: <ScanLine size={20} /> },
     {
       name: "Quản lý sự kiện",
       path: "/admin/events",
@@ -26,9 +30,9 @@ function AdminSidebar() {
   ];
 
   return (
-    <div className="w-64 bg-primary text-white h-screen sticky top-0 flex flex-col">
+    <div className="w-full md:w-64 md:shrink-0 bg-primary text-white md:h-screen md:sticky top-0 flex flex-col">
       {/* Thông tin User Admin ở phía trên */}
-      <div className="p-8 border-b border-white/10">
+      <div className="p-5 md:p-8 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/10">
             <UserIcon size={20} />
@@ -45,7 +49,7 @@ function AdminSidebar() {
       </div>
 
       {/* Menu điều hướng */}
-      <nav className="flex-1 p-4 mt-4 space-y-2">
+      <nav className="flex md:block overflow-x-auto md:flex-1 p-3 md:p-4 gap-2 md:space-y-2">
         {menuItems.map((item) => (
           <Link
             key={item.path}

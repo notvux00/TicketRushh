@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import {
@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
+import { finishCheckout } from "../utils/bookingStorage";
 import { useAuth } from "../hooks/useAuth";
 import { eventApi } from "../api/eventApi";
 import { DEFAULT_QR_URL } from "../lib/mediaUrl";
@@ -52,6 +53,13 @@ export default function CheckoutPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+
+  const active = useRef(true);
+  const expiring = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
 
   const [checkout, setCheckout] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +101,7 @@ export default function CheckoutPage() {
         if (canceled) return;
         setCheckout(data);
         if (data.status !== "PENDING") {
-          localStorage.removeItem(`checkout_order_${data.showtimeId}`);
+          finishCheckout(user.id, data.showtimeId, orderId);
         }
       } catch (error) {
         console.error("Failed to recover checkout session:", error);
@@ -107,7 +115,7 @@ export default function CheckoutPage() {
     return () => {
       canceled = true;
     };
-  }, [authLoading, isAuthenticated, navigate, orderId]);
+  }, [authLoading, isAuthenticated, navigate, orderId, user.id]);
 
   useEffect(() => {
     if (!checkout?.expiresAt || checkout.status !== "PENDING") {
@@ -190,15 +198,16 @@ export default function CheckoutPage() {
   };
 
   const handleExpire = async () => {
-    if (!checkout || checkout.status !== "PENDING") return;
+    if (!checkout || checkout.status !== "PENDING" || expiring.current) return;
+    expiring.current = true;
     try {
       await eventApi.cancelCheckout(orderId);
+      finishCheckout(user.id, checkout.showtimeId, orderId);
     } catch (error) {
-      console.warn("Failed to cancel expired checkout:", error);
+      // Keep the reference if the server's terminal state could not be confirmed.
+      console.warn("Failed to cancel expired checkout", error);
     } finally {
-      localStorage.removeItem(`cart_${checkout.showtimeId}`);
-      localStorage.removeItem(`checkout_order_${checkout.showtimeId}`);
-      navigate(`/event/${checkout.event.id}`);
+      if (active.current) navigate(checkout.event?.id ? `/event/${checkout.event.id}` : "/");
     }
   };
 
@@ -208,14 +217,13 @@ export default function CheckoutPage() {
     setActionLoading(true);
     try {
       await eventApi.cancelCheckout(orderId);
-      localStorage.removeItem(`cart_${checkout.showtimeId}`);
-      localStorage.removeItem(`checkout_order_${checkout.showtimeId}`);
-      navigate(`/event/${checkout.event.id}`);
+      finishCheckout(user.id, checkout.showtimeId, orderId);
+      if (active.current) navigate(`/event/${checkout.event.id}`);
     } catch (error) {
       console.error("Cancel checkout failed:", error);
       alert("Không thể hủy đơn hàng. Vui lòng thử lại.");
     } finally {
-      setActionLoading(false);
+      if (active.current) setActionLoading(false);
     }
   };
 
@@ -232,8 +240,8 @@ export default function CheckoutPage() {
       const response = await eventApi.confirmCheckout(orderId);
       // Currently backend returns "COMPLETED", plan suggests "PAID". We support both during transition.
       if (response && (response.status === "COMPLETED" || response.status === "PAID")) {
-        localStorage.removeItem(`cart_${checkout.showtimeId}`);
-        localStorage.removeItem(`checkout_order_${checkout.showtimeId}`);
+        finishCheckout(user.id, checkout.showtimeId, orderId);
+        if (!active.current) return;
         navigate(`/payment-success?orderId=${orderId}`, {
           state: {
             selectedSeats,
@@ -250,7 +258,7 @@ export default function CheckoutPage() {
       console.error("Confirm checkout failed:", error);
       alert("Không thể xác nhận thanh toán. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại.");
     } finally {
-      setActionLoading(false);
+      if (active.current) setActionLoading(false);
     }
   };
 
