@@ -42,14 +42,14 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public List<EventResponse> getAllEvents() {
-        return eventRepository.findAll().stream()
+        return eventRepository.findAllWithShowtimes().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public EventResponse getEventById(UUID id) {
-        return eventRepository.findById(id)
+        return eventRepository.findByIdWithShowtimes(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new RuntimeException("Event not found"));
     }

@@ -96,13 +96,14 @@
 ## P1 — Hiệu năng và dữ liệu
 
 ### P1-01 — Sửa N+1 cho API event
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-01-event-n-plus-one`)
+- **Test:** `./mvnw -B verify` (78 tests), test đếm query `eventListQueryCountDoesNotGrowWithEventCount`.
 - **Vấn đề:** `EventService.getAllEvents()` `findAll()` rồi lazy load `showtimes` → `zones`, gây N+1 ở endpoint public.
 - **File:** `repository/EventRepository.java`, `service/EventService.java`, `model/dto/EventResponse.java`.
 - **Việc cần làm:**
-  - [ ] Thêm query `left join fetch`/`@EntityGraph` cho list và detail (cẩn thận cartesian product).
-  - [ ] Cân nhắc DTO projection cho list, không load `description`/`showtimes` nếu không cần.
-  - [ ] Đo số query bằng Hibernate statistics trong test.
+  - [x] Thêm `left join fetch showtimes` cho list/detail, tránh MultipleBagFetch.
+  - [x] `@BatchSize(100)` cho `Showtime.zones` để giữ số query không tăng theo số event.
+  - [x] Test Hibernate statistics: thêm 4 event không tăng query count.
 - **Acceptance:** số query cho `/api/events` không tăng theo số event; JSON không đổi.
 - **Test:** integration test đếm query; `./mvnw -B verify`; k6 smoke.
 

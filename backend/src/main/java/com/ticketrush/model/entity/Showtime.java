@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "showtimes")
@@ -22,5 +23,6 @@ public class Showtime {
     private Event event;
 
     @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 100)
     private java.util.List<Zone> zones;
 }
