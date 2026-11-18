@@ -1,5 +1,8 @@
 export const HALL_WIDTH = 900;
 export const HALL_HEIGHT = 500;
+export const HALL_VIEW_WIDTH = 900;
+export const HALL_VIEW_HEIGHT = 560;
+export const HALL_VIEW_PADDING = { left: 48, right: 48, top: 108, bottom: 42 };
 export const HALL_WIDTH_METERS = 24;
 export const HALL_DEPTH_METERS = 18;
 export const SCREEN_LEAD_METERS = 2.5;
@@ -43,6 +46,50 @@ export function seatCanvasPosition(zone, seat) {
   return {
     x: positionX + ((col - 0.5) / cols) * width,
     y: positionY + ((row - 0.5) / rows) * height,
+  };
+}
+
+/**
+ * Scale the admin-defined zone rectangles uniformly into the visible seat
+ * area. Relative positions are preserved; the whole hall simply uses more of
+ * the black canvas, which keeps cinema seats readable on smaller screens.
+ */
+export function fitHallLayout(zones = [], canvas = {}) {
+  const width = Math.max(numeric(canvas.width, HALL_VIEW_WIDTH), 1);
+  const height = Math.max(numeric(canvas.height, HALL_VIEW_HEIGHT), 1);
+  const padding = { ...HALL_VIEW_PADDING, ...(canvas.padding || {}) };
+  const validZones = zones.filter((zone) => zone && Number.isFinite(Number(zone.positionX)) && Number.isFinite(Number(zone.positionY)));
+
+  if (validZones.length === 0) {
+    return { scale: 1, offsetX: 0, offsetY: 0, zones: [] };
+  }
+
+  const minX = Math.min(...validZones.map((zone) => numeric(zone.positionX)));
+  const minY = Math.min(...validZones.map((zone) => numeric(zone.positionY)));
+  const maxX = Math.max(...validZones.map((zone) => numeric(zone.positionX) + Math.max(numeric(zone.visualWidth, 160), 1)));
+  const maxY = Math.max(...validZones.map((zone) => numeric(zone.positionY) + Math.max(numeric(zone.visualHeight, 120), 1)));
+  const contentWidth = Math.max(maxX - minX, 1);
+  const contentHeight = Math.max(maxY - minY, 1);
+  const availableWidth = Math.max(width - padding.left - padding.right, 1);
+  const availableHeight = Math.max(height - padding.top - padding.bottom, 1);
+  const scale = clamp(Math.min(availableWidth / contentWidth, availableHeight / contentHeight), 0.5, 2);
+
+  const scaledWidth = contentWidth * scale;
+  const scaledHeight = contentHeight * scale;
+  const offsetX = padding.left + (availableWidth - scaledWidth) / 2 - minX * scale;
+  const offsetY = padding.top + (availableHeight - scaledHeight) / 2 - minY * scale;
+
+  return {
+    scale,
+    offsetX,
+    offsetY,
+    zones: validZones.map((zone) => ({
+      ...zone,
+      positionX: numeric(zone.positionX) * scale + offsetX,
+      positionY: numeric(zone.positionY) * scale + offsetY,
+      visualWidth: Math.max(numeric(zone.visualWidth, 160), 1) * scale,
+      visualHeight: Math.max(numeric(zone.visualHeight, 120), 1) * scale,
+    })),
   };
 }
 

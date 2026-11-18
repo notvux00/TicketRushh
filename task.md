@@ -4,7 +4,7 @@
 > Quy trình bắt buộc: xem [AGENT.md](AGENT.md). Không sửa trực tiếp trên `main`.
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
-> **Kết quả 2026-11-18:** 24/24 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> **Kết quả 2026-11-18:** 25/25 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -22,9 +22,9 @@
 | --- | --- | --- |
 | P0 | 5 | Bảo mật, secret, error contract, validation |
 | P1 | 6 | Hiệu năng DB, dữ liệu, tính đúng đắn |
-| P2 | 8 | Frontend: bundle, cấu trúc, UX, state |
+| P2 | 9 | Frontend: bundle, cấu trúc, UX, state |
 | P3 | 5 | Vệ sinh code, timezone, test, CI |
-| **Tổng** | **24** | |
+| **Tổng** | **25** | |
 
 ---
 
@@ -278,6 +278,20 @@
   - [x] Playwright: chọn ghế nhiều khu, kiểm tra tổng tiền, panel góc nhìn, ghế bị khóa/đã bán.
 - **Kết quả:** `BookingPage` 516 dòng; `HallSeatMap` 178, `ViewFromSeat` 108, helper `seatView` 82 dòng. Map dùng endpoint mới, fallback API theo zone nếu backend cũ.
 - **Acceptance:** người dùng thấy và chọn được ghế chính xác trên một sơ đồ duy nhất; mọi ghế có hàng/số/giá/trạng thái; panel mô phỏng đổi theo ghế; test backend/frontend/Playwright pass.
+
+### P2-07b — Cinema layout refinement (screen trong khung, auto-fit)
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-07b-cinema-layout`)
+- **Test:** `npm run lint`, `npm run build`, `node --test tests/*.test.cjs` (21), Playwright 19/19.
+- **Vấn đề:** sau P2-07, màn hình nằm ngoài khung đen; các zone co lại ở giữa khung nên ghế nhỏ, nhiều khoảng trống; bố cục chưa giống rạp (thiếu lối đi giữa, lối vào, screen trong khung).
+- **File:** `frontend/src/components/booking/HallSeatMap.jsx`, `ViewFromSeat.jsx`, `frontend/src/pages/BookingPage.jsx`, `frontend/src/utils/seatView.js`, test Node/Playwright.
+- **Việc cần làm:**
+  - [x] Đưa màn hình vào trong khung đen, phía trên ghế; thêm nhãn lối vào/lối đi.
+  - [x] Auto-fit toàn bộ zone vào vùng ghế (scale đều, giữ vị trí tương đối) để tăng kích thước ghế.
+  - [x] Thêm lối đi giữa cho khu >= 8 cột; giữ số ghế liên tục.
+  - [x] Đồng bộ geometry đã fit với panel “Góc nhìn từ ghế”.
+  - [x] Cập nhật test Node cho fit layout và Playwright.
+- **Kết quả:** màn hình nằm trong khung đen; vùng ghế auto-fit (scale tối đa 2.0) nên ghế lớn hơn; map mobile bỏ min-width cứng, hiển thị đủ khung và vẫn có zoom; panel góc nhìn dùng đúng tọa độ đã fit.
+- **Acceptance:** màn hình + ghế cùng nằm trong khung đen; ghế lớn hơn, ít khoảng trống; bố cục có lối đi giữa/lối vào; view-from-seat khớp vị trí; test pass.
 
 ## P3 — Vệ sinh code và CI
 

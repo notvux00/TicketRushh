@@ -58,3 +58,24 @@ test('view metrics move the screen opposite to an off-centre seat', async () => 
   assert.ok(centre.screenScale > right.screenScale);
   assert.equal(centre.quality, 'Gần trục giữa');
 });
+
+test('fit layout scales hall zones up inside the visible area without changing order', async () => {
+  const { fitHallLayout, HALL_VIEW_HEIGHT, HALL_VIEW_WIDTH } = await helper;
+  const layout = fitHallLayout([
+    { id: 'front', positionX: 280, positionY: 20, visualWidth: 340, visualHeight: 160 },
+    { id: 'back', positionX: 330, positionY: 200, visualWidth: 240, visualHeight: 100 },
+  ]);
+
+  assert.ok(layout.scale > 1);
+  const [front, back] = layout.zones;
+  assert.equal(front.id, 'front');
+  assert.equal(back.id, 'back');
+  assert.ok(front.positionX >= 48);
+  assert.ok(front.positionX + front.visualWidth <= HALL_VIEW_WIDTH - 48 + 0.01);
+  assert.ok(back.positionY + back.visualHeight <= HALL_VIEW_HEIGHT - 42 + 0.01);
+  assert.ok(front.visualWidth > 340);
+  assert.ok(back.positionY > front.positionY);
+
+  const empty = fitHallLayout([]);
+  assert.deepEqual(empty, { scale: 1, offsetX: 0, offsetY: 0, zones: [] });
+});
