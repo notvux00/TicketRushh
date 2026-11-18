@@ -3,6 +3,11 @@
 > Nguồn: review toàn bộ backend/frontend/infra ngày 2026-11-18.
 > Quy trình bắt buộc: xem [AGENT.md](AGENT.md). Không sửa trực tiếp trên `main`.
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
+>
+> **Kết quả 2026-11-18:** 21/22 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> P2-02b (tách nhỏ tiếp AdminAddEvent/AdminEventsList) là follow-up cosmetic, không chặn release.
+> Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
+> worker 5 (PostgreSQL), Terraform validate demo/prod.
 
 ## Quy ước
 
@@ -249,7 +254,7 @@
 ---
 
 ### P2-02b — Tách step/modal admin (follow-up)
-- **Trạng thái:** todo
+- **Trạng thái:** todo (cosmetic follow-up, không chặn release)
 - **Vấn đề:** `AdminAddEvent.jsx` và phần modal/detail của `AdminEventsList.jsx` vẫn quá lớn sau phase 1.
 - **Việc cần làm:**
   - [ ] Tách `EventInfoStep`, `ZoneStep`, `SeatMapStep` khỏi `AdminAddEvent`.
