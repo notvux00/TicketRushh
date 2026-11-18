@@ -9,6 +9,11 @@ public final class EventTime {
 
     private EventTime() {}
 
+    /** Business "now" in the event timezone, independent of the host TZ. */
+    public static LocalDateTime now() {
+        return LocalDateTime.now(ZONE);
+    }
+
     public static OffsetDateTime toOffset(LocalDateTime value) {
         return value == null ? null : value.atZone(ZONE).toOffsetDateTime();
     }

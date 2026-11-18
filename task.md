@@ -272,13 +272,14 @@
 - **Test:** `./mvnw -B verify`.
 
 ### P3-02 — Thống nhất timezone
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P3-02-timezone`)
+- **Test:** `./mvnw -B verify` (85 tests) với `TZ=UTC -Duser.timezone=UTC` và mặc định Asia/Ho_Chi_Minh.
 - **Vấn đề:** default TZ VN + `hibernate.jdbc.time_zone=UTC` + `LocalDateTime.now()` + hardcode zone ở `CheckoutService`.
 - **File:** `DemoApplication.java`, `util/EventTime.java`, `service/CheckoutService.java`, entities dùng `LocalDateTime.now()`.
 - **Việc cần làm:**
-  - [ ] Chốt convention: lưu UTC, convert ở DTO boundary (hoặc ngược lại) và ghi vào docs.
-  - [ ] Inject `Clock`, dùng `EventTime.ZONE` thay hardcode.
-  - [ ] Bỏ set default timezone trùng lặp; thêm test expiry qua timezone.
+  - [x] Chốt business time = `EventTime.ZONE`; mọi `now()` nghiệp vụ dùng `EventTime.now()`.
+  - [x] Bỏ hardcode `Asia/Ho_Chi_Minh` trong `CheckoutService`, dùng `EventTime.toOffset`.
+  - [x] Bỏ set default timezone trùng lặp; test toàn bộ backend pass dưới UTC và VN.
 - **Acceptance:** test expiry/queue ổn định khi `TZ=UTC` và `TZ=Asia/Ho_Chi_Minh`.
 - **Test:** `./mvnw -B verify` với 2 biến TZ; test Node `event_time`.
 

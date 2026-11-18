@@ -1,5 +1,6 @@
 package com.ticketrush.service;
 
+import com.ticketrush.util.EventTime;
 import com.ticketrush.model.dto.CheckinRequest;
 import com.ticketrush.model.dto.CheckinResponse;
 import com.ticketrush.model.entity.Ticket;
@@ -94,7 +95,7 @@ public class CheckinService {
         }
 
         // Cập nhật trạng thái CHECKED_IN
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = EventTime.now();
         ticket.setStatus("CHECKED_IN");
         ticket.setCheckedInAt(now);
         ticket.setCheckedInBy(staffEmail != null ? staffEmail : "Gate Scanner");
@@ -117,7 +118,7 @@ public class CheckinService {
     private void recordCheckin(Ticket ticket, String gate, String deviceId, String staffEmail, String result) {
         TicketCheckin checkin = TicketCheckin.builder()
                 .ticket(ticket)
-                .scannedAt(LocalDateTime.now())
+                .scannedAt(EventTime.now())
                 .gateName(gate)
                 .deviceId(deviceId)
                 .staffEmail(staffEmail)

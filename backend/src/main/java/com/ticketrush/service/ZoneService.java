@@ -1,5 +1,6 @@
 package com.ticketrush.service;
 
+import com.ticketrush.util.EventTime;
 import com.ticketrush.repository.TicketRepository;
 import com.ticketrush.util.PriceValidation;
 import java.time.LocalDateTime;
@@ -115,7 +116,7 @@ public class ZoneService {
         if (!zoneRepository.existsById(zoneId)) {
             throw new RuntimeException("Khu vực không tồn tại!");
         }
-        if (ticketRepository.protectedTicketsForZone(zoneId, LocalDateTime.now()) > 0) {
+        if (ticketRepository.protectedTicketsForZone(zoneId, EventTime.now()) > 0) {
             throw new IllegalStateException("Cannot delete a zone with issued tickets or active checkouts");
         }
         // Draft tickets from expired checkouts still reference the seats; remove

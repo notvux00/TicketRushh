@@ -1,5 +1,6 @@
 package com.ticketrush.service;
 
+import com.ticketrush.util.EventTime;
 import com.ticketrush.repository.TicketRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -88,8 +89,8 @@ public class EventService {
         EventResponse.ShowtimeResponse dto = new EventResponse.ShowtimeResponse();
         dto.setId(showtime.getId());
         dto.setName(showtime.getName());
-        dto.setStartTime(com.ticketrush.util.EventTime.toOffset(showtime.getStartTime()));
-        dto.setEndTime(com.ticketrush.util.EventTime.toOffset(showtime.getEndTime()));
+        dto.setStartTime(EventTime.toOffset(showtime.getStartTime()));
+        dto.setEndTime(EventTime.toOffset(showtime.getEndTime()));
         return dto;
     }
 
@@ -233,7 +234,7 @@ public class EventService {
     @Transactional
     public void deleteEvent(UUID id) {
         eventRepository.findForUpdate(id).orElseThrow(() -> new IllegalArgumentException("Event not found"));
-        if (ticketRepository.protectedTicketsForEvent(id, LocalDateTime.now()) > 0) {
+        if (ticketRepository.protectedTicketsForEvent(id, EventTime.now()) > 0) {
             throw new IllegalStateException("Cannot delete an event with issued tickets or an active checkout");
         }
 

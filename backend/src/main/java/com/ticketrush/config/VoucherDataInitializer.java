@@ -1,5 +1,6 @@
 package com.ticketrush.config;
 
+import com.ticketrush.util.EventTime;
 import com.ticketrush.model.entity.Voucher;
 import com.ticketrush.repository.VoucherRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +44,8 @@ public class VoucherDataInitializer implements CommandLineRunner {
             voucher.setTotalQuantity(quantity);
             voucher.setUsedQuantity(0);
             voucher.setActive(true);
-            voucher.setStartDate(LocalDateTime.now().minusDays(1));
-            voucher.setEndDate(LocalDateTime.now().plusMonths(6));
+            voucher.setStartDate(EventTime.now().minusDays(1));
+            voucher.setEndDate(EventTime.now().plusMonths(6));
             voucherRepository.save(voucher);
             log.info("Initialized test voucher: {}", code);
         }
