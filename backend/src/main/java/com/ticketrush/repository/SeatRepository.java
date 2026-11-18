@@ -36,6 +36,16 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
             """)
     List<Seat> findByZoneIdForBooking(@Param("zoneId") UUID zoneId);
 
+    // Toàn bộ ghế của một suất diễn trong một query, kèm zone để render bản đồ hợp nhất.
+    @Query("""
+            SELECT s FROM Seat s
+            JOIN FETCH s.zone z
+            JOIN FETCH z.showtime st
+            WHERE st.id = :showtimeId
+            ORDER BY s.gridRow ASC, s.gridCol ASC
+            """)
+    List<Seat> findByShowtimeIdForBooking(@Param("showtimeId") UUID showtimeId);
+
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Seat s where s.zone.id = :zoneId")
     int deleteByZoneId(@Param("zoneId") UUID zoneId);

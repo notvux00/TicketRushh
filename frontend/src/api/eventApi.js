@@ -30,6 +30,11 @@ export const eventApi = {
     return response.data;
   },
 
+  getShowtimeSeats: async (showtimeId) => {
+    const response = await axiosClient.get(`/events/showtimes/${showtimeId}/seats`);
+    return response.data;
+  },
+
   lockSeats: async (showtimeId, seatIds) => {
     const response = await axiosClient.post("/events/seats/lock", {
       showtimeId,

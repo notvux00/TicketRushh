@@ -4,6 +4,7 @@ import com.ticketrush.model.dto.EventResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
 import com.ticketrush.model.dto.LockSeatResponse;
 import com.ticketrush.model.dto.SeatResponse;
+import com.ticketrush.model.dto.ShowtimeSeatResponse;
 import com.ticketrush.model.dto.ZoneResponse;
 import com.ticketrush.service.CheckoutService;
 import com.ticketrush.service.EventService;
@@ -53,6 +54,14 @@ public class EventController {
             Authentication authentication) {
         String userId = (authentication != null && authentication.isAuthenticated()) ? authentication.getName() : null;
         return seatService.getSeatsByZoneForBooking(zoneId, userId);
+    }
+
+    @GetMapping("/showtimes/{showtimeId}/seats")
+    public List<ShowtimeSeatResponse> getSeatsByShowtime(
+            @PathVariable UUID showtimeId,
+            Authentication authentication) {
+        String userId = (authentication != null && authentication.isAuthenticated()) ? authentication.getName() : null;
+        return seatService.getSeatsByShowtimeForBooking(showtimeId, userId);
     }
 
     @PostMapping("/seats/lock")

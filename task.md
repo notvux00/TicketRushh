@@ -4,7 +4,7 @@
 > Quy trình bắt buộc: xem [AGENT.md](AGENT.md). Không sửa trực tiếp trên `main`.
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
-> **Kết quả 2026-11-18:** 23/23 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> **Kết quả 2026-11-18:** 24/24 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -22,9 +22,9 @@
 | --- | --- | --- |
 | P0 | 5 | Bảo mật, secret, error contract, validation |
 | P1 | 6 | Hiệu năng DB, dữ liệu, tính đúng đắn |
-| P2 | 7 | Frontend: bundle, cấu trúc, UX, state |
+| P2 | 8 | Frontend: bundle, cấu trúc, UX, state |
 | P3 | 5 | Vệ sinh code, timezone, test, CI |
-| **Tổng** | **23** | |
+| **Tổng** | **24** | |
 
 ---
 
@@ -263,6 +263,21 @@
   - [x] Giữ nguyên hành vi; thêm Playwright cho luồng tạo event và mở modal chi tiết.
 - **Kết quả:** `AdminAddEvent` 341 dòng, `AdminEventsList` 226 dòng; component lớn nhất 482 dòng (`EventInfoStep`).
 - **Acceptance:** mỗi page < ~500 dòng, test admin pass.
+
+### P2-07 — Unified seat map + mô phỏng góc nhìn từ ghế
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-07-unified-seat-map`)
+- **Test:** `./mvnw -B verify` (88 tests), `npm run lint`, `npm run build`, `node --test tests/*.test.cjs` (20), Playwright 19/19.
+- **Vấn đề:** Booking tách 2 màn `zone-overview` → `seat-picker`; màn đầu chỉ có khối khu vực, màn sau chỉ hiện ghế của một khu nên người dùng mất vị trí tương đối so với màn hình, lối đi và các khu khác; không có góc nhìn thực tế từ ghế.
+- **File:** `frontend/src/pages/BookingPage.jsx`, `frontend/src/components/booking/*`, `frontend/src/utils/seatView.js`, `frontend/src/api/eventApi.js`, `backend/.../EventController.java`, `SeatService.java`, `SeatRepository.java`, `ShowtimeSeatResponse.java`, test hai phía.
+- **Thiết kế:** một sơ đồ rạp duy nhất (màn hình ở trên, hàng A→, ghế thật trong từng khu), khu vực chỉ là lớp nền/giá; ghế là control chính. Panel chi tiết hiện khu/hàng/số/giá và mô phỏng góc nhìn từ ghế tới màn hình (độ lệch tâm, khoảng cách, độ nghiêng). Giữ tông navy của app, scene rạp tối với ánh sáng màn hình ấm; không dùng ảnh placeholder bên ngoài.
+- **Việc cần làm:**
+  - [x] Thêm API `GET /api/events/showtimes/{showtimeId}/seats` trả toàn bộ ghế kèm `zoneId/zoneName/price`, tránh N+1.
+  - [x] Hợp nhất zone overview + seat picker thành một hall map; render ghế theo `gridRow/gridCol` trong đúng vị trí khu.
+  - [x] Thêm legend trạng thái/hạng vé, zoom đơn giản, nhãn hàng, aria-label và thao tác bàn phím cho ghế.
+  - [x] Thêm panel “Góc nhìn từ ghế” mô phỏng theo tọa độ ghế; helper thuần + test Node.
+  - [x] Playwright: chọn ghế nhiều khu, kiểm tra tổng tiền, panel góc nhìn, ghế bị khóa/đã bán.
+- **Kết quả:** `BookingPage` 516 dòng; `HallSeatMap` 178, `ViewFromSeat` 108, helper `seatView` 82 dòng. Map dùng endpoint mới, fallback API theo zone nếu backend cũ.
+- **Acceptance:** người dùng thấy và chọn được ghế chính xác trên một sơ đồ duy nhất; mọi ghế có hàng/số/giá/trạng thái; panel mô phỏng đổi theo ghế; test backend/frontend/Playwright pass.
 
 ## P3 — Vệ sinh code và CI
 
