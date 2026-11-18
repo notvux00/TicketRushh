@@ -17,9 +17,9 @@
 | --- | --- | --- |
 | P0 | 5 | Bảo mật, secret, error contract, validation |
 | P1 | 6 | Hiệu năng DB, dữ liệu, tính đúng đắn |
-| P2 | 6 | Frontend: bundle, cấu trúc, UX, state |
+| P2 | 7 | Frontend: bundle, cấu trúc, UX, state |
 | P3 | 4 | Vệ sinh code, timezone, test, CI |
-| **Tổng** | **21** | |
+| **Tổng** | **22** | |
 
 ---
 
@@ -186,15 +186,18 @@
 - **Test:** `npm run build`, Playwright smoke các route.
 
 ### P2-02 — Tách component admin lớn
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-02-admin-split`, phase 1)
+- **Test:** frontend lint/build, Playwright 16/16.
+- **Ghi chú:** đã tách toàn bộ chart/panel thuần sang `components/admin/EventInsights.jsx` (395 dòng) và gom API vào `adminApi`. `AdminEventsList` còn 1.060 dòng và `AdminAddEvent` 1.572 dòng; việc chia nhỏ theo step/modal tiếp tục ở P2-02b.
 - **Vấn đề:** `AdminAddEvent.jsx` 1.567 dòng, `AdminEventsList.jsx` 1.450 dòng; JSX inline rất dài; gọi API trực tiếp.
 - **File:** `frontend/src/pages/AdminAddEvent.jsx`, `AdminEventsList.jsx`, `src/api/adminApi.js`.
 - **Việc cần làm:**
-  - [ ] Tách step components/hook (`useEventForm`, `useZoneEditor`).
-  - [ ] Gom API call vào `adminApi`/`eventApi`.
-  - [ ] Không đổi hành vi/UI.
-- **Acceptance:** mỗi file < ~400 dòng; không còn `axiosClient` gọi trực tiếp trong page; test admin pass.
-- **Test:** `npm run lint`, Playwright `admin-tools.spec.js`.
+  - [x] Tách chart/panel thuần (MetricCard, RevenueChart, OccupancyPanel, SeatMatrix, Donut/Age, AnalyticsOverview).
+  - [x] Gom API call event/analytics/zone/CRUD vào `adminApi`.
+  - [x] Không còn gọi `axiosClient` trực tiếp trong page admin; hành vi/UI giữ nguyên.
+  - [ ] P2-02b: tách step component của `AdminAddEvent` và modal/detail của `AdminEventsList`.
+- **Acceptance phase 1:** không còn `axiosClient` trực tiếp trong page; test admin pass; chart tách riêng. Line count đầy đủ để P2-02b.
+- **Test:** `npm run lint`, `npm run build`, Playwright `admin-tools.spec.js`.
 
 ### P2-03 — Sửa mutate state trong form
 - **Trạng thái:** verified (2026-11-18, branch `task/P2-03-list-state`)
@@ -242,6 +245,15 @@
 - **Test:** React Profiler (thủ công), Playwright home.
 
 ---
+
+### P2-02b — Tách step/modal admin (follow-up)
+- **Trạng thái:** todo
+- **Vấn đề:** `AdminAddEvent.jsx` và phần modal/detail của `AdminEventsList.jsx` vẫn quá lớn sau phase 1.
+- **Việc cần làm:**
+  - [ ] Tách `EventInfoStep`, `ZoneStep`, `SeatMapStep` khỏi `AdminAddEvent`.
+  - [ ] Tách `EventDetailModal`/`EventEditForm` khỏi `AdminEventsList`.
+  - [ ] Giữ nguyên hành vi; thêm Playwright cho luồng tạo event.
+- **Acceptance:** mỗi page < ~500 dòng, test admin pass.
 
 ## P3 — Vệ sinh code và CI
 
