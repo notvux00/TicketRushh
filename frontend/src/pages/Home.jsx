@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { eventApi } from "../api/eventApi";
 import EventCard from "../components/common/EventCard";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Music,
@@ -16,6 +16,63 @@ import {
   Inbox
 } from "lucide-react";
 
+function Countdown({ showtimes }) {
+  const [timeLeft, setTimeLeft] = useState({ hrs: "00", min: "00", sec: "00" });
+
+  useEffect(() => {
+    if (!showtimes?.length) return;
+
+    const now = new Date();
+    const nearestFutureShowtime = showtimes
+      .filter(s => new Date(s.startTime) > now)
+      .sort((s1, s2) => new Date(s1.startTime) - new Date(s2.startTime))[0];
+    const targetDate = nearestFutureShowtime ? new Date(nearestFutureShowtime.startTime) : null;
+
+    const updateCountdown = () => {
+      if (!targetDate) {
+        setTimeLeft({ hrs: "00", min: "00", sec: "00" });
+        return;
+      }
+      const difference = targetDate - new Date();
+      if (difference <= 0) {
+        setTimeLeft({ hrs: "00", min: "00", sec: "00" });
+        return;
+      }
+      setTimeLeft({
+        hrs: Math.floor(difference / (1000 * 60 * 60)).toString().padStart(2, "0"),
+        min: Math.floor((difference / 1000 / 60) % 60).toString().padStart(2, "0"),
+        sec: Math.floor((difference / 1000) % 60).toString().padStart(2, "0"),
+      });
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [showtimes]);
+
+  return (
+    <div className="flex gap-4 mb-10">
+      {[
+        { v: timeLeft.hrs, l: "Giờ" },
+        { v: timeLeft.min, l: "Phút" },
+        { v: timeLeft.sec, l: "Giây" },
+      ].map((t, i) => (
+        <div
+          key={i}
+          className="flex-1 bg-white/60 backdrop-blur-md rounded-3xl p-5 text-center border border-white shadow-inner"
+        >
+          <span className="block text-4xl font-black text-primary tracking-tighter mb-1">
+            {t.v}
+          </span>
+          <span className="text-[9px] uppercase font-black text-muted tracking-widest">
+            {t.l}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Home() {
   const { data: events, isLoading } = useQuery({
     queryKey: ["events"],
@@ -23,12 +80,12 @@ function Home() {
   });
 
   const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   // 1. Sort all events globally for the Hero section (nearest future first)
-  const sortedEvents = events?.slice().sort((a, b) => {
+  const sortedEvents = useMemo(() => events?.slice().sort((a, b) => {
     const now = new Date();
     const getStatus = (ev) => {
       const futureShowtimes = ev.showtimes?.filter(s => new Date(s.startTime) > now);
@@ -50,57 +107,16 @@ function Home() {
       return lastB - lastA;
     }
     return 0;
-  });
+  }), [events]);
 
   // 2. Filtered events for the grid below
-  const filteredEvents = sortedEvents?.filter(event => {
+  const filteredEvents = useMemo(() => sortedEvents?.filter(event => {
     const matchesSearch = event.eventName.toLowerCase().includes(searchQuery);
     const matchesCategory = !selectedCategory || event.category?.toUpperCase() === selectedCategory;
     return matchesSearch && matchesCategory;
-  });
+  }), [sortedEvents, searchQuery, selectedCategory]);
 
   const featuredEvent = sortedEvents?.[0];
-  const [timeLeft, setTimeLeft] = useState({ hrs: "00", min: "00", sec: "00" });
-
-  useEffect(() => {
-    if (!featuredEvent?.showtimes?.length) return;
-
-    const now = new Date();
-    // Find the nearest future showtime
-    const nearestFutureShowtime = featuredEvent.showtimes
-      .filter(s => new Date(s.startTime) > now)
-      .sort((s1, s2) => new Date(s1.startTime) - new Date(s2.startTime))[0];
-
-    const targetDate = nearestFutureShowtime ? new Date(nearestFutureShowtime.startTime) : null;
-
-    const updateCountdown = () => {
-      if (!targetDate) {
-        setTimeLeft({ hrs: "00", min: "00", sec: "00" });
-        return;
-      }
-
-      const currentTime = new Date();
-      const difference = targetDate - currentTime;
-
-      if (difference <= 0) {
-        setTimeLeft({ hrs: "00", min: "00", sec: "00" });
-      } else {
-        const hrs = Math.floor(difference / (1000 * 60 * 60));
-        const min = Math.floor((difference / 1000 / 60) % 60);
-        const sec = Math.floor((difference / 1000) % 60);
-        setTimeLeft({
-          hrs: hrs.toString().padStart(2, "0"),
-          min: min.toString().padStart(2, "0"),
-          sec: sec.toString().padStart(2, "0"),
-        });
-      }
-    };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-
-    return () => clearInterval(timer);
-  }, [featuredEvent]);
 
   return (
     <div className="min-h-screen bg-[#f0f4f8] font-sans selection:bg-primary selection:text-white">
@@ -149,25 +165,7 @@ function Home() {
                 {featuredEvent?.eventName || "Midnight Neon Tour"}
               </h3>
               
-              <div className="flex gap-4 mb-10">
-                {[
-                  { v: timeLeft.hrs, l: "Giờ" },
-                  { v: timeLeft.min, l: "Phút" },
-                  { v: timeLeft.sec, l: "Giây" },
-                ].map((t, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-white/60 backdrop-blur-md rounded-3xl p-5 text-center border border-white shadow-inner"
-                  >
-                    <span className="block text-4xl font-black text-primary tracking-tighter mb-1">
-                      {t.v}
-                    </span>
-                    <span className="text-[9px] uppercase font-black text-muted tracking-widest">
-                      {t.l}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <Countdown showtimes={featuredEvent?.showtimes} />
               
               <Link 
                 to={featuredEvent ? `/event/${featuredEvent.id}` : "#"}

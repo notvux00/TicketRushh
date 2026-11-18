@@ -230,12 +230,13 @@
 - **Test:** `npm run build`, Playwright page smoke.
 
 ### P2-06 — Memoize derive dữ liệu ở Home
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-06-home-memo`)
+- **Test:** frontend lint/build, Playwright 16/16.
 - **Vấn đề:** sort/filter toàn bộ event chạy lại mỗi giây do countdown tick.
 - **File:** `frontend/src/pages/Home.jsx`.
 - **Việc cần làm:**
-  - [ ] `useMemo` cho `sortedEvents`/`filteredEvents` theo `events`, `searchQuery`, `selectedCategory`.
-  - [ ] Tách countdown thành component riêng để không re-render cả trang.
+  - [x] `useMemo` cho `sortedEvents`/`filteredEvents` theo `events`, `searchQuery`, `selectedCategory`.
+  - [x] Tách `Countdown` thành component riêng để tick mỗi giây không re-render cả trang.
 - **Acceptance:** countdown tick không recompute sort/filter; UI không đổi.
 - **Test:** React Profiler (thủ công), Playwright home.
 
