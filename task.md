@@ -196,13 +196,14 @@
 - **Test:** `npm run lint`, Playwright `admin-tools.spec.js`.
 
 ### P2-03 — Sửa mutate state trong form
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-03-list-state`)
+- **Test:** `node --test tests/list_state.test.cjs`, frontend lint/build.
 - **Vấn đề:** `[...formData.zones]` rồi gán `updated[index].field` → sửa object gốc; drag/resize cũng vậy.
 - **File:** `frontend/src/pages/AdminAddEvent.jsx`.
 - **Việc cần làm:**
-  - [ ] Dùng `map` + spread object khi update list.
-  - [ ] Tách helper `updateAt(list, index, patch)`.
-  - [ ] Kiểm tra undo/back step không mất dữ liệu.
+  - [x] Dùng `map` + spread object khi update list.
+  - [x] Tách helper `updateAt(list, index, patch)` + test Node.
+  - [x] Áp dụng cho input, drag và resize zone.
 - **Acceptance:** state cũ không bị đột biến; React DevTools thấy reference mới đúng chỗ.
 - **Test:** unit test helper; Playwright tạo event 3 bước.
 

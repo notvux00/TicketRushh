@@ -23,6 +23,7 @@ import { uploadMedia } from "../api/mediaApi";
 import { Resizable } from "re-resizable";
 
 import { ZONE_COLORS, CANVAS_W, CANVAS_H } from "../constants/zoneColors";
+import { updateAt } from "../utils/listState";
 
 function AdminAddEvent() {
   const navigate = useNavigate();
@@ -116,9 +117,10 @@ function AdminAddEvent() {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const handleListChange = (listName, index, field, value) => {
-    const updated = [...formData[listName]];
-    updated[index][field] = value;
-    setFormData((prev) => ({ ...prev, [listName]: updated }));
+    setFormData((prev) => ({
+      ...prev,
+      [listName]: updateAt(prev[listName], index, { [field]: value }),
+    }));
   };
 
   // 2. Hàm xử lý khi thả khối Zone
@@ -134,21 +136,24 @@ function AdminAddEvent() {
     const y = Math.round(zoneBounds.top - canvasBounds.top);
 
     // Cập nhật tọa độ vào state formData để chuẩn bị gửi lên BE
-    const updatedZones = [...formData.zones];
-    updatedZones[index].positionX = x;
-    updatedZones[index].positionY = y;
-
-    setFormData((prev) => ({ ...prev, zones: updatedZones }));
+    setFormData((prev) => ({
+      ...prev,
+      zones: updateAt(prev.zones, index, { positionX: x, positionY: y }),
+    }));
   };
 
   const handleResizeStop = (index, e, direction, ref, d) => {
-    const updatedZones = [...formData.zones];
-    // Cộng dồn kích thước mới vào kích thước hiện tại
-    updatedZones[index].visualWidth =
-      (updatedZones[index].visualWidth || 150) + d.width;
-    updatedZones[index].visualHeight =
-      (updatedZones[index].visualHeight || 120) + d.height;
-    setFormData((prev) => ({ ...prev, zones: updatedZones }));
+    setFormData((prev) => {
+      const zone = prev.zones[index];
+      return {
+        ...prev,
+        // Cộng dồn kích thước mới vào kích thước hiện tại
+        zones: updateAt(prev.zones, index, {
+          visualWidth: (zone.visualWidth || 150) + d.width,
+          visualHeight: (zone.visualHeight || 120) + d.height,
+        }),
+      };
+    });
   };
 
   const handleFileUpload = async (e) => {
