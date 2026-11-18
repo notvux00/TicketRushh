@@ -63,6 +63,7 @@ Trong terminal khác, chạy npm ci và npm run dev tại frontend. Vite proxy /
 | MEDIA_ENDPOINT, MEDIA_PUBLIC_ENDPOINT, MEDIA_PATH_STYLE | Local S3-compatible endpoint |
 | MEDIA_PUBLIC_BASE_URL | Local URL ở trên; AWS dùng URL CloudFront do Terraform truyền |
 | APP_SEED_DEMO_DATA | `true` chỉ ở local/demo để tạo voucher mẫu; mặc định `false` |
+| MAX_SEATS_PER_ZONE, MAX_SEATS_PER_REQUEST | Giới hạn sinh ghế khi tạo zone/event (mặc định 5000 và 100000) |
 | APP_BOOTSTRAP_ADMIN, ADMIN_EMAIL, ADMIN_PASSWORD | Bootstrap admin |
 | ADMIN_RESET_PASSWORD | Chỉ bật khi chủ động reset mật khẩu admin |
 | CORS_ALLOWED_ORIGINS, WS_ALLOWED_ORIGINS | Danh sách origin frontend |

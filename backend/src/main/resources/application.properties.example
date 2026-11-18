@@ -31,6 +31,10 @@ app.media.path-style=${MEDIA_PATH_STYLE:false}
 # Demo rows (local/demo only)
 app.seed.demo-data=${APP_SEED_DEMO_DATA:false}
 
+# Catalog generation guards
+app.catalog.max-seats-per-zone=${MAX_SEATS_PER_ZONE:5000}
+app.catalog.max-seats-per-request=${MAX_SEATS_PER_REQUEST:100000}
+
 # Admin bootstrap (local/demo only)
 app.bootstrap.admin.enabled=${APP_BOOTSTRAP_ADMIN:false}
 app.bootstrap.admin.email=${ADMIN_EMAIL:admin@gmail.com}

@@ -35,4 +35,8 @@ public interface SeatRepository extends JpaRepository<Seat, UUID> {
             ORDER BY s.gridRow ASC, s.gridCol ASC
             """)
     List<Seat> findByZoneIdForBooking(@Param("zoneId") UUID zoneId);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Seat s where s.zone.id = :zoneId")
+    int deleteByZoneId(@Param("zoneId") UUID zoneId);
 }
