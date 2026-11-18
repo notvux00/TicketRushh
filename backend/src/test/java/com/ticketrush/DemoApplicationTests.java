@@ -32,7 +32,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "jwt.secret=test-jwt-secret-0123456789-abcdefghijklmnopqrstuvwxyz",
+                "app.ticket.signing-secret=test-ticket-secret-0123456789-abcdefghijklmnopqrstuvwxyz"
+        })
 @AutoConfigureMockMvc
 class DemoApplicationTests {
 
@@ -716,7 +721,7 @@ class DemoApplicationTests {
         assertTrue(confirmed.body().get("success").asBoolean());
         UUID order=UUID.fromString(confirmed.body().get("orderId").asText());
         String qr=draftQr(order);
-        assertTrue(qr.startsWith("TKRUSH:v1:"));
+        assertTrue(qr.startsWith("TKRUSH:v2:"));
         assertEquals(200,postApi("/api/checkin/scan",f.staffToken(),Map.of("qrPayload",qr)).code());
     }
 

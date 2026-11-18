@@ -24,6 +24,7 @@ REDIS_HOST_VALUE="${redis_host}"
 REDIS_PORT_VALUE="${redis_port}"
 REDIS_SECRET_NAME="${redis_secret_name}"
 JWT_SECRET_NAME="${jwt_secret_name}"
+TICKET_SIGNING_SECRET_NAME="${ticket_signing_secret_name}"
 ADMIN_SECRET_NAME="${admin_secret_name}"
 ADMIN_EMAIL_VALUE="${admin_email}"
 MEDIA_BUCKET_VALUE="${media_bucket_name}"
@@ -60,6 +61,12 @@ REDIS_PASSWORD=$(jq -r '.auth_token' <<<"$REDIS_SECRET_JSON")
 JWT_SECRET=$(aws secretsmanager get-secret-value \
   --region "$REGION" \
   --secret-id "$JWT_SECRET_NAME" \
+  --query SecretString \
+  --output text)
+
+TICKET_SIGNING_SECRET=$(aws secretsmanager get-secret-value \
+  --region "$REGION" \
+  --secret-id "$TICKET_SIGNING_SECRET_NAME" \
   --query SecretString \
   --output text)
 
@@ -108,6 +115,7 @@ docker run -d \
   -e "REDIS_PASSWORD=$REDIS_PASSWORD" \
   -e "REDIS_SSL=true" \
   -e "JWT_SECRET=$JWT_SECRET" \
+  -e "TICKET_SIGNING_SECRET=$TICKET_SIGNING_SECRET" \
   -e "CORS_ALLOWED_ORIGINS=$CORS_ORIGINS_VALUE" \
   -e "WS_ALLOWED_ORIGINS=$CORS_ORIGINS_VALUE" \
   -e "MEDIA_BUCKET=$MEDIA_BUCKET_VALUE" \

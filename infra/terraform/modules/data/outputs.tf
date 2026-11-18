@@ -63,6 +63,11 @@ output "jwt_secret_name" {
   value       = aws_secretsmanager_secret.jwt.name
 }
 
+output "ticket_signing_secret_name" {
+  description = "Secrets Manager secret name for the ticket QR signing key."
+  value       = aws_secretsmanager_secret.ticket_signing.name
+}
+
 output "admin_secret_name" {
   description = "Secrets Manager secret name for the initial admin password."
   value       = aws_secretsmanager_secret.admin.name
