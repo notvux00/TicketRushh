@@ -9,6 +9,7 @@ import com.ticketrush.model.dto.ZonePositionUpdate;
 import com.ticketrush.service.EventAnalyticsService;
 import com.ticketrush.service.EventService;
 import com.ticketrush.service.ZoneService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class AdminEventController {
     private final EventAnalyticsService eventAnalyticsService;
 
     @PostMapping
-    public ResponseEntity<EventResponse> createEvent(@RequestBody EventCreateRequest request) {
+    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventCreateRequest request) {
         EventResponse response = eventService.createEvent(request);
         return ResponseEntity.ok(response);
     }
@@ -40,7 +41,7 @@ public class AdminEventController {
     @PutMapping("/{eventId}")
     public ResponseEntity<EventResponse> replaceEvent(
             @PathVariable UUID eventId,
-            @RequestBody EventUpdateRequest request) {
+            @Valid @RequestBody EventUpdateRequest request) {
         return ResponseEntity.ok(eventService.updateEvent(eventId, request));
     }
 
@@ -57,7 +58,7 @@ public class AdminEventController {
     @PatchMapping("/{eventId}/zones/positions")
     public ResponseEntity<String> updateEventZonePositions(
             @PathVariable UUID eventId,
-            @RequestBody List<ZonePositionUpdate> updates) {
+            @RequestBody List<@Valid ZonePositionUpdate> updates) {
         zoneService.updatePositionsByEvent(eventId, updates);
         return ResponseEntity.ok("Đã đồng bộ tọa độ cho toàn bộ các suất diễn!");
     }

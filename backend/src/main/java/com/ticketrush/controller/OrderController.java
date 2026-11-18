@@ -8,6 +8,7 @@ import com.ticketrush.model.dto.VoucherResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
 import com.ticketrush.repository.OrderRepository;
 import com.ticketrush.service.CheckoutService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class OrderController {
     private CheckoutService checkoutService;
 
     @PostMapping("/checkout")
-    public CheckoutSessionResponse createCheckout(@RequestBody LockSeatRequest request, Authentication authentication) {
+    public CheckoutSessionResponse createCheckout(@Valid @RequestBody LockSeatRequest request, Authentication authentication) {
         return checkoutService.createSession(request, authentication.getName());
     }
 
@@ -49,7 +50,7 @@ public class OrderController {
 
     @PostMapping("/checkout/{orderId}/apply-voucher")
     public CheckoutSessionResponse applyVoucher(@PathVariable UUID orderId,
-                                                @RequestBody ApplyVoucherRequest request,
+                                                @Valid @RequestBody ApplyVoucherRequest request,
                                                 Authentication authentication) {
         return checkoutService.applyVoucher(orderId, request.getCode(), authentication.getName());
     }

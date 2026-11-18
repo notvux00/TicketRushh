@@ -3,6 +3,7 @@ package com.ticketrush.controller;
 import com.ticketrush.model.dto.SeatBulkUpdateRequest;
 import com.ticketrush.model.dto.SeatResponse;
 import com.ticketrush.service.SeatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class AdminSeatController {
     }
 
     @PatchMapping("/bulk-status")
-    public ResponseEntity<Void> updateBulkStatus(@RequestBody SeatBulkUpdateRequest request) {
+    public ResponseEntity<Void> updateBulkStatus(@Valid @RequestBody SeatBulkUpdateRequest request) {
         seatService.updateSeatsStatus(request);
         return ResponseEntity.ok().build();
     }

@@ -6,6 +6,7 @@ import com.ticketrush.model.dto.SeatResponse;
 import com.ticketrush.service.EventService;
 import com.ticketrush.service.ZoneService;
 import com.ticketrush.service.SeatService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,7 +58,7 @@ public class EventController {
 
     @PostMapping("/seats/lock")
     public com.ticketrush.model.dto.LockSeatResponse lockSeats(
-            @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
+            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
             org.springframework.security.core.Authentication authentication) {
         
         // Use user email or ID from JWT as locker identity
@@ -80,7 +81,7 @@ public class EventController {
 
     @PostMapping("/seats/unlock")
     public com.ticketrush.model.dto.LockSeatResponse unlockSeats(
-            @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
+            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
             org.springframework.security.core.Authentication authentication) {
         
         String userId = authentication.getName();
@@ -94,7 +95,7 @@ public class EventController {
 
     @PostMapping("/seats/confirm")
     public com.ticketrush.model.dto.LockSeatResponse confirmSeats(
-            @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
+            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
             org.springframework.security.core.Authentication authentication) {
         var session = checkoutService.createAndConfirmSession(request, authentication.getName());
         return new com.ticketrush.model.dto.LockSeatResponse(
