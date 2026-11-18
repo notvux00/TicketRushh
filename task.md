@@ -77,15 +77,16 @@
 - **Test:** MockMvc cho 400/401/403/404/409/500; `./mvnw -B verify`; Playwright checkout.
 
 ### P0-05 — Validation request DTO + `@Valid`
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P0-05-request-validation`)
+- **Test:** `./mvnw -B verify` (75 tests).
 - **Vấn đề:** `LockSeatRequest`, `EventCreateRequest`, `ZoneRequest`, `UserProfileDto`… không constraint; controller thiếu `@Valid`; input xấu gây NPE/409 khó hiểu.
 - **File:** `model/dto/*.java`, các controller tương ứng.
 - **Việc cần làm:**
-  - [ ] `LockSeatRequest`: `@NotNull showtimeId`, `@NotEmpty seatIds`, giới hạn số ghế theo cấu hình.
-  - [ ] `EventCreateRequest`: `@NotBlank eventName/venueName`, `@Size` mô tả, ít nhất 1 showtime/zone.
-  - [ ] `ZoneRequest`: `matrixRow/matrixCol >= 1` và tổng ghế <= ngưỡng; `price` hợp lệ.
-  - [ ] `UserProfileDto`: `@Email`, `@Size`, validate ngày sinh.
-  - [ ] Thêm `@Valid` ở controller; đảm bảo `MethodArgumentNotValidException` được handler P0-04 bắt.
+  - [x] `LockSeatRequest`: `@NotNull showtimeId`, `@NotEmpty seatIds`, tối đa 50 ghế/lần.
+  - [x] `EventCreateRequest`: `@NotBlank eventName`, `@Size` các field, ít nhất 1 showtime, validate từng showtime/zone.
+  - [x] `ZoneRequest`: `matrixRow/matrixCol` trong 1..200; `price` finite/không âm; giới hạn tổng ghế chuyển sang P1-04.
+  - [x] `UserProfileDto`: `@Email`, `@Size`, `@Past` ngày sinh.
+  - [x] Thêm `@Valid` ở controller; handler bắt `MethodArgumentNotValidException`, `ConstraintViolationException`, `HandlerMethodValidationException`.
 - **Acceptance:** payload thiếu field trả 400 + danh sách field; không còn NPE từ input.
 - **Test:** MockMvc invalid payload cho từng endpoint; `./mvnw -B verify`.
 

@@ -105,6 +105,26 @@ class DemoApplicationTests {
     }
 
     @Test
+    void invalidBookingAndCatalogPayloadsAreRejectedWithFieldErrors() throws Exception {
+        var f = fixture();
+
+        var booking = postApi("/api/orders/checkout", f.userToken(), Map.of());
+        assertEquals(400, booking.code());
+        assertEquals("VALIDATION_FAILED", booking.body().get("code").asText());
+        assertTrue(booking.body().get("fieldErrors").has("showtimeId"));
+        assertTrue(booking.body().get("fieldErrors").has("seatIds"));
+
+        var event = postApi("/api/admin/events", admin(f), Map.of("eventName", "No showtimes"));
+        assertEquals(400, event.code());
+        assertTrue(event.body().get("fieldErrors").has("showtimes"));
+
+        var zone = postApi("/api/admin/showtimes/"+f.showtime()+"/zones", admin(f),
+                Map.of("name", "bad", "price", 10, "matrixRow", 0, "matrixCol", 1));
+        assertEquals(400, zone.code());
+        assertTrue(zone.body().get("fieldErrors").has("matrixRow"));
+    }
+
+    @Test
     void malformedJsonReturnsStableErrorContract() throws Exception {
         var response = mvc.perform(post("/api/auth/login")
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)

@@ -2,6 +2,7 @@ package com.ticketrush.controller;
 
 import com.ticketrush.model.dto.UserProfileDto;
 import com.ticketrush.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,7 +25,7 @@ public class UserController {
     }
 
     @PutMapping
-    public ResponseEntity<UserProfileDto> updateProfile(Authentication authentication, @RequestBody UserProfileDto dto) {
+    public ResponseEntity<UserProfileDto> updateProfile(Authentication authentication, @Valid @RequestBody UserProfileDto dto) {
         UUID userId = UUID.fromString(authentication.getName());
         UserProfileDto updatedProfile = userService.updateProfile(userId, dto.getEmail(), dto);
         return ResponseEntity.ok(updatedProfile);

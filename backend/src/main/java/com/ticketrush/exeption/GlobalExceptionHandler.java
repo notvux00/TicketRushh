@@ -1,5 +1,6 @@
 package com.ticketrush.exeption;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -49,6 +51,30 @@ public class GlobalExceptionHandler {
         log.info("Malformed request body: {}", ex.getClass().getSimpleName());
         return ResponseEntity.badRequest()
                 .body(ApiError.of(INVALID_REQUEST, "Nội dung yêu cầu không đúng định dạng"));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        ex.getConstraintViolations().forEach(violation ->
+                fields.putIfAbsent(violation.getPropertyPath().toString(), violation.getMessage()));
+        String traceId = traceId();
+        log.info("Constraint violation traceId={} fields={}", traceId, fields.keySet());
+        return ResponseEntity.badRequest().body(
+                new ApiError(VALIDATION_FAILED, "Tham số yêu cầu không hợp lệ", fields, traceId));
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleMethodValidation(HandlerMethodValidationException ex) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        ex.getParameterValidationResults().forEach(result -> result.getResolvableErrors().forEach(error -> {
+            String name = result.getMethodParameter().getParameterName();
+            fields.putIfAbsent(name == null ? "parameter" : name, error.getDefaultMessage());
+        }));
+        String traceId = traceId();
+        log.info("Method validation failed traceId={} parameters={}", traceId, fields.keySet());
+        return ResponseEntity.badRequest().body(
+                new ApiError(VALIDATION_FAILED, "Tham số yêu cầu không hợp lệ", fields, traceId));
     }
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})

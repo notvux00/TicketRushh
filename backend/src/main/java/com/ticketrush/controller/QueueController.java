@@ -2,9 +2,12 @@ package com.ticketrush.controller;
 
 import com.ticketrush.model.dto.QueueStatusResponse;
 import com.ticketrush.service.VirtualQueueService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -12,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/queue")
+@Validated
 public class QueueController {
 
     @Autowired
@@ -43,19 +47,25 @@ public class QueueController {
     // ═══════════════════════════════════════════
 
     @PostMapping("/admin/set-threshold")
-    public ResponseEntity<?> setThreshold(@RequestParam UUID showtimeId, @RequestParam int threshold) {
+    public ResponseEntity<?> setThreshold(
+            @RequestParam UUID showtimeId,
+            @RequestParam @Min(0) @Max(1_000_000) int threshold) {
         virtualQueueService.setThreshold(showtimeId, threshold);
         return ResponseEntity.ok(Map.of("message", "Threshold updated", "threshold", threshold));
     }
 
     @PostMapping("/admin/set-batch-size")
-    public ResponseEntity<?> setBatchSize(@RequestParam UUID showtimeId, @RequestParam int batchSize) {
+    public ResponseEntity<?> setBatchSize(
+            @RequestParam UUID showtimeId,
+            @RequestParam @Min(1) @Max(100_000) int batchSize) {
         virtualQueueService.setBatchSize(showtimeId, batchSize);
         return ResponseEntity.ok(Map.of("message", "Batch size updated", "batchSize", batchSize));
     }
 
     @PostMapping("/admin/simulate-users")
-    public Map<String, Object> simulateUsers(@RequestParam UUID showtimeId, @RequestParam int count) {
+    public Map<String, Object> simulateUsers(
+            @RequestParam UUID showtimeId,
+            @RequestParam @Min(1) @Max(100_000) int count) {
         int created = virtualQueueService.simulateUsers(showtimeId, count);
         return Map.of("success", true, "simulatedCount", created,
                 "message", "Đã thêm " + created + " người giả lập vào hàng chờ");
