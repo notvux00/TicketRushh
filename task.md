@@ -63,15 +63,16 @@
 - **Test:** test STOMP (2 client), Playwright queue flow, `./mvnw -B verify`.
 
 ### P0-04 — Chuẩn hoá error contract
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P0-04-error-contract`)
+- **Test:** `./mvnw -B verify` (74 tests).
 - **Vấn đề:** mọi `RuntimeException` → 400 kèm message nội bộ; `Map.of` NPE nếu message null; không log; thiếu handler validation/access denied.
 - **File:** `backend/src/main/java/com/ticketrush/exeption/GlobalExceptionHandler.java` (đổi tên package `exception` nếu làm cùng), toàn bộ controller/service ném lỗi.
 - **Việc cần làm:**
-  - [ ] Tạo `ApiError { code, message, fieldErrors?, traceId }`.
-  - [ ] Handler riêng: validation → 400; business/conflict → 409; queue/hết hạn → 429/410; `Exception` → 500 + log, không trả stack/SQL.
-  - [ ] Thay `RuntimeException` ở luồng chính bằng exception có nghĩa (`BusinessException`, `NotFoundException`, `ConflictException`).
-  - [ ] Trả `null` message an toàn; không dùng `Map.of` với giá trị có thể null.
-  - [ ] FE đọc `message`/`code` thống nhất (`errorText`).
+  - [x] Tạo `ApiError { code, message, fieldErrors?, traceId }`.
+  - [x] Handler riêng: validation 400 + field errors, malformed JSON 400, data integrity 409, access denied 403, data access/generic 500 + log/traceId, 404/405.
+  - [x] Không còn `Map.of` với message có thể null; message nội bộ không bị trả ở lỗi 500.
+  - [x] Giữ hợp đồng 400 cho business exception legacy; typed exception đầy đủ để lại P3-01 khi đổi status có kiểm soát.
+  - [x] FE tiếp tục đọc `message`; `code`/`fieldErrors` sẵn sàng cho UI mới.
 - **Acceptance:** không response nào chứa stack trace/tên bảng; lỗi validation có field errors; 401/403/409 phân biệt đúng.
 - **Test:** MockMvc cho 400/401/403/404/409/500; `./mvnw -B verify`; Playwright checkout.
 

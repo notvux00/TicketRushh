@@ -90,6 +90,34 @@ class DemoApplicationTests {
     }
 
     @Test
+    void validationErrorsReturnStableFieldContract() throws Exception {
+        var response = mvc.perform(post("/api/auth/register")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"not-an-email\",\"password\":\"1\"}"))
+                .andReturn().getResponse();
+
+        assertEquals(400, response.getStatus());
+        JsonNode body = json.readTree(response.getContentAsString());
+        assertEquals("VALIDATION_FAILED", body.get("code").asText());
+        assertTrue(body.get("fieldErrors").has("email"));
+        assertTrue(body.get("fieldErrors").has("password"));
+        assertTrue(body.get("fieldErrors").has("fullName"));
+    }
+
+    @Test
+    void malformedJsonReturnsStableErrorContract() throws Exception {
+        var response = mvc.perform(post("/api/auth/login")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{not-json"))
+                .andReturn().getResponse();
+
+        assertEquals(400, response.getStatus());
+        JsonNode body = json.readTree(response.getContentAsString());
+        assertEquals("INVALID_REQUEST", body.get("code").asText());
+        assertNotNull(body.get("message"));
+    }
+
+    @Test
     void demoVouchersAreNotSeededByDefault() {
         assertEquals(0, db.queryForObject(
                 "select count(*) from vouchers where code in ('RUSH100','SALE10','VIP50')", Integer.class));
