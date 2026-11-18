@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   plan-apply:
-    if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == 'apply'
+    if: inputs.confirm == 'apply'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     env:
@@ -42,6 +42,15 @@ jobs:
         working-directory: infra/terraform/envs/${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify deployment gate
+        env:
+          DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+        run: |
+          if [ "$DEPLOY_ENABLED" != "true" ]; then
+            echo "::error::DEPLOY_ENABLED is not 'true' for environment ${{ inputs.environment }}"
+            exit 1
+          fi
 
       - name: Validate deployment configuration
         shell: bash
