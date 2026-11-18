@@ -4,8 +4,8 @@
 > Quy trình bắt buộc: xem [AGENT.md](AGENT.md). Không sửa trực tiếp trên `main`.
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
-> **Kết quả 2026-11-18:** 21/22 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
-> P2-02b (tách nhỏ tiếp AdminAddEvent/AdminEventsList) là follow-up cosmetic, không chặn release.
+> **Kết quả 2026-11-18:** 22/22 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
 
@@ -200,7 +200,7 @@
   - [x] Tách chart/panel thuần (MetricCard, RevenueChart, OccupancyPanel, SeatMatrix, Donut/Age, AnalyticsOverview).
   - [x] Gom API call event/analytics/zone/CRUD vào `adminApi`.
   - [x] Không còn gọi `axiosClient` trực tiếp trong page admin; hành vi/UI giữ nguyên.
-  - [ ] P2-02b: tách step component của `AdminAddEvent` và modal/detail của `AdminEventsList`.
+  - [x] P2-02b: tách step component của `AdminAddEvent` và modal/detail của `AdminEventsList` (xem P2-02b).
 - **Acceptance phase 1:** không còn `axiosClient` trực tiếp trong page; test admin pass; chart tách riêng. Line count đầy đủ để P2-02b.
 - **Test:** `npm run lint`, `npm run build`, Playwright `admin-tools.spec.js`.
 
@@ -254,12 +254,14 @@
 ---
 
 ### P2-02b — Tách step/modal admin (follow-up)
-- **Trạng thái:** todo (cosmetic follow-up, không chặn release)
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-02b-admin-split-followup`)
+- **Test:** `npm run lint`, `npm run build`, Playwright 18/18 (`npm run test:browser`, thêm 2 test admin event).
 - **Vấn đề:** `AdminAddEvent.jsx` và phần modal/detail của `AdminEventsList.jsx` vẫn quá lớn sau phase 1.
 - **Việc cần làm:**
-  - [ ] Tách `EventInfoStep`, `ZoneStep`, `SeatMapStep` khỏi `AdminAddEvent`.
-  - [ ] Tách `EventDetailModal`/`EventEditForm` khỏi `AdminEventsList`.
-  - [ ] Giữ nguyên hành vi; thêm Playwright cho luồng tạo event.
+  - [x] Tách `EventInfoStep`, `ZoneStep`, `SeatMapStep` khỏi `AdminAddEvent`.
+  - [x] Tách `EventDetailModal`/`EventEditForm` khỏi `AdminEventsList`; thêm `EventShowtimeSelector`, `EventZonePricing`, `VenueSeatMap`, `QueueManagementSection`.
+  - [x] Giữ nguyên hành vi; thêm Playwright cho luồng tạo event và mở modal chi tiết.
+- **Kết quả:** `AdminAddEvent` 341 dòng, `AdminEventsList` 226 dòng; component lớn nhất 482 dòng (`EventInfoStep`).
 - **Acceptance:** mỗi page < ~500 dòng, test admin pass.
 
 ## P3 — Vệ sinh code và CI
