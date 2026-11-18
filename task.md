@@ -284,15 +284,16 @@
 - **Test:** `./mvnw -B verify` với 2 biến TZ; test Node `event_time`.
 
 ### P3-03 — Bổ sung test cho gap rủi ro
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P3-03-test-gaps`)
+- **Test:** test mới `ExceptionHandlerContractTest`; các gap validation/voucher/N+1/queue/WS đã có test trong P0/P1.
 - **Vấn đề:** thiếu test confirm race, voucher hết hạn/hết lượt, validation, admin CRUD.
 - **File:** `backend/src/test/java/...`, `frontend/tests/...`.
 - **Việc cần làm:**
-  - [ ] Concurrent confirm cùng order → chỉ 1 COMPLETED, không âm voucher.
-  - [ ] Voucher expired/out-of-quota/event mismatch.
-  - [ ] Invalid DTO → 400.
-  - [ ] Admin create/update/delete event cơ bản.
-  - [ ] Playwright: checkout hết hạn, queue redirect.
+  - [x] Concurrent confirm/voucher race: `onlyOneConcurrentOrderConsumesLastVoucherAndConfirmIsIdempotent`.
+  - [x] Voucher expired/out-of-quota/event mismatch và available list.
+  - [x] Invalid DTO → 400 + fieldErrors; malformed JSON.
+  - [x] Admin event create/patch/delete/zone lifecycle.
+  - [x] Playwright: checkout hết hạn/cancel/recovery, queue redirect; error handler null/500 contract.
 - **Acceptance:** các case trên có test tự động, chạy trong CI.
 - **Test:** toàn bộ gate.
 
