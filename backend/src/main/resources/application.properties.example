@@ -28,6 +28,9 @@ app.media.public-endpoint=${MEDIA_PUBLIC_ENDPOINT:}
 app.media.public-base-url=${MEDIA_PUBLIC_BASE_URL:}
 app.media.path-style=${MEDIA_PATH_STYLE:false}
 
+# Demo rows (local/demo only)
+app.seed.demo-data=${APP_SEED_DEMO_DATA:false}
+
 # Admin bootstrap (local/demo only)
 app.bootstrap.admin.enabled=${APP_BOOTSTRAP_ADMIN:false}
 app.bootstrap.admin.email=${ADMIN_EMAIL:admin@gmail.com}
