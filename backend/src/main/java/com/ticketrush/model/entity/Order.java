@@ -1,5 +1,6 @@
 package com.ticketrush.model.entity;
 
+import com.ticketrush.util.EventTime;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,7 @@ public class Order {
     private String status; // "PENDING", "COMPLETED", "EXPIRED"
 
     @Column(updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = EventTime.now();
 
     private LocalDateTime expiresAt;
 

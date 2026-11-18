@@ -68,7 +68,7 @@ class VoucherServiceTest {
         mockOrder.setOriginalPrice(1000000.0);
         mockOrder.setTotalPrice(1000000.0);
         mockOrder.setDiscountAmount(0.0);
-        mockOrder.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        mockOrder.setExpiresAt(com.ticketrush.util.EventTime.now().plusMinutes(10));
 
         mockEvent = new Event();
         mockEvent.setId(UUID.randomUUID());

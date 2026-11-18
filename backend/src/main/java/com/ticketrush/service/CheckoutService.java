@@ -173,7 +173,7 @@ public class CheckoutService {
         PriceValidation.requireValid(order.getTotalPrice());
 
         if (order.getVoucher() != null
-                && voucherRepository.consumeAvailableUse(order.getVoucher().getId(), LocalDateTime.now()) != 1) {
+                && voucherRepository.consumeAvailableUse(order.getVoucher().getId(), EventTime.now()) != 1) {
             throw new IllegalStateException("Voucher is no longer available. Remove it or choose another voucher.");
         }
 
@@ -225,7 +225,7 @@ public class CheckoutService {
         Voucher voucher = voucherRepository.findByCodeIgnoreCaseAndActiveTrue(voucherCode.trim())
                 .orElseThrow(() -> new RuntimeException("Mã giảm giá không tồn tại hoặc đã hết hiệu lực"));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = EventTime.now();
         if (voucher.getStartDate() != null && now.isBefore(voucher.getStartDate())) {
             throw new RuntimeException("Mã giảm giá chưa đến thời gian áp dụng");
         }
@@ -304,7 +304,7 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<VoucherResponse> getActiveVouchers() {
-        return voucherRepository.findAvailable(LocalDateTime.now()).stream().map(v -> {
+        return voucherRepository.findAvailable(EventTime.now()).stream().map(v -> {
             VoucherResponse res = new VoucherResponse();
             res.setId(v.getId());
             res.setCode(v.getCode());
@@ -359,7 +359,7 @@ public class CheckoutService {
     }
 
     private boolean isExpired(Order order) {
-        return order.getExpiresAt() != null && order.getExpiresAt().isBefore(LocalDateTime.now());
+        return order.getExpiresAt() != null && order.getExpiresAt().isBefore(EventTime.now());
     }
 
     private User getOrCreateUser(String userId) {
@@ -394,8 +394,7 @@ public class CheckoutService {
         }
         response.setQrCodeUrl(buildVietQrUrl(order.getId(), order.getTotalPrice()));
         response.setCreatedAt(order.getCreatedAt());
-        response.setExpiresAt(order.getExpiresAt() == null ? null : order.getExpiresAt()
-                .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toOffsetDateTime());
+        response.setExpiresAt(EventTime.toOffset(order.getExpiresAt()));
 
         if (tickets.isEmpty()) {
             if (!"EXPIRED".equalsIgnoreCase(order.getStatus())) {
