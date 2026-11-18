@@ -195,5 +195,9 @@ module "maintenance_worker" {
 
   log_retention_days = var.log_retention_days
 
+  # The demo account has only the 10-execution unreserved minimum, so
+  # reserving even one execution is rejected by Lambda.
+  reserved_concurrency = -1
+
   tags = local.common_tags
 }

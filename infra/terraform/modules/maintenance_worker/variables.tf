@@ -40,6 +40,12 @@ variable "psycopg2_layer_arn" {
   default     = ""
 }
 
+variable "reserved_concurrency" {
+  description = "Reserved concurrent executions for the worker. Use -1 on accounts whose unreserved concurrency is already at the 10-execution minimum."
+  type        = number
+  default     = 1
+}
+
 variable "log_retention_days" {
   description = "CloudWatch Logs retention in days."
   type        = number
