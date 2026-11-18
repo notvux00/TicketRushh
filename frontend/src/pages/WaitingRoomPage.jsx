@@ -11,6 +11,7 @@ import { Client } from "@stomp/stompjs";
 import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
 import Navbar from "../components/layout/Navbar";
+import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 
 export default function WaitingRoomPage() {
   const { eventId, showtimeId } = useParams();
@@ -223,7 +224,7 @@ export default function WaitingRoomPage() {
               <img 
                 alt="Concert Preview" 
                 className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay group-hover:scale-105 transition-transform duration-700" 
-                src={event?.coverImage || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=2070"} 
+                src={event?.coverImage || DEFAULT_EVENT_IMAGE} 
               />
               <div className="relative z-10 text-center text-white">
                 <div className="w-20 h-20 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform bg-white/10 backdrop-blur-md mx-auto">

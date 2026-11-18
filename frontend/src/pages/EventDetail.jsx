@@ -20,6 +20,7 @@ import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
 import { isEventExpired, isShowtimeExpired } from "../utils/eventUtils";
 import { Clock } from "lucide-react";
+import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -116,7 +117,7 @@ export default function EventDetail() {
       {/* Hero Banner */}
       <div className="relative w-full h-[400px] md:h-[500px] bg-gray-200 overflow-hidden">
         <img 
-          src={event.coverImage || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=2070"} 
+          src={event.coverImage || DEFAULT_EVENT_IMAGE} 
           alt={event.eventName}
           className="w-full h-full object-cover"
         />
@@ -181,12 +182,12 @@ export default function EventDetail() {
                         src={event.trailerUrl}
                         className="w-full h-full"
                         controls
-                        poster={event.coverImage || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=2070"}
+                        poster={event.coverImage || DEFAULT_EVENT_IMAGE}
                       />
                     ) : (
                       <>
                         <img 
-                          src={event.coverImage || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=2070"} 
+                          src={event.coverImage || DEFAULT_EVENT_IMAGE} 
                           alt="Trailer" 
                           className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
                         />
@@ -430,7 +431,7 @@ export default function EventDetail() {
                 >
                   <div className="w-full h-48 bg-gray-100 rounded-2xl overflow-hidden mb-4 relative shadow-inner">
                     <img 
-                      src={rEvent.coverImage || "https://via.placeholder.com/400x300?text=No+Image"} 
+                      src={rEvent.coverImage || DEFAULT_EVENT_IMAGE} 
                       alt={rEvent.eventName} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     />

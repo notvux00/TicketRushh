@@ -1,3 +1,4 @@
+import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 import { useQuery } from "@tanstack/react-query";
 import { eventApi } from "../api/eventApi";
 import EventCard from "../components/common/EventCard";
@@ -126,7 +127,7 @@ function Home() {
           <img
             alt="Hero Background"
             className="w-full h-full object-cover scale-105 blur-[2px] opacity-80"
-            src={featuredEvent?.coverImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30"}
+            src={featuredEvent?.coverImage || DEFAULT_EVENT_IMAGE}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#f0f4f8] via-[#f0f4f8]/60 to-transparent"></div>
         </div>

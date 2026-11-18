@@ -223,13 +223,14 @@
 - **Test:** `npm run lint`, Playwright auth/checkout/admin.
 
 ### P2-05 — Dọn asset/config chết + fallback ảnh
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-05-dead-assets`)
+- **Test:** backend 85 tests, frontend lint/build, Playwright 16/16.
 - **Vấn đề:** `App.css`, `assets/react.svg|vite.svg|hero.png`, `tailwind.config.js` không dùng; `app.qr.base-url`/`qrBaseUrl` chết; fallback dùng `via.placeholder.com`/Unsplash remote.
 - **File:** `frontend/src/App.css`, `frontend/src/assets/*`, `frontend/tailwind.config.js`, `backend/.../CheckoutService.java`, `application.properties`, các page dùng ảnh.
 - **Việc cần làm:**
-  - [ ] Xoá file/field không dùng (xác nhận bằng grep trước).
-  - [ ] Thêm ảnh fallback local + `loading="lazy"`/`decoding="async"`.
-  - [ ] Bỏ `DEFAULT_VOUCHERS` hardcode (liên quan P1-03).
+  - [x] Xoá `App.css`, asset Vite cũ, `tailwind.config.js` (v4), field `qrBaseUrl`/`app.qr.base-url`.
+  - [x] Thêm `public/media/fallback-event.svg`, bỏ fallback Unsplash/via.placeholder; lazy-load ảnh card.
+  - [x] `DEFAULT_VOUCHERS` đã bỏ ở P1-03.
 - **Acceptance:** không còn tham chiếu asset chết; ảnh lỗi hiển thị fallback local.
 - **Test:** `npm run build`, Playwright page smoke.
 
