@@ -17,13 +17,22 @@ concurrency:
 
 jobs:
   deploy:
-    if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == 'deploy'
+    if: inputs.confirm == 'deploy'
     runs-on: ubuntu-latest
     environment: demo
     env:
       IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify deployment gate
+        env:
+          DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+        run: |
+          if [ "$DEPLOY_ENABLED" != "true" ]; then
+            echo "::error::DEPLOY_ENABLED is not 'true' for the demo environment"
+            exit 1
+          fi
 
       - uses: actions/setup-python@v5
         with:
