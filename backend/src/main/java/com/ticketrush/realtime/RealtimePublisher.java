@@ -26,9 +26,25 @@ public class RealtimePublisher {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
+    /** Broadcast to every subscriber of a public topic. */
     public void publish(String destination, Object payload) {
+        send(destination, payload, null);
+    }
+
+    /**
+     * Deliver only to the STOMP session authenticated as {@code userId}.
+     * User ids are never part of the public broadcast payload.
+     */
+    public void publishToUser(String userId, String destination, Object payload) {
+        send(destination, payload, userId);
+    }
+
+    private void send(String destination, Object payload, String userId) {
         Map<String, Object> envelope = new LinkedHashMap<>();
         envelope.put("destination", destination);
+        if (userId != null) {
+            envelope.put("user", userId);
+        }
         envelope.put("payload", payload);
 
         try {

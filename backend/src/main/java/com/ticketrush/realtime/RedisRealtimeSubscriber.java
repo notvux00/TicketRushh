@@ -8,6 +8,7 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * Receives realtime messages from Redis and delivers them to the local STOMP
@@ -33,7 +34,12 @@ public class RedisRealtimeSubscriber implements MessageListener {
 
             JsonNode payload = root.path("payload");
             Object body = objectMapper.convertValue(payload, Object.class);
-            messagingTemplate.convertAndSend(destination, body);
+            String user = root.path("user").asText(null);
+            if (StringUtils.hasText(user)) {
+                messagingTemplate.convertAndSendToUser(user, destination, body);
+            } else {
+                messagingTemplate.convertAndSend(destination, body);
+            }
         } catch (Exception e) {
             log.warn("Ignoring malformed realtime message", e);
         }
