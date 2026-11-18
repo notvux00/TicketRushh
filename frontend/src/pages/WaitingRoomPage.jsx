@@ -15,7 +15,8 @@ import Navbar from "../components/layout/Navbar";
 export default function WaitingRoomPage() {
   const { eventId, showtimeId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, session, isAuthenticated } = useAuth();
+  const accessToken = session?.access_token;
   
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,26 +28,25 @@ export default function WaitingRoomPage() {
 
     const client = new Client({
       brokerURL: getWsUrl(),
+      connectHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       reconnectDelay: 2000, // Thử lại nhanh hơn (2s)
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       onConnect: () => {
-        console.log("Queue WebSocket: Connected successfully");
-        // Subscribe to showtime queue updates
+        // Vé vào cửa chỉ được gửi tới đúng user đã xác thực.
+        client.subscribe("/user/queue/access", (message) => {
+          if (!message.body) return;
+          const payload = JSON.parse(message.body);
+          if (payload.type === "ACCESS_GRANTED" && payload.showtimeId === showtimeId) {
+            navigate(`/event/${eventId}/book/${showtimeId}`);
+          }
+        });
+        // Topic công khai chỉ chứa dữ liệu không định danh.
         client.subscribe(`/topic/queue/${showtimeId}`, (message) => {
-          if (message.body) {
-            const payload = JSON.parse(message.body);
-            
-            // So sánh ID người dùng (hỗ trợ cả user.id và user.sub tùy theo auth provider)
-            const currentUserId = user.id || user.sub;
-            
-            if (payload.type === "ACCESS_GRANTED" && payload.userId === currentUserId) {
-              console.log("Access Granted! Redirecting...");
-              navigate(`/event/${eventId}/book/${showtimeId}`);
-            } else if (payload.type === "POSITION_UPDATE") {
-              // Cập nhật lại vị trí khi có thông báo chung
-              fetchStatus();
-            }
+          if (!message.body) return;
+          const payload = JSON.parse(message.body);
+          if (payload.type === "POSITION_UPDATE") {
+            fetchStatus();
           }
         });
       },
@@ -64,7 +64,7 @@ export default function WaitingRoomPage() {
     return () => {
       if (client.active) client.deactivate();
     };
-  }, [showtimeId, user, eventId, navigate]);
+  }, [showtimeId, user, accessToken, eventId, navigate]);
 
   const fetchStatus = async () => {
     try {

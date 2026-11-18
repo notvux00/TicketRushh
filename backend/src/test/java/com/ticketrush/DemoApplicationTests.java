@@ -50,6 +50,7 @@ class DemoApplicationTests {
     @org.springframework.boot.test.web.server.LocalServerPort int port;
     @Autowired org.springframework.context.ConfigurableApplicationContext context;
     @Autowired com.ticketrush.realtime.RealtimePublisher realtime;
+    @Autowired org.springframework.messaging.simp.user.SimpUserRegistry wsUsers;
 
     static {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
@@ -877,13 +878,61 @@ class DemoApplicationTests {
             }
             throw new AssertionError("No STOMP frame: "+prefix);
         }
-        void connect(int port) throws Exception {
+        void open(int port) throws Exception {
             socket=java.net.http.HttpClient.newHttpClient().newWebSocketBuilder().subprotocols("v12.stomp")
                     .buildAsync(java.net.URI.create("ws://127.0.0.1:"+port+"/ws"),this).get(5,TimeUnit.SECONDS);
-            socket.sendText("CONNECT\naccept-version:1.2\nhost:localhost\nheart-beat:0,0\n\n\0",true).join();
+        }
+        void connect(int port) throws Exception {
+            connect(port, null);
+        }
+        void connect(int port, String token) throws Exception {
+            open(port);
+            String auth = token == null ? "" : "Authorization:Bearer "+token+"\n";
+            socket.sendText("CONNECT\naccept-version:1.2\nhost:localhost\nheart-beat:0,0\n"+auth+"\n\0",true).join();
             await("CONNECTED");
         }
         @Override public void close(){if(socket!=null)socket.abort();}
+    }
+
+    @Test
+    void queueGrantIsDeliveredOnlyToTheAuthenticatedUser() throws Exception {
+        var f = fixture();
+        User other = new User(); other.setId(UUID.randomUUID()); other.setRole("USER");
+        String otherToken = tokens.generateToken(other);
+        var subscribed = new CountDownLatch(2);
+        org.springframework.context.ApplicationListener<org.springframework.web.socket.messaging.SessionSubscribeEvent> listener =
+                event -> subscribed.countDown();
+        context.addApplicationListener(listener);
+        try (var owner = new StompProbe(); var stranger = new StompProbe()) {
+            owner.connect(port, f.userToken());
+            stranger.connect(port, otherToken);
+            String subscribe = "SUBSCRIBE\nid:user-access\ndestination:/user/queue/access\nack:auto\n\n\0";
+            owner.socket.sendText(subscribe, true).join();
+            stranger.socket.sendText(subscribe, true).join();
+            assertTrue(subscribed.await(5, TimeUnit.SECONDS));
+            assertNotNull(wsUsers.getUser(f.userId().toString()), "owner STOMP principal is registered");
+            realtime.publishToUser(f.userId().toString(), "/queue/access",
+                    Map.of("type", "ACCESS_GRANTED", "showtimeId", f.showtime().toString()));
+            String frame = owner.await("MESSAGE");
+            assertTrue(frame.contains("ACCESS_GRANTED"));
+            assertTrue(frame.contains(f.showtime().toString()));
+            String leaked = stranger.frames.poll(1, TimeUnit.SECONDS);
+            assertTrue(leaked == null || !leaked.contains("ACCESS_GRANTED"));
+        } finally {
+            ((org.springframework.context.support.AbstractApplicationContext) context).removeApplicationListener(listener);
+        }
+    }
+
+    @Test
+    void websocketRejectsInvalidAuthenticationToken() throws Exception {
+        try (var probe = new StompProbe()) {
+            probe.open(port);
+            probe.socket.sendText("CONNECT\naccept-version:1.2\nhost:localhost\nheart-beat:0,0\n"
+                    + "Authorization:Bearer invalid.jwt.token\n\n\0", true).join();
+            probe.await("ERROR");
+            String frame = probe.frames.poll(1, TimeUnit.SECONDS);
+            assertTrue(frame == null || !frame.startsWith("CONNECTED"));
+        }
     }
 
     @ParameterizedTest

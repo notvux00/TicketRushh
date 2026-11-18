@@ -51,14 +51,15 @@
 - **Test:** integration test với property bật/tắt; `./mvnw -B verify`.
 
 ### P0-03 — Bảo vệ WebSocket và không lộ userId
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P0-03-websocket-auth`)
+- **Test:** `./mvnw -B verify` (77 tests), `npm run lint && npm run build`, Playwright 16/16.
 - **Vấn đề:** topic công khai `/topic/queue/{showtimeId}` broadcast `userId`; ai cũng subscribe được mọi showtime.
 - **File:** `backend/src/main/java/com/ticketrush/config/WebSocketConfig.java`, `service/VirtualQueueService.java`, `frontend/src/pages/WaitingRoomPage.jsx`, `frontend/src/lib/wsUrl.js`.
 - **Việc cần làm:**
-  - [ ] Xác thực JWT ở frame `CONNECT` (query param `token` hoặc header `Authorization`) và gắn `Principal`.
-  - [ ] Gửi `ACCESS_GRANTED` qua `/user/queue/...` (hoặc destination riêng có token opaque), không broadcast userId.
-  - [ ] Giữ broadcast chung chỉ với dữ liệu không định danh (`POSITION_UPDATE`, tổng hàng chờ).
-  - [ ] FE gửi token khi connect, subscribe đúng user destination.
+  - [x] Xác thực JWT ở frame `CONNECT` qua header `Authorization`/`token`; token sai bị từ chối.
+  - [x] Gửi `ACCESS_GRANTED` qua `/user/queue/access`; payload không còn `userId`.
+  - [x] Topic công khai chỉ còn `POSITION_UPDATE` và trạng thái ghế (không định danh).
+  - [x] FE gửi token khi connect, subscribe `/user/queue/access`; polling REST vẫn là fallback.
 - **Acceptance:** user B không nhận được userId của user A; subscribe không token bị từ chối; queue/seat realtime vẫn hoạt động 2 tab.
 - **Test:** test STOMP (2 client), Playwright queue flow, `./mvnw -B verify`.
 

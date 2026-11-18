@@ -187,11 +187,12 @@ public class VirtualQueueService {
             if (outcome == 0) break;
             if (outcome == 1) granted++;
 
-            // Broadcast ACCESS_GRANTED cho user cụ thể qua WebSocket
+            // Chỉ gửi ACCESS_GRANTED cho đúng user đã xác thực; không lộ userId
+            // trên topic công khai của showtime.
             Map<String, Object> payload = new HashMap<>();
             payload.put("type", "ACCESS_GRANTED");
-            payload.put("userId", userId);
-            realtimePublisher.publish("/topic/queue/" + showtimeId, payload);
+            payload.put("showtimeId", showtimeId.toString());
+            realtimePublisher.publishToUser(userId, "/queue/access", payload);
         }
 
         // Broadcast POSITION_UPDATE cho tất cả users còn lại trong hàng chờ
