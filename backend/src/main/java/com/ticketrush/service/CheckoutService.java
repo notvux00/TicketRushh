@@ -308,7 +308,7 @@ public class CheckoutService {
 
     @Transactional(readOnly = true)
     public List<VoucherResponse> getActiveVouchers() {
-        return voucherRepository.findByActiveTrueOrderByMinOrderPriceAsc().stream().map(v -> {
+        return voucherRepository.findAvailable(LocalDateTime.now()).stream().map(v -> {
             VoucherResponse res = new VoucherResponse();
             res.setId(v.getId());
             res.setCode(v.getCode());

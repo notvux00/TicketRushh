@@ -108,6 +108,35 @@ class DemoApplicationTests {
     }
 
     @Test
+    void availableVoucherListOnlyContainsCurrentlyUsableCodes() throws Exception {
+        var f = fixture();
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        String valid = "OK" + suffix;
+        String expired = "EX" + suffix;
+        String future = "FU" + suffix;
+        String exhausted = "US" + suffix;
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        db.update("insert into vouchers(id,code,discount_type,discount_value,total_quantity,used_quantity,active,start_date,end_date) values(?,?,?,?,?,?,?,?,?)",
+                UUID.randomUUID(), valid, "FIXED_AMOUNT", 1000, 10, 0, true, now.minusDays(1), now.plusDays(1));
+        db.update("insert into vouchers(id,code,discount_type,discount_value,total_quantity,used_quantity,active,start_date,end_date) values(?,?,?,?,?,?,?,?,?)",
+                UUID.randomUUID(), expired, "FIXED_AMOUNT", 1000, 10, 0, true, now.minusDays(2), now.minusDays(1));
+        db.update("insert into vouchers(id,code,discount_type,discount_value,total_quantity,used_quantity,active,start_date,end_date) values(?,?,?,?,?,?,?,?,?)",
+                UUID.randomUUID(), future, "FIXED_AMOUNT", 1000, 10, 0, true, now.plusDays(1), now.plusDays(2));
+        db.update("insert into vouchers(id,code,discount_type,discount_value,total_quantity,used_quantity,active,start_date,end_date) values(?,?,?,?,?,?,?,?,?)",
+                UUID.randomUUID(), exhausted, "FIXED_AMOUNT", 1000, 5, 5, true, now.minusDays(1), now.plusDays(1));
+
+        var response = mvc.perform(get("/api/orders/vouchers").header("Authorization", "Bearer "+f.userToken()))
+                .andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+        String body = response.getContentAsString();
+        assertTrue(body.contains(valid));
+        assertFalse(body.contains(expired));
+        assertFalse(body.contains(future));
+        assertFalse(body.contains(exhausted));
+    }
+
+    @Test
     void eventListQueryCountDoesNotGrowWithEventCount() throws Exception {
         fixture();
         var statistics = entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
