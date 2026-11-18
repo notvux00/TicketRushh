@@ -21,6 +21,7 @@ import { useAuth } from "../hooks/useAuth";
 import { isEventExpired, isShowtimeExpired } from "../utils/eventUtils";
 import { Clock } from "lucide-react";
 import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import EventImage from "../components/common/EventImage";
 import { toast } from "../lib/toast";
 
 export default function EventDetail() {
@@ -117,10 +118,11 @@ export default function EventDetail() {
     <div className="min-h-screen bg-background">
       {/* Hero Banner */}
       <div className="relative w-full h-[400px] md:h-[500px] bg-gray-200 overflow-hidden">
-        <img 
-          src={event.coverImage || DEFAULT_EVENT_IMAGE} 
+        <EventImage
+          src={event.coverImage}
           alt={event.eventName}
           className="w-full h-full object-cover"
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
         {isEventExpired(event) && (
@@ -187,10 +189,10 @@ export default function EventDetail() {
                       />
                     ) : (
                       <>
-                        <img 
-                          src={event.coverImage || DEFAULT_EVENT_IMAGE} 
-                          alt="Trailer" 
-                          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
+                        <EventImage
+                          src={event.coverImage}
+                          alt="Trailer"
+                          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                         />
                         <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="w-20 h-20 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl z-10 group-hover:scale-110 transition-transform cursor-pointer">
@@ -431,10 +433,10 @@ export default function EventDetail() {
                   className="glass-card rounded-2xl p-3 group cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col border border-border"
                 >
                   <div className="w-full h-48 bg-gray-100 rounded-2xl overflow-hidden mb-4 relative shadow-inner">
-                    <img 
-                      src={rEvent.coverImage || DEFAULT_EVENT_IMAGE} 
-                      alt={rEvent.eventName} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    <EventImage
+                      src={rEvent.coverImage}
+                      alt={rEvent.eventName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Calendar Badge */}
                     <div className="absolute top-3 left-3 flex gap-1.5">

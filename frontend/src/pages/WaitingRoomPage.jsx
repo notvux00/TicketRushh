@@ -11,7 +11,7 @@ import { Client } from "@stomp/stompjs";
 import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
 import Navbar from "../components/layout/Navbar";
-import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import EventImage from "../components/common/EventImage";
 import { confirmAction } from "../lib/confirm";
 
 export default function WaitingRoomPage() {
@@ -222,10 +222,10 @@ export default function WaitingRoomPage() {
               transition={{ duration: 0.8 }}
               className="flex-1 min-h-[300px] rounded-3xl bg-primary-container relative overflow-hidden flex items-center justify-center group cursor-pointer shadow-2xl"
             >
-              <img 
-                alt="Concert Preview" 
-                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay group-hover:scale-105 transition-transform duration-700" 
-                src={event?.coverImage || DEFAULT_EVENT_IMAGE} 
+              <EventImage
+                alt="Concert Preview"
+                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
+                src={event?.coverImage}
               />
               <div className="relative z-10 text-center text-white">
                 <div className="w-20 h-20 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform bg-white/10 backdrop-blur-md mx-auto">

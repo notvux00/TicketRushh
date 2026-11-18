@@ -18,11 +18,9 @@ import Navbar from "../components/layout/Navbar";
 import { finishCheckout } from "../utils/bookingStorage";
 import { useAuth } from "../hooks/useAuth";
 import { eventApi } from "../api/eventApi";
-import { DEFAULT_QR_URL } from "../lib/mediaUrl";
+import EventImage from "../components/common/EventImage";
 import { toast } from "../lib/toast";
 import { confirmAction } from "../lib/confirm";
-
-const PAYMENT_QR = DEFAULT_QR_URL;
 
 export default function CheckoutPage() {
   const { orderId } = useParams();
@@ -302,7 +300,7 @@ export default function CheckoutPage() {
         <div className="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 overflow-hidden border border-slate-200">
           <div className="relative h-48 w-full overflow-hidden bg-slate-900">
             {event?.coverImage ? (
-              <img alt="Event header" className="w-full h-full object-cover opacity-60" src={event.coverImage} />
+              <EventImage alt="Event header" className="w-full h-full object-cover opacity-60" src={event.coverImage} loading="eager" />
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-blue-900 to-indigo-900" />
             )}

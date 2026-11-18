@@ -18,6 +18,7 @@ import {
 import { Link } from "react-router-dom";
 import { eventApi } from "../api/eventApi";
 import QRCodeRenderer from "../components/ticket/QRCodeRenderer";
+import EventImage from "../components/common/EventImage";
 import { downloadETicketCard } from "../utils/ticketExporter";
 
 export default function MyTickets() {
@@ -111,7 +112,7 @@ export default function MyTickets() {
                     {/* Header Section */}
                     <div className="flex gap-6 mb-8">
                       <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
-                        <img className="w-full h-full object-cover" src={order.eventImage} alt={order.eventName} />
+                        <EventImage className="w-full h-full object-cover" src={order.eventImage} alt={order.eventName} />
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">

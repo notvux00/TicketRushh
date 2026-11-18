@@ -1,7 +1,7 @@
-import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 import { useQuery } from "@tanstack/react-query";
 import { eventApi } from "../api/eventApi";
 import EventCard from "../components/common/EventCard";
+import EventImage from "../components/common/EventImage";
 import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -124,10 +124,11 @@ function Home() {
       {/* 1. Hero Section */}
       <section className="relative h-[650px] flex items-center justify-center px-6 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
+          <EventImage
             alt="Hero Background"
             className="w-full h-full object-cover scale-105 blur-[2px] opacity-80"
-            src={featuredEvent?.coverImage || DEFAULT_EVENT_IMAGE}
+            src={featuredEvent?.coverImage}
+            loading="eager"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#f0f4f8] via-[#f0f4f8]/60 to-transparent"></div>
         </div>
