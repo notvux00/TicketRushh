@@ -25,12 +25,22 @@ public class QueueController {
     // User Endpoints
     // ═══════════════════════════════════════════
 
+    /**
+     * Joins the queue once. Kept separate from status polling so a GET never
+     * re-enqueues a user who has already left.
+     */
+    @PostMapping("/{showtimeId}/join")
+    public QueueStatusResponse joinQueue(
+            @PathVariable UUID showtimeId,
+            Authentication authentication) {
+        return virtualQueueService.checkAndEnqueue(showtimeId, authentication.getName());
+    }
+
     @GetMapping("/{showtimeId}/status")
     public QueueStatusResponse getQueueStatus(
             @PathVariable UUID showtimeId,
             Authentication authentication) {
-        String userId = authentication.getName();
-        return virtualQueueService.checkAndEnqueue(showtimeId, userId);
+        return virtualQueueService.getStatus(showtimeId, authentication.getName());
     }
 
     @PostMapping("/{showtimeId}/leave")

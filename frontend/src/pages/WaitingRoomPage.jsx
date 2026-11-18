@@ -94,7 +94,10 @@ export default function WaitingRoomPage() {
 
     if (isAuthenticated) {
       fetchEventData();
-      fetchStatus();
+      // Join once; subsequent polling only reads status.
+      eventApi.joinQueue(showtimeId).catch((err) => {
+        console.error("Error joining queue:", err);
+      }).finally(() => fetchStatus());
     } else if (!loading) {
       navigate(`/event/${eventId}`);
     }

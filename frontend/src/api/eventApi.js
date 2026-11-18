@@ -103,6 +103,11 @@ export const eventApi = {
   // Virtual Queue APIs (User)
   // ═══════════════════════════════════════════
 
+  joinQueue: async (showtimeId) => {
+    const response = await axiosClient.post(`/queue/${showtimeId}/join`);
+    return response.data;
+  },
+
   getQueueStatus: async (showtimeId) => {
     const response = await axiosClient.get(`/queue/${showtimeId}/status`);
     return response.data;
