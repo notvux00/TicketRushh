@@ -14,6 +14,17 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     @Query("select e from Event e where e.id = :id")
     java.util.Optional<Event> findForUpdate(@Param("id") UUID id);
 
+    /**
+     * Load events and their showtimes in one query. Zones are fetched in
+     * batches by {@code Showtime.zones} so the list endpoint stays O(1) queries
+     * regardless of the number of events.
+     */
+    @Query("select distinct e from Event e left join fetch e.showtimes order by e.id")
+    java.util.List<Event> findAllWithShowtimes();
+
+    @Query("select distinct e from Event e left join fetch e.showtimes where e.id = :id")
+    java.util.Optional<Event> findByIdWithShowtimes(@Param("id") UUID id);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
             UPDATE events

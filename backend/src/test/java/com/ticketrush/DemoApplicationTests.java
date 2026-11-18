@@ -36,7 +36,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "jwt.secret=test-jwt-secret-0123456789-abcdefghijklmnopqrstuvwxyz",
-                "app.ticket.signing-secret=test-ticket-secret-0123456789-abcdefghijklmnopqrstuvwxyz"
+                "app.ticket.signing-secret=test-ticket-secret-0123456789-abcdefghijklmnopqrstuvwxyz",
+                "spring.jpa.properties.hibernate.generate_statistics=true"
         })
 @AutoConfigureMockMvc
 class DemoApplicationTests {
@@ -51,6 +52,7 @@ class DemoApplicationTests {
     @Autowired org.springframework.context.ConfigurableApplicationContext context;
     @Autowired com.ticketrush.realtime.RealtimePublisher realtime;
     @Autowired org.springframework.messaging.simp.user.SimpUserRegistry wsUsers;
+    @Autowired jakarta.persistence.EntityManagerFactory entityManagerFactory;
 
     static {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
@@ -103,6 +105,44 @@ class DemoApplicationTests {
         assertTrue(body.get("fieldErrors").has("email"));
         assertTrue(body.get("fieldErrors").has("password"));
         assertTrue(body.get("fieldErrors").has("fullName"));
+    }
+
+    @Test
+    void eventListQueryCountDoesNotGrowWithEventCount() throws Exception {
+        fixture();
+        var statistics = entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+        statistics.clear();
+        assertEquals(200, mvc.perform(get("/api/events")).andReturn().getResponse().getStatus());
+        long baseline = statistics.getPrepareStatementCount();
+
+        List<UUID> createdEvents = new java.util.ArrayList<>();
+        try {
+            for (int i = 0; i < 4; i++) {
+                UUID event = UUID.randomUUID();
+                UUID showtime = UUID.randomUUID();
+                UUID zone = UUID.randomUUID();
+                createdEvents.add(event);
+                java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(2);
+                db.update("insert into events(id,event_name,description) values(?,?,?)",
+                        event, "Query count " + i, "description");
+                db.update("insert into showtimes(id,name,start_time,end_time,event_id) values(?,?,?,?,?)",
+                        showtime, "Show", start, start.plusHours(2), event);
+                db.update("insert into zones(id,name,matrix_row,matrix_col,showtime_id,price) values(?,?,?,?,?,?)",
+                        zone, "Z", 1, 1, showtime, 1000.0);
+            }
+
+            statistics.clear();
+            assertEquals(200, mvc.perform(get("/api/events")).andReturn().getResponse().getStatus());
+            long withMoreEvents = statistics.getPrepareStatementCount();
+            assertTrue(withMoreEvents <= baseline + 1,
+                    "event list must stay constant-query: baseline=" + baseline + ", after=" + withMoreEvents);
+        } finally {
+            for (UUID event : createdEvents) {
+                db.update("delete from zones where showtime_id in (select id from showtimes where event_id=?)", event);
+                db.update("delete from showtimes where event_id=?", event);
+                db.update("delete from events where id=?", event);
+            }
+        }
     }
 
     @Test
