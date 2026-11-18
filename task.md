@@ -4,7 +4,7 @@
 > Quy trình bắt buộc: xem [AGENT.md](AGENT.md). Không sửa trực tiếp trên `main`.
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
-> **Kết quả 2026-11-18:** 22/22 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> **Kết quả 2026-11-18:** 23/23 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -23,8 +23,8 @@
 | P0 | 5 | Bảo mật, secret, error contract, validation |
 | P1 | 6 | Hiệu năng DB, dữ liệu, tính đúng đắn |
 | P2 | 7 | Frontend: bundle, cấu trúc, UX, state |
-| P3 | 4 | Vệ sinh code, timezone, test, CI |
-| **Tổng** | **22** | |
+| P3 | 5 | Vệ sinh code, timezone, test, CI |
+| **Tổng** | **23** | |
 
 ---
 
@@ -316,6 +316,16 @@
 - **Acceptance:** CI fail khi có warning mới; local chạy được backend test.
 - **Test:** chạy lại CI local equivalent.
 
+### P3-05 — Sửa Terraform test thiếu biến ticket signing
+- **Trạng thái:** verified (2026-11-18, branch `task/P3-05-ci-terraform-test`)
+- **Test:** `terraform fmt -check -recursive`, `terraform test` bootstrap + compute, `terraform validate` demo/prod.
+- **Vấn đề:** P0-01 thêm biến `ticket_signing_secret_name` nhưng test `modules/compute/tests/ecr.tftest.hcl` không khai báo → job Terraform của CI fail từ sau P0-01.
+- **File:** `infra/terraform/modules/compute/tests/ecr.tftest.hcl`.
+- **Việc cần làm:**
+  - [x] Thêm `ticket_signing_secret_name` vào block `variables` của test.
+  - [x] Chạy lại toàn bộ test/validate Terraform local.
+- **Acceptance:** job `terraform` của CI pass trở lại; không đổi hạ tầng.
+
 ---
 
 ## Thứ tự thực hiện đề xuất
@@ -323,6 +333,6 @@
 1. **Sprint 1 (P0):** P0-01 → P0-02 → P0-04 → P0-05 → P0-03.
 2. **Sprint 2 (P1):** P1-01 → P1-02 → P1-03 → P1-04 → P1-05 → P1-06.
 3. **Sprint 3 (P2):** P2-03 → P2-06 → P2-01 → P2-02 → P2-04 → P2-05.
-4. **Sprint 4 (P3):** P3-01 → P3-02 → P3-03 → P3-04.
+4. **Sprint 4 (P3):** P3-01 → P3-02 → P3-03 → P3-04 → P3-05.
 
 > Phụ thuộc: P0-04 trước P0-05 (handler validation). P1-03 trước P2-05 (bỏ voucher hardcode). P3-04 sau khi hết warning.

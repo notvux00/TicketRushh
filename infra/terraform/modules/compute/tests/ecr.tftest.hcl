@@ -8,23 +8,24 @@ mock_provider "aws" {
 }
 
 variables {
-  name_prefix           = "ticketrush-contract-test"
-  config_prefix         = "/ticketrush/test"
-  app_subnet_ids        = ["subnet-0123456789abcdef0"]
-  app_security_group_id = "sg-0123456789abcdef0"
-  instance_profile_name = "contract-test"
-  target_group_arn      = "arn:aws:elasticloadbalancing:ap-southeast-1:123456789012:targetgroup/test/1234567890123456"
-  db_url                = "jdbc:postgresql://database.invalid/ticketrush"
-  db_secret_name        = "test/db"
-  redis_host            = "redis.invalid"
-  redis_secret_name     = "test/redis"
-  jwt_secret_name       = "test/jwt"
-  admin_secret_name     = "test/admin"
-  admin_email           = "admin@test.invalid"
-  app_fqdn              = "test.invalid"
-  media_bucket_name     = "contract-test-media"
-  media_region          = "ap-southeast-1"
-  cors_allowed_origins  = ["https://test.invalid"]
+  name_prefix                = "ticketrush-contract-test"
+  config_prefix              = "/ticketrush/test"
+  app_subnet_ids             = ["subnet-0123456789abcdef0"]
+  app_security_group_id      = "sg-0123456789abcdef0"
+  instance_profile_name      = "contract-test"
+  target_group_arn           = "arn:aws:elasticloadbalancing:ap-southeast-1:123456789012:targetgroup/test/1234567890123456"
+  db_url                     = "jdbc:postgresql://database.invalid/ticketrush"
+  db_secret_name             = "test/db"
+  redis_host                 = "redis.invalid"
+  redis_secret_name          = "test/redis"
+  jwt_secret_name            = "test/jwt"
+  ticket_signing_secret_name = "test/ticket-signing"
+  admin_secret_name          = "test/admin"
+  admin_email                = "admin@test.invalid"
+  app_fqdn                   = "test.invalid"
+  media_bucket_name          = "contract-test-media"
+  media_region               = "ap-southeast-1"
+  cors_allowed_origins       = ["https://test.invalid"]
 }
 
 run "aws_ecr_selection_contract" {
