@@ -135,26 +135,27 @@ resource "aws_launch_template" "app" {
   vpc_security_group_ids = [var.app_security_group_id]
 
   user_data = base64encode(templatefile("${path.module}/user_data.sh.tftpl", {
-    region                   = local.region
-    ecr_registry             = local.ecr_registry
-    ecr_repository_url       = aws_ecr_repository.backend.repository_url
-    image_tag_parameter_name = aws_ssm_parameter.image_tag.name
-    log_group_name           = aws_cloudwatch_log_group.backend.name
-    db_url                   = var.db_url
-    db_secret_name           = var.db_secret_name
-    redis_host               = var.redis_host
-    redis_port               = var.redis_port
-    redis_secret_name        = var.redis_secret_name
-    jwt_secret_name          = var.jwt_secret_name
-    admin_secret_name        = var.admin_secret_name
-    admin_email              = var.admin_email
-    media_bucket_name        = var.media_bucket_name
-    media_region             = var.media_region
-    app_fqdn                 = var.app_fqdn
-    cors_allowed_origins     = local.cors_origins
-    media_public_base_url    = "https://${var.app_fqdn}"
-    enable_bootstrap_admin   = "true"
-    enable_reset_admin       = "false"
+    region                     = local.region
+    ecr_registry               = local.ecr_registry
+    ecr_repository_url         = aws_ecr_repository.backend.repository_url
+    image_tag_parameter_name   = aws_ssm_parameter.image_tag.name
+    log_group_name             = aws_cloudwatch_log_group.backend.name
+    db_url                     = var.db_url
+    db_secret_name             = var.db_secret_name
+    redis_host                 = var.redis_host
+    redis_port                 = var.redis_port
+    redis_secret_name          = var.redis_secret_name
+    jwt_secret_name            = var.jwt_secret_name
+    ticket_signing_secret_name = var.ticket_signing_secret_name
+    admin_secret_name          = var.admin_secret_name
+    admin_email                = var.admin_email
+    media_bucket_name          = var.media_bucket_name
+    media_region               = var.media_region
+    app_fqdn                   = var.app_fqdn
+    cors_allowed_origins       = local.cors_origins
+    media_public_base_url      = "https://${var.app_fqdn}"
+    enable_bootstrap_admin     = "true"
+    enable_reset_admin         = "false"
   }))
 
   metadata_options {

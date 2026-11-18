@@ -95,6 +95,11 @@ variable "jwt_secret_name" {
   type        = string
 }
 
+variable "ticket_signing_secret_name" {
+  description = "Secrets Manager secret name for the ticket QR signing key."
+  type        = string
+}
+
 variable "admin_secret_name" {
   description = "Secrets Manager secret name for the initial admin password."
   type        = string

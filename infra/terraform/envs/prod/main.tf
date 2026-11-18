@@ -148,14 +148,15 @@ module "compute" {
   image_tag_default = var.image_tag
 
   # RDS Proxy requires TLS.
-  db_url            = "jdbc:postgresql://${module.data.db_address}:${module.data.db_port}/${module.data.db_name}?sslmode=require"
-  db_secret_name    = module.data.db_secret_name
-  redis_host        = module.data.redis_primary_endpoint
-  redis_port        = module.data.redis_port
-  redis_secret_name = module.data.redis_secret_name
-  jwt_secret_name   = module.data.jwt_secret_name
-  admin_secret_name = module.data.admin_secret_name
-  admin_email       = var.admin_email
+  db_url                     = "jdbc:postgresql://${module.data.db_address}:${module.data.db_port}/${module.data.db_name}?sslmode=require"
+  db_secret_name             = module.data.db_secret_name
+  redis_host                 = module.data.redis_primary_endpoint
+  redis_port                 = module.data.redis_port
+  redis_secret_name          = module.data.redis_secret_name
+  jwt_secret_name            = module.data.jwt_secret_name
+  ticket_signing_secret_name = module.data.ticket_signing_secret_name
+  admin_secret_name          = module.data.admin_secret_name
+  admin_email                = var.admin_email
 
   app_fqdn             = module.edge.app_fqdn
   media_bucket_name    = module.edge.media_bucket_name

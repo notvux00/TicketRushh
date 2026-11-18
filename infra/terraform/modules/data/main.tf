@@ -29,6 +29,11 @@ resource "random_password" "jwt" {
   special = false
 }
 
+resource "random_password" "ticket_signing" {
+  length  = 64
+  special = false
+}
+
 resource "random_password" "admin" {
   count   = var.admin_password == "" ? 1 : 0
   length  = 24
@@ -84,6 +89,19 @@ resource "aws_secretsmanager_secret" "jwt" {
 resource "aws_secretsmanager_secret_version" "jwt" {
   secret_id     = aws_secretsmanager_secret.jwt.id
   secret_string = random_password.jwt.result
+}
+
+resource "aws_secretsmanager_secret" "ticket_signing" {
+  name                    = "${var.name_prefix}/ticket-signing"
+  description             = "TicketRush ticket QR signing secret"
+  recovery_window_in_days = var.secret_recovery_window_days
+
+  tags = local.tags
+}
+
+resource "aws_secretsmanager_secret_version" "ticket_signing" {
+  secret_id     = aws_secretsmanager_secret.ticket_signing.id
+  secret_string = random_password.ticket_signing.result
 }
 
 resource "aws_secretsmanager_secret" "admin" {

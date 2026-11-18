@@ -20,10 +20,21 @@ public class JwtTokenProvider {
     private final long expirationMs;
 
     public JwtTokenProvider(
-            @Value("${jwt.secret:TicketRushSuperSecretKeyForJwtSigningMustBeAtLeast256BitsLong2026!}") String secret,
+            @Value("${jwt.secret:}") String secret,
             @Value("${jwt.expiration:86400000}") long expirationMs) { // Mặc định 24 giờ
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.key = Keys.hmacShaKeyFor(requireSigningSecret(secret, "JWT_SECRET"));
         this.expirationMs = expirationMs;
+    }
+
+    private static byte[] requireSigningSecret(String secret, String name) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(name + " is required; refusing to start without a signing secret");
+        }
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < 32) {
+            throw new IllegalStateException(name + " must be at least 32 bytes");
+        }
+        return bytes;
     }
 
     /**

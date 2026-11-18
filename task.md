@@ -26,14 +26,15 @@
 ## P0 — Bảo mật và tính đúng đắn
 
 ### P0-01 — Tách secret và fail-fast khi dùng default
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P0-01-secret-separation`)
+- **Test:** `./mvnw -B verify` (69 tests), `npm run lint && npm run build`, `python -m unittest discover -s tests` (12), `terraform validate` demo/prod.
 - **Vấn đề:** `jwt.secret` có default trong `application.properties`; `JwtTokenProvider` và `TicketSignatureService` dùng chung secret; QR vé có thể bị forge nếu lộ JWT secret.
 - **File:** `backend/src/main/resources/application.properties`, `backend/src/main/java/com/ticketrush/util/JwtTokenProvider.java`, `backend/src/main/java/com/ticketrush/service/TicketSignatureService.java`, `docker-compose.yml`, `.env.example`, `docs/LOCAL_DEV.md`.
 - **Việc cần làm:**
-  - [ ] Bỏ fallback secret trong code; đọc `JWT_SECRET` bắt buộc.
-  - [ ] Thêm `app.ticket.signing-secret` (env `TICKET_SIGNING_SECRET`), tách khỏi `JWT_SECRET`; hỗ trợ `app.ticket.signing-key-version`.
-  - [ ] Fail-fast khi secret rỗng/ngắn hơn 32 byte hoặc trùng default, trừ khi `APP_ALLOW_INSECURE_DEFAULTS=true` (chỉ local).
-  - [ ] Cập nhật compose/env mẫu/docs; secret mới không commit.
+  - [x] Bỏ fallback secret trong code; đọc `JWT_SECRET` bắt buộc.
+  - [x] Thêm `app.ticket.signing-secret` (env `TICKET_SIGNING_SECRET`), tách khỏi `JWT_SECRET`; hỗ trợ `app.ticket.signing-key-version` và payload v2 (vẫn đọc được vé v1).
+  - [x] Fail-fast khi secret rỗng/ngắn hơn 32 byte hoặc trùng `JWT_SECRET`, trừ khi `APP_ALLOW_INSECURE_DEFAULTS=true` (chỉ local).
+  - [x] Cập nhật compose/env mẫu/docs/Terraform; secret mới không commit.
 - **Acceptance:** app không start nếu thiếu secret ở profile thường; test ký/verify vé vẫn pass; không còn literal secret trong `src/main`.
 - **Test:** unit test cho `TicketSignatureService` (đúng/sai/version), `./mvnw -B verify`.
 

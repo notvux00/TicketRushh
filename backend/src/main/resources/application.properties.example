@@ -12,9 +12,13 @@ spring.data.redis.port=${REDIS_PORT:6379}
 spring.data.redis.password=${REDIS_PASSWORD:}
 spring.data.redis.ssl.enabled=${REDIS_SSL:false}
 
-# JWT - generate a strong value for any shared/demo environment
-jwt.secret=${JWT_SECRET:change-me-to-a-random-256-bit-secret}
+# JWT and ticket signing - generate two different strong values (>=32 bytes).
+# The application refuses to start when either value is missing or when they match.
+jwt.secret=${JWT_SECRET:}
 jwt.expiration=${JWT_EXPIRATION:86400000}
+app.ticket.signing-secret=${TICKET_SIGNING_SECRET:}
+app.ticket.signing-key-version=${TICKET_SIGNING_KEY_VERSION:1}
+app.security.allow-insecure-defaults=${APP_ALLOW_INSECURE_DEFAULTS:false}
 
 # S3 media (leave endpoint/public-endpoint empty on AWS)
 app.media.bucket=${MEDIA_BUCKET:ticketrush-media}

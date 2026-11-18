@@ -37,6 +37,7 @@ $env:APP_BOOTSTRAP_ADMIN = "true"
 $env:ADMIN_EMAIL = "admin@gmail.com"
 $env:ADMIN_PASSWORD = "admin123"
 $env:JWT_SECRET = "replace-with-a-random-secret-at-least-32-bytes"
+$env:TICKET_SIGNING_SECRET = "replace-with-a-different-random-secret-at-least-32-bytes"
 $env:MEDIA_ENDPOINT = "http://localhost:9090"
 $env:MEDIA_PUBLIC_ENDPOINT = "http://localhost:9090"
 $env:MEDIA_PUBLIC_BASE_URL = "http://localhost:9090/ticketrush-media"
@@ -55,7 +56,9 @@ Trong terminal khác, chạy npm ci và npm run dev tại frontend. Vite proxy /
 | --- | --- |
 | DB_URL, DB_USERNAME, DB_PASSWORD | PostgreSQL |
 | REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_SSL | Redis; ElastiCache dùng TLS |
-| JWT_SECRET | Ký JWT và ticket QR; cần giữ ổn định giữa instance/restart |
+| JWT_SECRET | Ký JWT; bắt buộc, >= 32 byte, cần giữ ổn định giữa instance/restart |
+| TICKET_SIGNING_SECRET | Ký QR vé; bắt buộc, >= 32 byte và phải khác JWT_SECRET. Rotate sẽ làm QR cũ không còn hợp lệ |
+| TICKET_SIGNING_KEY_VERSION | Phiên bản khoá ký vé, mặc định 1; tăng khi chủ động rotate và chấp nhận reissue vé |
 | MEDIA_BUCKET, MEDIA_REGION | S3 bucket/region |
 | MEDIA_ENDPOINT, MEDIA_PUBLIC_ENDPOINT, MEDIA_PATH_STYLE | Local S3-compatible endpoint |
 | MEDIA_PUBLIC_BASE_URL | Local URL ở trên; AWS dùng URL CloudFront do Terraform truyền |
