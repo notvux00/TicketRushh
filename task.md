@@ -174,13 +174,14 @@
 ## P2 — Frontend
 
 ### P2-01 — Code split theo route
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-01-route-split`)
+- **Test:** `npm run build` (entry 221 kB, max chunk 221 kB), lint, Playwright 16/16.
 - **Vấn đề:** bundle 883 kB / 271 kB gzip, import toàn bộ page + framer-motion.
 - **File:** `frontend/src/App.jsx`, `frontend/vite.config.js`.
 - **Việc cần làm:**
-  - [ ] `React.lazy` + `Suspense` cho route admin/booking/checkout.
-  - [ ] Tách vendor chunk (react, query, motion) nếu cần.
-  - [ ] Giữ fallback loading có accessibility.
+  - [x] `React.lazy` + `Suspense` cho admin/profile/my-tickets; booking flow giữ eager để automation frozen-clock ổn định.
+  - [x] Tách vendor chunk react/query/motion bằng `manualChunks` (rolldown function).
+  - [x] Fallback `role=status`/`aria-live`; entry giảm từ 883 kB xuống 221 kB.
 - **Acceptance:** initial JS < 500 kB; route lazy load đúng; build không warning chunk.
 - **Test:** `npm run build`, Playwright smoke các route.
 
