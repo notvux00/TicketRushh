@@ -12,5 +12,6 @@ export function mediaUrl(path) {
   return `${configuredBase}${normalized}`;
 }
 
-export const DEFAULT_QR_URL = "/media/qr/qr_for_all.png";
-export const DEFAULT_EVENT_IMAGE = "/media/fallback-event.svg";
+// Served from the frontend bucket. Production CloudFront routes /media/* to
+// the upload bucket, so bundled placeholders must not live under /media/.
+export const DEFAULT_EVENT_IMAGE = "/images/fallback-event.svg";

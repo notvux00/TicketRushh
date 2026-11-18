@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { MapPin, Pencil, Save } from "lucide-react";
 import { adminApi } from "../../api/adminApi";
 import { uploadMedia } from "../../api/mediaApi";
-import { DEFAULT_EVENT_IMAGE } from "../../lib/mediaUrl";
+import EventImage from "../common/EventImage";
 import { toast } from "../../lib/toast";
 import {
   AnalyticsOverview,
@@ -225,17 +225,19 @@ export default function EventDetailModal({ event, onClose }) {
       >
         {/* HEADER: Banner & Thông tin chính */}
         <div className="h-24 md:h-28 bg-slate-900 relative flex-shrink-0 shadow-lg shadow-slate-900/10">
-          <img
-            src={displayEvent.coverImage || DEFAULT_EVENT_IMAGE}
+          <EventImage
+            src={displayEvent.coverImage}
             className="w-full h-full object-cover opacity-40 blur-sm"
             alt="Banner Blur"
+            loading="eager"
           />
           <div className="absolute inset-0 flex items-center px-6 md:px-10 gap-5 md:gap-6">
             <div className="relative shrink-0">
-              <img
+              <EventImage
                 src={displayEvent.coverImage}
                 className="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover border-4 border-white/10 shadow-2xl"
                 alt="Main Cover"
+                loading="eager"
               />
               {isEditing && (
                 <label className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 cursor-pointer items-center rounded-full border border-white/40 bg-slate-950/85 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-lg transition hover:bg-white hover:text-slate-900">

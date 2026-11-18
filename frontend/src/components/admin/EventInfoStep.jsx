@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "../../lib/toast";
 import { uploadMedia } from "../../api/mediaApi";
+import EventImage from "../common/EventImage";
 
 export default function EventInfoStep({
   formData,
@@ -288,7 +289,7 @@ export default function EventInfoStep({
 
               <div className="w-full h-28 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center relative group">
                 {formData.coverImage ? (
-                  <img
+                  <EventImage
                     src={formData.coverImage}
                     className="w-full h-full object-cover"
                     alt="Preview"

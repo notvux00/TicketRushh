@@ -422,7 +422,7 @@ class DemoApplicationTests {
                     .dataSource(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())
                     .schemas(schema).group(true).load();
             upgraded.migrate();upgraded.validate();
-            assertEquals("9",upgraded.info().current().getVersion().toString());
+            assertEquals("10",upgraded.info().current().getVersion().toString());
             try(var connection=java.sql.DriverManager.getConnection(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())) {
                 connection.setSchema(schema);connection.setAutoCommit(false);
                 try(var statement=connection.prepareStatement("delete from tickets where order_id=?")) {

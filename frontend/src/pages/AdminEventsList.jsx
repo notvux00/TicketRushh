@@ -15,7 +15,7 @@ import { useState } from "react";
 import { adminApi } from "../api/adminApi";
 import { AnimatePresence } from "framer-motion";
 import { isEventExpired } from "../utils/eventUtils";
-import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import EventImage from "../components/common/EventImage";
 import { toast } from "../lib/toast";
 import { confirmAction } from "../lib/confirm";
 import EventDetailModal from "../components/admin/EventDetailModal";
@@ -121,8 +121,8 @@ function AdminEventsList() {
           >
             <div className="flex flex-col md:flex-row">
               <div className="w-full md:w-56 h-48 md:h-auto relative overflow-hidden">
-                <img
-                  src={event.coverImage || DEFAULT_EVENT_IMAGE}
+                <EventImage
+                  src={event.coverImage}
                   alt={event.eventName}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />

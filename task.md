@@ -357,6 +357,23 @@
 
 ---
 
+## DEMO — Bổ sung trước khi demo
+
+### DEMO-01 — Ảnh sự kiện demo không phụ thuộc host ngoài
+- **Trạng thái:** verified (2026-11-18, branch `task/DEMO-01-event-images`)
+- **Test:** backend `./mvnw -B verify` 88 tests (JDK 17) + migration upgrade V6→V10; frontend `npm run lint`, `npm run build`, `npm run test:browser` 19/19; `node --test tests/*.test.cjs` 21; `python -m unittest discover -s tests` 12. Live: 5/5 ảnh 200, 0 console error, fallback hoạt động khi chặn 1 ảnh.
+- **Vấn đề:** ảnh seed trỏ `picsum.photos` (redirect sang `fastly.picsum.photos` bị CSP chặn) và không có `onError`; fallback `/media/fallback-event.svg` lại rơi vào media bucket nên 403. Trang chủ, event detail, my-tickets, admin list đều hiện icon ảnh vỡ.
+- **File:** `frontend/public/images/events/*`, `frontend/public/images/fallback-event.svg`, `frontend/src/components/common/EventImage.jsx`, các page/component dùng cover, `backend/src/main/resources/db/migration/V10__demo_event_covers.sql`, `seed-demo.sql`, `frontend/index.html`.
+- **Việc cần làm:**
+  - [x] Thêm 4 ảnh CC0 (concert/movie/sports/comedy) vào bundle frontend, crop 16:9.
+  - [x] Chuyển fallback về `/images/fallback-event.svg` (frontend bucket) và thêm `EventImage` có `onError` cho mọi cover.
+  - [x] Migration `V10` + `seed-demo.sql` trỏ cover về `/images/events/*`.
+  - [x] Bỏ ảnh Google (gstatic) bị CSP chặn và nút Google login không hoạt động; bỏ shim inline `window.global` + sửa title/lang `index.html`.
+- **Acceptance:** không còn request ảnh lỗi/CSP trên trang chủ, event detail, my-tickets, admin; ảnh lỗi đều rơi về fallback local; demo không phụ thuộc mạng ngoài.
+- **Test:** `npm run lint`, `npm run build`, `node --test tests/*.test.cjs`, kiểm tra ảnh live sau deploy.
+
+---
+
 ## Thứ tự thực hiện đề xuất
 
 1. **Sprint 1 (P0):** P0-01 → P0-02 → P0-04 → P0-05 → P0-03.

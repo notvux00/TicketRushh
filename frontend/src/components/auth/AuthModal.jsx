@@ -100,17 +100,6 @@ export default function AuthModal() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      await authApi.loginWithGoogle();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: "Lỗi đăng nhập Google: " + error.message,
-      });
-    }
-  };
-
   if (!isAuthModalOpen) return null;
 
   return (
@@ -293,30 +282,6 @@ export default function AuthModal() {
               </button>
             </div>
           </div>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-100"></span>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-4 text-gray-400 font-semibold tracking-widest">
-                Hoặc
-              </span>
-            </div>
-          </div>
-
-          {/* Google Login */}
-          <button
-            onClick={handleGoogleLogin}
-            className="w-full h-13 flex items-center justify-center gap-4 bg-white border border-gray-200 rounded-xl font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm group"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
-            Sign in with Google
-          </button>
 
           {/* Footer Terms */}
           <p className="mt-8 text-[11px] text-muted text-center leading-relaxed px-4">
