@@ -580,10 +580,8 @@ class DemoApplicationTests {
     void unlockBroadcastsOnlyWhenItsOwnLockWasDeleted() {
         var f = fixture(); var seat = f.seats().get(0);
         String key = "lock:seat:"+f.showtime()+":"+seat;
-        var service = new com.ticketrush.service.SeatLockService();
         var publisher = org.mockito.Mockito.mock(com.ticketrush.realtime.RealtimePublisher.class);
-        org.springframework.test.util.ReflectionTestUtils.setField(service, "redisTemplate", cache);
-        org.springframework.test.util.ReflectionTestUtils.setField(service, "realtimePublisher", publisher);
+        var service = new com.ticketrush.service.SeatLockService(cache, publisher, null, null);
         cache.opsForValue().set(key, "someone-else");
         service.unlockSeats(f.showtime(), List.of(seat), f.userId().toString());
         assertEquals("someone-else", cache.opsForValue().get(key));
@@ -614,10 +612,8 @@ class DemoApplicationTests {
         var raced = new StringRedisTemplate(cache.getConnectionFactory()) {
             @Override public org.springframework.data.redis.core.ValueOperations<String,String> opsForValue() { return values; }
         };
-        var service = new com.ticketrush.service.SeatLockService();
         var publisher = org.mockito.Mockito.mock(com.ticketrush.realtime.RealtimePublisher.class);
-        org.springframework.test.util.ReflectionTestUtils.setField(service, "redisTemplate", raced);
-        org.springframework.test.util.ReflectionTestUtils.setField(service, "realtimePublisher", publisher);
+        var service = new com.ticketrush.service.SeatLockService(raced, publisher, null, null);
         service.unlockSeats(f.showtime(), List.of(seat), f.userId().toString());
         assertEquals(replacement, cache.opsForValue().get(key));
         org.mockito.Mockito.verifyNoInteractions(publisher);
@@ -720,9 +716,8 @@ class DemoApplicationTests {
         factory.afterPropertiesSet();
         try {
             var isolated=new StringRedisTemplate(factory);
-            var service=new com.ticketrush.service.VirtualQueueService();
-            org.springframework.test.util.ReflectionTestUtils.setField(service,"redisTemplate",isolated);
-            org.springframework.test.util.ReflectionTestUtils.setField(service,"realtimePublisher",org.mockito.Mockito.mock(com.ticketrush.realtime.RealtimePublisher.class));
+            var service=new com.ticketrush.service.VirtualQueueService(isolated,
+                    org.mockito.Mockito.mock(com.ticketrush.realtime.RealtimePublisher.class));
             var sid=UUID.randomUUID(); var wait="queue:waiting:"+sid;
             var batchKey="queue:batchSize:"+sid;
             isolated.opsForValue().set("queue:maxCapacity:"+sid,"3");

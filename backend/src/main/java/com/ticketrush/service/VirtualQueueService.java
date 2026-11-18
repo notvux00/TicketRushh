@@ -2,7 +2,7 @@ package com.ticketrush.service;
 
 import com.ticketrush.model.dto.QueueStatusResponse;
 import com.ticketrush.realtime.RealtimePublisher;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.ScanOptions;
@@ -12,13 +12,11 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class VirtualQueueService {
 
-    @Autowired
-    private StringRedisTemplate redisTemplate;
-
-    @Autowired
-    private RealtimePublisher realtimePublisher;
+    private final StringRedisTemplate redisTemplate;
+    private final RealtimePublisher realtimePublisher;
 
     private static final int DEFAULT_ACTIVATION_THRESHOLD = 200;
     private static final int DEFAULT_BATCH_SIZE = 50;

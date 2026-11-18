@@ -260,13 +260,14 @@
 ## P3 — Vệ sinh code và CI
 
 ### P3-01 — Thống nhất injection/style, sửa typo package
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P3-01-code-style`)
+- **Test:** `./mvnw -B verify` (85 tests).
 - **Vấn đề:** trộn field/constructor injection; FQCN inline; package `exeption`.
 - **File:** `controller/EventController.java`, `QueueController.java`, `service/SeatLockService.java`, `VirtualQueueService.java`, `exeption/*`.
 - **Việc cần làm:**
-  - [ ] `@RequiredArgsConstructor` + `private final`.
-  - [ ] Import đầy đủ, bỏ FQCN inline.
-  - [ ] Đổi `exeption` → `exception` (không ảnh hưởng DB) hoặc để lại nếu muốn giảm diff.
+  - [x] `@RequiredArgsConstructor` + `private final` ở EventController/QueueController/SeatLockService/VirtualQueueService.
+  - [x] Import đầy đủ, bỏ FQCN inline trong controller.
+  - [x] Đổi `exeption` → `exception`, cập nhật test khởi tạo service.
 - **Acceptance:** không còn `@Autowired` field; build/lint sạch.
 - **Test:** `./mvnw -B verify`.
 

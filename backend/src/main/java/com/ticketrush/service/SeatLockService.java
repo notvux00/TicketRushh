@@ -1,7 +1,8 @@
 package com.ticketrush.service;
 
 import com.ticketrush.realtime.RealtimePublisher;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ticketrush.repository.SeatRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -15,16 +16,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SeatLockService {
 
-    @Autowired
-    private StringRedisTemplate redisTemplate;
-
-    @Autowired
-    private RealtimePublisher realtimePublisher;
-
-    @Autowired
-    private VirtualQueueService virtualQueueService;
+    private final StringRedisTemplate redisTemplate;
+    private final RealtimePublisher realtimePublisher;
+    private final VirtualQueueService virtualQueueService;
+    private final SeatRepository seatRepository;
 
     private static final int LOCK_TTL_SECONDS = 600; // 10 minutes
     private static final long LOCK_TTL_MILLIS = LOCK_TTL_SECONDS * 1000L;
@@ -61,12 +59,10 @@ public class SeatLockService {
     /**
      * Lock multiple seats for a user
      */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public boolean lockSeats(UUID showtimeId, List<UUID> seatIds, String userId) {
         return lockSeats(showtimeId, seatIds, userId, null);
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public boolean lockSeats(UUID showtimeId, List<UUID> seatIds, String userId, UUID orderId) {
         if (seatIds == null || seatIds.isEmpty()) {
             return false;
@@ -219,8 +215,5 @@ public class SeatLockService {
         }
         return lockedInfo;
     }
-
-    @Autowired
-    private com.ticketrush.repository.SeatRepository seatRepository;
 
 }
