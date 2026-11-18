@@ -4,8 +4,9 @@ Runs every 15 minutes via EventBridge to reconcile stale data.
 
 Jobs:
   1. Expire PENDING orders past their expires_at.
-  2. Reap seats stuck in LOCKED for > 15 min (safety net for Redis TTL misses).
-  3. Deactivate vouchers past end_date or fully used.
+  2. Delete draft tickets that belong to expired orders.
+  3. Reap seats stuck in LOCKED for > 15 min (safety net for Redis TTL misses).
+  4. Deactivate vouchers past end_date or fully used.
 """
 
 import json
@@ -31,6 +32,13 @@ UPDATE orders
 SET    status = 'EXPIRED'
 WHERE  status = 'PENDING'
   AND  expires_at < NOW()
+"""
+
+SQL_DELETE_EXPIRED_TICKETS = """
+DELETE FROM tickets t
+USING  orders o
+WHERE  t.order_id = o.id
+  AND  o.status = 'EXPIRED'
 """
 
 SQL_REAP_SEATS = """
@@ -93,6 +101,7 @@ def run_jobs(conn):
         with conn.cursor() as cur:
             for name, sql in (
                 ("expired_orders", SQL_EXPIRE_ORDERS),
+                ("deleted_expired_tickets", SQL_DELETE_EXPIRED_TICKETS),
                 ("reaped_seats", SQL_REAP_SEATS),
                 ("deactivated_vouchers", SQL_DEACTIVATE_VOUCHERS),
             ):
