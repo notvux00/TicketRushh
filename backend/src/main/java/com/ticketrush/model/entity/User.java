@@ -6,17 +6,24 @@ import java.util.UUID;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"orders", "password"})
 public class User {
-    @Id 
+    @Id
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Column(unique = true, nullable = false)
@@ -26,10 +33,10 @@ public class User {
     private String password;
 
     private String fullName;
-    
+
     @Builder.Default
     private String role = "USER"; // "USER" or "ADMIN"
-    
+
     private String gender;
     private LocalDate dateOfBirth;
     private String avatarUrl;

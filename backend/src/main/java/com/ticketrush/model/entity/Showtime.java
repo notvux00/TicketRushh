@@ -1,17 +1,24 @@
 package com.ticketrush.model.entity;
 
-import java.util.UUID;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "showtimes")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"event", "zones"})
 public class Showtime {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     private String name;
