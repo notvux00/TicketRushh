@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion as Motion } from "framer-motion";
 import { 
@@ -24,7 +24,23 @@ export default function WaitingRoomPage() {
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
 
-  // WebSocket connection
+    const fetchStatus = useCallback(async () => {
+    try {
+      const data = await eventApi.getQueueStatus(showtimeId);
+      setStatus(data);
+
+      // Nếu đã được cấp quyền trong khi đang polling, chuyển hướng ngay
+      if (data.accessGranted || !data.needQueue) {
+        navigate(`/event/${eventId}/book/${showtimeId}`);
+      }
+    } catch (err) {
+      console.error("Error fetching queue status:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [showtimeId, eventId, navigate]);
+
+// WebSocket connection
   useEffect(() => {
     if (!showtimeId || !user) return;
 
@@ -65,23 +81,7 @@ export default function WaitingRoomPage() {
     return () => {
       if (client.active) client.deactivate();
     };
-  }, [showtimeId, user, accessToken, eventId, navigate]);
-
-  const fetchStatus = async () => {
-    try {
-      const data = await eventApi.getQueueStatus(showtimeId);
-      setStatus(data);
-      
-      // Nếu đã được cấp quyền trong khi đang polling, chuyển hướng ngay
-      if (data.accessGranted || !data.needQueue) {
-        navigate(`/event/${eventId}/book/${showtimeId}`);
-      }
-    } catch (err) {
-      console.error("Error fetching queue status:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [showtimeId, user, accessToken, eventId, navigate, fetchStatus]);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -93,20 +93,21 @@ export default function WaitingRoomPage() {
       }
     };
 
-    if (isAuthenticated) {
-      fetchEventData();
-      // Join once; subsequent polling only reads status.
-      eventApi.joinQueue(showtimeId).catch((err) => {
-        console.error("Error joining queue:", err);
-      }).finally(() => fetchStatus());
-    } else if (!loading) {
+    if (!isAuthenticated) {
       navigate(`/event/${eventId}`);
+      return;
     }
+
+    fetchEventData();
+    // Join once; subsequent polling only reads status.
+    eventApi.joinQueue(showtimeId).catch((err) => {
+      console.error("Error joining queue:", err);
+    }).finally(() => fetchStatus());
 
     // Polling dự phòng mỗi 10 giây
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
-  }, [eventId, showtimeId, isAuthenticated, navigate]);
+  }, [eventId, showtimeId, isAuthenticated, navigate, fetchStatus]);
 
   const handleLeaveQueue = async () => {
     if (await confirmAction("Bạn có chắc chắn muốn rời hàng chờ? Bạn sẽ mất vị trí hiện tại.")) {
