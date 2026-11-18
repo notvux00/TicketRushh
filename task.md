@@ -158,13 +158,14 @@
 - **Test:** `python -m unittest` trong `infra/lambda/maintenance`; Flyway migrate sạch từ V1.
 
 ### P1-06 — Tách join/status queue, bỏ code chết
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-06-queue-join-status`)
+- **Test:** `./mvnw -B verify` (85 tests), frontend lint/build, Playwright 16/16.
 - **Vấn đề:** `GET /queue/{id}/status` mutate Redis (`checkAndEnqueue`), `getStatus()` không dùng.
 - **File:** `controller/QueueController.java`, `service/VirtualQueueService.java`, `frontend/src/api/eventApi.js`, `WaitingRoomPage.jsx`, `BookingPage.jsx`.
 - **Việc cần làm:**
-  - [ ] `POST /queue/{id}/join` → enqueue; `GET /queue/{id}/status` → chỉ đọc.
-  - [ ] FE gọi join một lần khi vào phòng chờ, poll status.
-  - [ ] Xoá `getStatus` hoặc dùng đúng chỗ.
+  - [x] `POST /queue/{id}/join` → enqueue; `GET /queue/{id}/status` → chỉ đọc.
+  - [x] FE gọi join một lần khi vào phòng chờ, poll status; rời hàng chờ không bị thêm lại.
+  - [x] `getStatus` được dùng đúng chỗ; test polling không re-enqueue.
 - **Acceptance:** polling không đưa user đã rời hàng chờ trở lại; queue flow 2 tab vẫn đúng.
 - **Test:** service test + Playwright queue.
 

@@ -108,6 +108,32 @@ class DemoApplicationTests {
     }
 
     @Test
+    void queueJoinIsExplicitAndStatusPollingNeverReenqueues() throws Exception {
+        var f = fixture();
+        String waitKey = "queue:waiting:" + f.showtime();
+        cache.delete(waitKey);
+        cache.opsForValue().set("queue:threshold:" + f.showtime(), "0");
+        try {
+            var status = mvc.perform(get("/api/queue/" + f.showtime() + "/status")
+                    .header("Authorization", "Bearer " + f.userToken())).andReturn().getResponse();
+            assertEquals(200, status.getStatus());
+            assertEquals(0L, cache.opsForZSet().size(waitKey));
+
+            var joined = postApi("/api/queue/" + f.showtime() + "/join", f.userToken(), Map.of());
+            assertEquals(200, joined.code(), joined.body().toString());
+            assertEquals(1L, cache.opsForZSet().size(waitKey));
+
+            postApi("/api/queue/" + f.showtime() + "/leave", f.userToken(), Map.of());
+            assertEquals(0L, cache.opsForZSet().size(waitKey));
+            mvc.perform(get("/api/queue/" + f.showtime() + "/status")
+                    .header("Authorization", "Bearer " + f.userToken())).andReturn().getResponse();
+            assertEquals(0L, cache.opsForZSet().size(waitKey));
+        } finally {
+            cache.delete(List.of(waitKey, "queue:threshold:" + f.showtime()));
+        }
+    }
+
+    @Test
     void zoneCreationRejectsOversizedCatalogAndDeletesSeatsInBulk() throws Exception {
         var f = fixture();
 
