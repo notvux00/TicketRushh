@@ -80,6 +80,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       APP_BOOTSTRAP_ADMIN: "true"
+      APP_SEED_DEMO_DATA: "true"
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@gmail.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       ADMIN_RESET_PASSWORD: "true"

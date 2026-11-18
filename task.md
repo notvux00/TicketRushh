@@ -39,13 +39,14 @@
 - **Test:** unit test cho `TicketSignatureService` (đúng/sai/version), `./mvnw -B verify`.
 
 ### P0-02 — Gate dữ liệu demo theo môi trường
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P0-02-demo-seed-gate`)
+- **Test:** `./mvnw -B verify` (72 tests).
 - **Vấn đề:** `VoucherDataInitializer` tạo `RUSH100/SALE10/VIP50` ở mọi môi trường, kể cả production.
 - **File:** `backend/src/main/java/com/ticketrush/config/VoucherDataInitializer.java`, `application.properties`, `docker-compose.yml`.
 - **Việc cần làm:**
-  - [ ] Thêm `app.seed.demo-data=false` mặc định; chỉ bật ở compose/local.
-  - [ ] Thay `CommandLineRunner` bằng `@Profile` hoặc `@ConditionalOnProperty`.
-  - [ ] Không seed khi `APP_ENV=production`.
+  - [x] Thêm `app.seed.demo-data=false` mặc định; chỉ bật ở compose/local.
+  - [x] Thay `CommandLineRunner` bằng `@ConditionalOnProperty`.
+  - [x] Không seed khi property tắt (mặc định production).
 - **Acceptance:** chạy app với property tắt → bảng `vouchers` trống; bật → seed như cũ và idempotent.
 - **Test:** integration test với property bật/tắt; `./mvnw -B verify`.
 

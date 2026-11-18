@@ -90,6 +90,12 @@ class DemoApplicationTests {
     }
 
     @Test
+    void demoVouchersAreNotSeededByDefault() {
+        assertEquals(0, db.queryForObject(
+                "select count(*) from vouchers where code in ('RUSH100','SALE10','VIP50')", Integer.class));
+    }
+
+    @Test
     void overviewCountsCompletedRevenueOncePerMultiSeatOrder() throws Exception {
         var f = fixture();
         var before = adminGet("/api/admin/overview", f);
