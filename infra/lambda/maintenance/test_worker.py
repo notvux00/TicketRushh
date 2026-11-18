@@ -14,14 +14,15 @@ class HandlerTests(unittest.TestCase):
     def test_handler_commits_counts_and_closes(self):
         conn = MagicMock()
         cur = conn.cursor.return_value.__enter__.return_value
-        type(cur).rowcount = unittest.mock.PropertyMock(side_effect=[2, 3, 4])
+        type(cur).rowcount = unittest.mock.PropertyMock(side_effect=[2, 1, 3, 4])
         with patch.object(maintenance, "_connect", return_value=conn):
             result = maintenance.handler({}, None)
         self.assertEqual(result, {"statusCode": 200, "body": {
-            "expired_orders": 2, "reaped_seats": 3, "deactivated_vouchers": 4}})
+            "expired_orders": 2, "deleted_expired_tickets": 1,
+            "reaped_seats": 3, "deactivated_vouchers": 4}})
         self.assertEqual([c.args[0] for c in cur.execute.call_args_list], [
-            maintenance.SQL_EXPIRE_ORDERS, maintenance.SQL_REAP_SEATS,
-            maintenance.SQL_DEACTIVATE_VOUCHERS])
+            maintenance.SQL_EXPIRE_ORDERS, maintenance.SQL_DELETE_EXPIRED_TICKETS,
+            maintenance.SQL_REAP_SEATS, maintenance.SQL_DEACTIVATE_VOUCHERS])
         self.assertEqual(conn.__exit__.call_args.args, (None, None, None))
         conn.close.assert_called_once()
 
@@ -63,6 +64,7 @@ class PostgreSQLTests(unittest.TestCase):
                 # Session-local tables shadow real application tables.
                 cur.execute("""
                     CREATE TEMP TABLE orders (id int PRIMARY KEY, status text, expires_at timestamp);
+                    CREATE TEMP TABLE tickets (id int PRIMARY KEY, order_id int);
                     CREATE TEMP TABLE seats (id int PRIMARY KEY, status text, locked_at timestamp, locked_by text);
                     CREATE TEMP TABLE vouchers (id int PRIMARY KEY, active boolean, end_date timestamp,
                         used_quantity int, total_quantity int);
@@ -74,6 +76,7 @@ class PostgreSQLTests(unittest.TestCase):
                 INSERT INTO orders VALUES
                     (1,'PENDING',NOW()-INTERVAL '1 hour'), (2,'PENDING',NOW()+INTERVAL '1 hour'),
                     (3,'PAID',NOW()-INTERVAL '1 hour'), (4,'PENDING',NULL), (5,'PENDING',NOW());
+                INSERT INTO tickets VALUES (1,1), (2,2), (3,3);
                 INSERT INTO seats VALUES
                     (1,'LOCKED',NOW()-INTERVAL '16 minutes','u'),
                     (2,'LOCKED',NOW()-INTERVAL '10 minutes','u'),
@@ -87,16 +90,20 @@ class PostgreSQLTests(unittest.TestCase):
                     (5,true,NULL,0,10), (6,true,NOW(),0,10), (7,true,NULL,11,10);
             """)
         self.assertEqual(maintenance.run_jobs(self.conn), {
-            "expired_orders": 1, "reaped_seats": 1, "deactivated_vouchers": 3})
+            "expired_orders": 1, "deleted_expired_tickets": 1,
+            "reaped_seats": 1, "deactivated_vouchers": 3})
         with self.conn.cursor() as cur:
             cur.execute("SELECT status, locked_at, locked_by FROM seats WHERE id=1")
             self.assertEqual(cur.fetchone(), ("AVAILABLE", None, None))
+            cur.execute("SELECT id FROM tickets ORDER BY id")
+            self.assertEqual(cur.fetchall(), [(2,), (3,)])
             # Move strict-boundary fixtures forward before a new transaction's NOW().
             cur.execute("UPDATE orders SET expires_at=NOW()+INTERVAL '1 hour' WHERE id=5")
             cur.execute("UPDATE seats SET locked_at=NOW() WHERE id=5")
             cur.execute("UPDATE vouchers SET end_date=NOW()+INTERVAL '1 hour' WHERE id=6")
         self.assertEqual(maintenance.run_jobs(self.conn), {
-            "expired_orders": 0, "reaped_seats": 0, "deactivated_vouchers": 0})
+            "expired_orders": 0, "deleted_expired_tickets": 0,
+            "reaped_seats": 0, "deactivated_vouchers": 0})
 
     def test_failure_rolls_back_all_jobs(self):
         with self.conn:

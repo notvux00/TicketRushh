@@ -1,9 +1,11 @@
 # Maintenance worker
 
-Runs every 15 minutes: expires overdue PENDING orders, releases seats LOCKED
-for more than 15 minutes, and deactivates expired or exhausted vouchers.
-All jobs share one transaction. Errors roll back and propagate to Lambda.
-No draft tickets are deleted. Timestamps are compared in UTC, matching the DB configuration.
+Runs every 15 minutes: expires overdue PENDING orders, deletes their draft
+tickets, releases seats LOCKED for more than 15 minutes, and deactivates
+expired or exhausted vouchers. All jobs share one transaction. Errors roll
+back and propagate to Lambda. Timestamps are compared in UTC, matching the DB
+configuration. The partial index `idx_orders_pending_expires_at` keeps the
+expiry scan small.
 
 ## Package and deploy
 
@@ -74,4 +76,5 @@ terraform -chdir=infra/terraform/modules/maintenance_worker test
 
 After apply, invoke the function named by Terraform's
 `maintenance_worker_function_name` output and check its CloudWatch log group:
-`/aws/lambda/<function-name>`. Success returns `statusCode: 200` and three row counts.
+`/aws/lambda/<function-name>`. Success returns `statusCode: 200` and four row counts
+(`expired_orders`, `deleted_expired_tickets`, `reaped_seats`, `deactivated_vouchers`).

@@ -146,13 +146,14 @@
 - **Test:** unit test label/limit; integration test tạo/xoá zone.
 
 ### P1-05 — Maintenance worker dọn draft + index
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-05-maintenance-cleanup`)
+- **Test:** `./mvnw -B verify` (84 tests), worker unit + PostgreSQL integration 5/5 (DSN local).
 - **Vấn đề:** order EXPIRED còn ticket nháp; `SQL_REAP_SEATS` gần như no-op; thiếu index cho `orders(expires_at)`.
 - **File:** `infra/lambda/maintenance/maintenance.py`, `backend/src/main/resources/db/migration/V9__*.sql`, `infra/lambda/maintenance/test_worker.py`.
 - **Việc cần làm:**
-  - [ ] Migration mới `V9`: partial index `orders(expires_at) WHERE status='PENDING'`; index hỗ trợ job nếu cần.
-  - [ ] Worker: xoá ticket của order vừa EXPIRED (tôn trọng trigger), hoặc để backend job làm; bỏ/sửa `SQL_REAP_SEATS` cho khớp thực tế.
-  - [ ] Test SQL trên PostgreSQL Testcontainer/local DSN.
+  - [x] Migration `V9`: partial index `orders(expires_at) WHERE status='PENDING'`.
+  - [x] Worker xoá ticket của order EXPIRED sau bước expire; giữ `SQL_REAP_SEATS` làm safety net cho dữ liệu legacy.
+  - [x] Test worker unit + PostgreSQL integration (4 job, idempotent, rollback).
 - **Acceptance:** sau job không còn draft ticket mồ côi; `EXPLAIN` dùng index; test worker pass.
 - **Test:** `python -m unittest` trong `infra/lambda/maintenance`; Flyway migrate sạch từ V1.
 
