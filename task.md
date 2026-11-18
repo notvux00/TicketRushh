@@ -121,13 +121,14 @@
 - **Test:** `./mvnw -B verify`; test serialize entity.
 
 ### P1-03 — Chỉ trả voucher còn dùng được
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-03-voucher-availability`)
+- **Test:** `./mvnw -B verify` (81 tests), frontend lint/build, Playwright 16/16.
 - **Vấn đề:** `getActiveVouchers` lọc mỗi `active=true`; voucher hết hạn/hết lượt/chưa bắt đầu vẫn hiện.
 - **File:** `service/CheckoutService.java`, `repository/VoucherRepository.java`, `frontend/src/pages/CheckoutPage.jsx`.
 - **Việc cần làm:**
-  - [ ] Query lọc `active`, `startDate <= now`, `endDate >= now`, `usedQuantity < totalQuantity`.
-  - [ ] Sắp xếp ổn định; bỏ `DEFAULT_VOUCHERS` hardcode ở FE.
-  - [ ] Trả lý do không dùng được nếu cần (`disabledReason`).
+  - [x] Query lọc `active`, `startDate <= now`, `endDate >= now`, `usedQuantity < totalQuantity`.
+  - [x] Sắp xếp theo `minOrderPrice`; bỏ `DEFAULT_VOUCHERS` hardcode ở FE.
+  - [x] Test 4 trạng thái voucher trên `/api/orders/vouchers`.
 - **Acceptance:** voucher hết hạn không xuất hiện; apply trực tiếp vẫn trả lỗi rõ ràng.
 - **Test:** repository/service test với 4 trạng thái voucher; Playwright checkout voucher.
 

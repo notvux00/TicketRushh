@@ -22,33 +22,6 @@ import { DEFAULT_QR_URL } from "../lib/mediaUrl";
 
 const PAYMENT_QR = DEFAULT_QR_URL;
 
-const DEFAULT_VOUCHERS = [
-  {
-    code: "RUSH100",
-    description: "Giảm ngay 100.000 đ cho đơn hàng từ 500.000 đ",
-    discountType: "FIXED_AMOUNT",
-    discountValue: 100000,
-    minOrderPrice: 500000,
-    maxDiscount: null,
-  },
-  {
-    code: "SALE10",
-    description: "Giảm 10% tối đa 200.000 đ cho mọi đơn hàng",
-    discountType: "PERCENTAGE",
-    discountValue: 10,
-    minOrderPrice: 0,
-    maxDiscount: 200000,
-  },
-  {
-    code: "VIP50",
-    description: "Ưu đãi VIP giảm 50.000 đ cho đơn từ 100.000 đ",
-    discountType: "FIXED_AMOUNT",
-    discountValue: 50000,
-    minOrderPrice: 100000,
-    maxDiscount: null,
-  },
-];
-
 export default function CheckoutPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -68,7 +41,7 @@ export default function CheckoutPage() {
   const [voucherCodeInput, setVoucherCodeInput] = useState("");
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [voucherMessage, setVoucherMessage] = useState(null);
-  const [availableVouchers, setAvailableVouchers] = useState(DEFAULT_VOUCHERS);
+  const [availableVouchers, setAvailableVouchers] = useState([]);
   const [copiedField, setCopiedField] = useState(null);
 
   useEffect(() => {
@@ -81,12 +54,11 @@ export default function CheckoutPage() {
     eventApi
       .getVouchers()
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAvailableVouchers(data);
-        }
+        if (Array.isArray(data)) setAvailableVouchers(data);
       })
       .catch((err) => {
-        console.warn("Could not fetch remote vouchers, using defaults:", err);
+        console.warn("Could not fetch vouchers:", err);
+        setAvailableVouchers([]);
       });
   }, []);
 
