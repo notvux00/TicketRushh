@@ -212,14 +212,15 @@
 - **Test:** unit test helper; Playwright tạo event 3 bước.
 
 ### P2-04 — Thay `alert`/`confirm`, bỏ log production
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P2-04-toast-confirm`)
+- **Test:** lint/build, Playwright 16/16 (dialog native đã đổi sang ConfirmHost).
 - **Vấn đề:** ~30 chỗ `alert/confirm`, nhiều `console.log`.
 - **File:** `BookingPage.jsx`, `CheckoutPage.jsx`, `AdminEventsList.jsx`, `AdminAddEvent.jsx`, `WaitingRoomPage.jsx`, `utils/ticketExporter.js`, `components/auth/AuthModal.jsx`…
 - **Việc cần làm:**
-  - [ ] Tạo `ToastProvider` + `ConfirmDialog` dùng chung.
-  - [ ] Thay toàn bộ `alert/confirm` ở luồng chính.
-  - [ ] Xoá `console.log`; giữ `console.warn/error` có ngữ cảnh.
-- **Acceptance:** không còn `alert(`/`confirm(` trong `src`; thông báo lỗi hiển thị trong UI.
+  - [x] Tạo `ToastHost` + `ConfirmHost` dùng chung, mount trong `App`.
+  - [x] Thay toàn bộ `alert` và `window.confirm` ở `src` (kể cả utils) bằng toast/`confirmAction`.
+  - [x] Xoá `console.log`; giữ `console.warn/error` có ngữ cảnh.
+- **Acceptance:** không còn `alert(`/`window.confirm` trong `src`; lỗi/thành công hiển thị trong UI.
 - **Test:** `npm run lint`, Playwright auth/checkout/admin.
 
 ### P2-05 — Dọn asset/config chết + fallback ảnh

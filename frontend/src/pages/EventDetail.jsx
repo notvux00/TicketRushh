@@ -21,6 +21,7 @@ import { useAuth } from "../hooks/useAuth";
 import { isEventExpired, isShowtimeExpired } from "../utils/eventUtils";
 import { Clock } from "lucide-react";
 import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import { toast } from "../lib/toast";
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -370,11 +371,11 @@ export default function EventDetail() {
               <button 
                 onClick={async () => {
                   if (!selectedShowtime) {
-                    alert("Vui lòng chọn suất diễn trước khi mua vé!");
+                    toast.error("Vui lòng chọn suất diễn trước khi mua vé!");
                     return;
                   }
                   if (isShowtimeExpired(selectedShowtime)) {
-                    alert("Suất diễn này đã kết thúc, không thể đặt vé!");
+                    toast.error("Suất diễn này đã kết thúc, không thể đặt vé!");
                     return;
                   }
                   

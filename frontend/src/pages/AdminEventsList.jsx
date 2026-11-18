@@ -34,6 +34,8 @@ import { uploadMedia } from "../api/mediaApi";
 import { eventApi } from "../api/eventApi";
 import { MetricCard, RevenueChart, OccupancyPanel, SeatMatrix, DonutChart, AgeBarChart, AnalyticsOverview } from "../components/admin/EventInsights";
 import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import { toast } from "../lib/toast";
+import { confirmAction } from "../lib/confirm";
 
 const MotionDiv = motion.div;
 
@@ -79,7 +81,7 @@ function QueueManagementSection({ showtimeId }) {
     mutationFn: () => eventApi.adminSetQueueThreshold(showtimeId, threshold),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-queue-info", showtimeId] });
-      alert("Đã cập nhật ngưỡng kích hoạt!");
+      toast.success("Đã cập nhật ngưỡng kích hoạt!");
     }
   });
 
@@ -87,7 +89,7 @@ function QueueManagementSection({ showtimeId }) {
     mutationFn: () => eventApi.adminSetBatchSize(showtimeId, batchSize),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-queue-info", showtimeId] });
-      alert("Đã cập nhật số người vào mỗi đợt!");
+      toast.success("Đã cập nhật số người vào mỗi đợt!");
     }
   });
 
@@ -95,7 +97,7 @@ function QueueManagementSection({ showtimeId }) {
     mutationFn: () => eventApi.adminSimulateUsers(showtimeId, simCount),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-queue-info", showtimeId] });
-      alert(`Đã thêm ${data.simulatedCount} user giả lập vào hàng chờ!`);
+      toast.success(`Đã thêm ${data.simulatedCount} user giả lập vào hàng chờ!`);
     }
   });
 
@@ -103,7 +105,7 @@ function QueueManagementSection({ showtimeId }) {
     mutationFn: () => eventApi.adminResetQueue(showtimeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-queue-info", showtimeId] });
-      alert("Đã reset hàng chờ!");
+      toast.success("Đã reset hàng chờ!");
     }
   });
 
@@ -356,7 +358,7 @@ function AdminEventsList() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file hình ảnh.");
+      toast.error("Vui lòng chọn file hình ảnh.");
       return;
     }
 
@@ -365,7 +367,7 @@ function AdminEventsList() {
       const publicUrl = await uploadMedia(file, "event-cover");
       updateDraftEvent("coverImage", publicUrl);
     } catch (error) {
-      alert("Lỗi tải ảnh lên S3: " + error.message);
+      toast.error("Lỗi tải ảnh lên S3: " + error.message);
     } finally {
       setIsUploadingCover(false);
       e.target.value = "";
@@ -422,7 +424,7 @@ function AdminEventsList() {
         queryClient.invalidateQueries({ queryKey: ["showtime-analytics"] }),
         queryClient.invalidateQueries({ queryKey: ["event-zones", activeShowtimeId] }),
       ]);
-      alert("Đã lưu thay đổi sự kiện thành công.");
+      toast.success("Đã lưu thay đổi sự kiện thành công.");
     },
     onError: (error) => {
       const data = error?.response?.data;
@@ -431,7 +433,7 @@ function AdminEventsList() {
         (typeof data === "string" ? data : "") ||
         error?.message ||
         "Không thể lưu thay đổi sự kiện.";
-      alert(message);
+      toast.error(message);
     },
   });
 
@@ -439,7 +441,7 @@ function AdminEventsList() {
     mutationFn: ({ id }) => adminApi.deleteEvent(id),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
-      alert(`Đã xóa thành công sự kiện ${variables.eventName}`);
+      toast.success(`Đã xóa thành công sự kiện ${variables.eventName}`);
     },
   });
 
@@ -517,9 +519,9 @@ function AdminEventsList() {
                         <Eye size={18} />
                       </button>
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          if (window.confirm("Xóa sự kiện này?"))
+                          if (await confirmAction("Xóa sự kiện này?"))
                             deleteMutation.mutate({ id: event.id, eventName: event.eventName });
                         }}
                         className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all group/btn"

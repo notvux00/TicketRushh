@@ -1,3 +1,5 @@
+
+import { toast } from "../lib/toast";
 /**
  * Tiện ích tải mã QR và Thẻ vé điện tử (E-Ticket Card) chất lượng cao bằng HTML5 Canvas.
  */
@@ -5,7 +7,7 @@
 export function downloadQRCodeOnly(canvasId, seatLabel = "seat") {
   const canvas = document.getElementById(canvasId);
   if (!canvas) {
-    alert("Không tìm thấy mã QR để tải!");
+    toast.error("Không tìm thấy mã QR để tải!");
     return;
   }
 
@@ -29,7 +31,7 @@ export function downloadETicketCard(ticket, options = {}) {
 
   const qrCanvas = document.getElementById(canvasId);
   if (!qrCanvas) {
-    alert("Đang tải dữ liệu vé, vui lòng thử lại sau giây lát!");
+    toast.error("Đang tải dữ liệu vé, vui lòng thử lại sau giây lát!");
     return;
   }
 

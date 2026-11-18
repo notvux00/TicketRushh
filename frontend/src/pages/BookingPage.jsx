@@ -11,6 +11,7 @@ import { eventApi } from "../api/eventApi";
 import Navbar from "../components/layout/Navbar";
 import { readCart, saveCart, rememberCheckout, checkoutReferences, finishCheckout } from "../utils/bookingStorage";
 import { useAuth } from "../hooks/useAuth";
+import { toast } from "../lib/toast";
 
 // Hằng số cho Canvas
 const CANVAS_W = 900;
@@ -156,7 +157,6 @@ export default function BookingPage() {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
-        console.log("Connected to WebSocket");
         client.subscribe(`/topic/events/showtimes/${showtimeId}/seats`, (message) => {
           if (message.body) {
             const payload = JSON.parse(message.body);
@@ -223,7 +223,7 @@ export default function BookingPage() {
       setCurrentView("seat-picker");
     } catch (error) {
       console.error("Error fetching seats:", error);
-      alert("Không thể lấy dữ liệu ghế ngồi!");
+      toast.error("Không thể lấy dữ liệu ghế ngồi!");
     }
   };
 
@@ -247,7 +247,7 @@ export default function BookingPage() {
     } else {
       // Guard: kiểm tra giới hạn số vé
       if (selectedSeats.length >= maxTickets) {
-        alert(`Bạn chỉ được chọn tối đa ${maxTickets} vé cho mỗi đơn hàng.`);
+        toast.error(`Bạn chỉ được chọn tối đa ${maxTickets} vé cho mỗi đơn hàng.`);
         return;
       }
       setSelectedSeats(prev => [...prev, seat]);
@@ -270,7 +270,7 @@ export default function BookingPage() {
         rememberCheckout(user.id, showtimeId, response.orderId, revision);
         navigate(`/checkout/${response.orderId}`);
       } else {
-        alert("Lỗi: " + response.message);
+        toast.error("Lỗi: " + response.message);
         setSelectedSeats([]);
       }
     } catch (error) {
@@ -278,16 +278,16 @@ export default function BookingPage() {
       const serverMsg = error?.response?.data?.message || "";
       // Phân biệt lỗi mạng vs lỗi server
       if (!navigator.onLine) {
-        alert("Mất kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.");
+        toast.error("Mất kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.");
       } else if (error?.response?.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       } else if (error?.response?.status === 400 && serverMsg.toLowerCase().includes("max tickets")) {
-        alert(`Vượt quá giới hạn ${maxTickets} vé/đơn hàng. Vui lòng bỏ bớt ghế.`);
+        toast.error(`Vượt quá giới hạn ${maxTickets} vé/đơn hàng. Vui lòng bỏ bớt ghế.`);
       } else if (error?.response?.status === 409) {
-        alert("Một hoặc nhiều ghế vừa bị người khác đặt. Vui lòng chọn ghế khác.");
+        toast.error("Một hoặc nhiều ghế vừa bị người khác đặt. Vui lòng chọn ghế khác.");
         setSelectedSeats([]);
       } else {
-        alert(serverMsg || "Không thể giữ ghế lúc này. Vui lòng thử lại.");
+        toast.error(serverMsg || "Không thể giữ ghế lúc này. Vui lòng thử lại.");
       }
     } finally {
       creatingCheckout.current = false;
