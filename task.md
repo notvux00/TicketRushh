@@ -108,14 +108,15 @@
 - **Test:** integration test đếm query; `./mvnw -B verify`; k6 smoke.
 
 ### P1-02 — Bỏ `@Data` khỏi JPA entity
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-02-entity-lombok`)
+- **Test:** `./mvnw -B verify` (80 tests), `EntityLombokTest`.
 - **Vấn đề:** `@Data` sinh `toString/equals/hashCode` đệ quy qua quan hệ 2 chiều, có thể `LazyInitializationException`/`StackOverflow`.
 - **File:** `model/entity/*.java`.
 - **Việc cần làm:**
-  - [ ] Đổi sang `@Getter @Setter @NoArgsConstructor`.
-  - [ ] `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` chỉ dùng `id`.
-  - [ ] `@ToString(exclude = ...)` cho quan hệ.
-  - [ ] Không đổi tên cột/schema.
+  - [x] Đổi sang `@Getter @Setter` (giữ `@Builder/@NoArgsConstructor` ở User/TicketCheckin).
+  - [x] `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` chỉ dùng `id`.
+  - [x] `@ToString(exclude = ...)` cho quan hệ và password.
+  - [x] Không đổi tên cột/schema; test đệ quy và equality pass.
 - **Acceptance:** log/serialize không lỗi vòng lặp; test hiện có pass; không đổi JSON API.
 - **Test:** `./mvnw -B verify`; test serialize entity.
 

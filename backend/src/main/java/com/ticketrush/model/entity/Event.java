@@ -2,16 +2,22 @@ package com.ticketrush.model.entity;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.List;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name = "events")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"creator", "showtimes"})
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Column(nullable = false)
@@ -19,7 +25,7 @@ public class Event {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-    
+
     private String coverImage;
     private String trailerUrl;
     private String venueName;

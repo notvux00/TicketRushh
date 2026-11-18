@@ -2,14 +2,21 @@ package com.ticketrush.model.entity;
 
 import java.util.UUID;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Table(name = "zones")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"showtime", "seats"})
 public class Zone {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     private String name;
@@ -31,7 +38,7 @@ public class Zone {
 
     @Column(name = "visual_height")
     private Integer visualHeight = 120;
-    
+
     @Column(name = "price")
     private Double price = 0.0;
 
