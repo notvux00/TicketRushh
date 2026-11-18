@@ -13,3 +13,4 @@ export function mediaUrl(path) {
 }
 
 export const DEFAULT_QR_URL = "/media/qr/qr_for_all.png";
+export const DEFAULT_EVENT_IMAGE = "/media/fallback-event.svg";

@@ -17,7 +17,6 @@ import com.ticketrush.repository.UserRepository;
 import com.ticketrush.repository.VoucherRepository;
 import com.ticketrush.realtime.RealtimePublisher;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +33,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CheckoutService {
     private static final int CHECKOUT_TTL_MINUTES = 10;
-
-    @Value("${app.qr.base-url:/media/qr/qr_for_all.png}")
-    private String qrBaseUrl;
 
     private final OrderRepository orderRepository;
     private final SeatRepository seatRepository;

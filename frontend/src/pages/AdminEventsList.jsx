@@ -33,6 +33,7 @@ import { isEventExpired } from "../utils/eventUtils";
 import { uploadMedia } from "../api/mediaApi";
 import { eventApi } from "../api/eventApi";
 import { MetricCard, RevenueChart, OccupancyPanel, SeatMatrix, DonutChart, AgeBarChart, AnalyticsOverview } from "../components/admin/EventInsights";
+import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 
 const MotionDiv = motion.div;
 
@@ -481,7 +482,7 @@ function AdminEventsList() {
                 <img
                   src={
                     event.coverImage ||
-                    "https://via.placeholder.com/400x300?text=No+Image"
+                    DEFAULT_EVENT_IMAGE
                   }
                   alt={event.eventName}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -585,7 +586,7 @@ function AdminEventsList() {
                 <img
                   src={
                     displayEvent.coverImage ||
-                    "https://via.placeholder.com/1200x400"
+                    DEFAULT_EVENT_IMAGE
                   }
                   className="w-full h-full object-cover opacity-40 blur-sm"
                   alt="Banner Blur"

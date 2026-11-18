@@ -1,6 +1,7 @@
 import { MapPin, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { isEventExpired } from "../../utils/eventUtils";
+import { DEFAULT_EVENT_IMAGE } from "../../lib/mediaUrl";
 
 function EventCard({ event }) {
   const expired = isEventExpired(event);
@@ -12,7 +13,9 @@ function EventCard({ event }) {
           <img
             alt={event.eventName}
             className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${expired ? "grayscale-[0.5] opacity-90" : ""}`}
-            src={event.coverImage || "https://via.placeholder.com/400x300?text=No+Image"}
+            src={event.coverImage || DEFAULT_EVENT_IMAGE}
+            loading="lazy"
+            decoding="async"
           />
           {expired && (
             <div className="absolute top-0 right-0 z-10">
