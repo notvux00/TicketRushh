@@ -18,7 +18,7 @@ import {
   Copy,
   Grid,
 } from "lucide-react";
-import axiosClient from "../api/axiosClient";
+import { adminApi } from "../api/adminApi";
 import { uploadMedia } from "../api/mediaApi";
 import { Resizable } from "re-resizable";
 
@@ -212,7 +212,7 @@ function AdminAddEvent() {
     setLoading(true);
     try {
       // GỬI TẤT CẢ TRONG 1 REQUEST (Đã tối ưu Backend Bulk + Async)
-      await axiosClient.post("/admin/events", {
+      await adminApi.createEvent({
         ...formData,
         maxTicketsPerOrder: parseInt(formData.maxTicketsPerOrder),
         // formData.zones đã có sẵn các thông số positionX, visualWidth từ Step 3
