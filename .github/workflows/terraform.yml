@@ -31,6 +31,7 @@ jobs:
       TF_IN_AUTOMATION: "true"
       TF_VAR_admin_email: ${{ vars.ADMIN_EMAIL }}
       TF_VAR_alarm_email: ${{ vars.ALARM_EMAIL }}
+      TF_VAR_admin_password: ${{ secrets.ADMIN_PASSWORD }}
       TF_VAR_aws_region: ${{ vars.AWS_REGION }}
       TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
       TF_STATE_KEY: ticketrush/${{ inputs.environment }}/terraform.tfstate
@@ -45,7 +46,7 @@ jobs:
       - name: Validate deployment configuration
         shell: bash
         run: |
-          for name in TF_VAR_admin_email TF_VAR_alarm_email TF_VAR_aws_region TF_STATE_BUCKET TF_STATE_REGION TF_LOCK_TABLE; do
+          for name in TF_VAR_admin_email TF_VAR_alarm_email TF_VAR_admin_password TF_VAR_aws_region TF_STATE_BUCKET TF_STATE_REGION TF_LOCK_TABLE; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing deployment configuration: $name"
               exit 1

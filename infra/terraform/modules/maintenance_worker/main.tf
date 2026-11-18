@@ -97,7 +97,7 @@ resource "aws_lambda_function" "maintenance" {
   timeout                        = 30
   memory_size                    = 128
   architectures                  = ["x86_64"]
-  reserved_concurrent_executions = 1
+  reserved_concurrent_executions = var.reserved_concurrency
 
   layers = var.psycopg2_layer_arn != "" ? [var.psycopg2_layer_arn] : []
 
