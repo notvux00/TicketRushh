@@ -2,7 +2,9 @@ package com.ticketrush.service;
 
 import com.ticketrush.model.dto.SeatBulkUpdateRequest;
 import com.ticketrush.model.dto.SeatResponse;
+import com.ticketrush.model.dto.ShowtimeSeatResponse;
 import com.ticketrush.model.entity.Seat;
+import com.ticketrush.model.entity.Zone;
 import com.ticketrush.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -83,5 +85,43 @@ public class SeatService {
             seat.setStatus(request.getStatus());
         }
         seatRepository.saveAll(seats);
+    }
+
+    /**
+     * Trả toàn bộ ghế của một suất diễn kèm thông tin khu vực để frontend vẽ
+     * một bản đồ rạp duy nhất (không cần gọi từng zone).
+     */
+    @Transactional(readOnly = true)
+    public List<ShowtimeSeatResponse> getSeatsByShowtimeForBooking(UUID showtimeId, String userId) {
+        List<Seat> seats = seatRepository.findByShowtimeIdForBooking(showtimeId);
+        if (seats.isEmpty()) return List.of();
+
+        List<UUID> seatIds = seats.stream().map(Seat::getId).collect(Collectors.toList());
+        java.util.Map<UUID, String> lockedSeatsInfo = seatLockService.getLockedSeatsInfo(showtimeId, seatIds);
+
+        return seats.stream().map(seat -> {
+            ShowtimeSeatResponse res = new ShowtimeSeatResponse();
+            res.setId(seat.getId());
+            res.setSeatLabel(seat.getSeatLabel());
+            res.setGridRow(seat.getGridRow());
+            res.setGridCol(seat.getGridCol());
+
+            Zone zone = seat.getZone();
+            res.setZoneId(zone.getId());
+            res.setZoneName(zone.getName());
+            res.setPrice(zone.getPrice());
+
+            String locker = lockedSeatsInfo.get(seat.getId());
+            boolean isLocked = locker != null;
+            boolean lockedByMe = isLocked && userId != null && seatLockService.isOwnedByUser(locker, userId);
+            res.setLockedByMe(lockedByMe);
+
+            if (!"SOLD".equalsIgnoreCase(seat.getStatus()) && isLocked) {
+                res.setStatus("LOCKED");
+            } else {
+                res.setStatus(seat.getStatus());
+            }
+            return res;
+        }).collect(Collectors.toList());
     }
 }
