@@ -1,6 +1,11 @@
 import { useMemo } from "react";
 import { Lock, X } from "lucide-react";
-import { HALL_HEIGHT, HALL_WIDTH, rowLabelFromIndex, splitSeatLabel } from "../../utils/seatView";
+import {
+  HALL_VIEW_HEIGHT,
+  HALL_VIEW_WIDTH,
+  rowLabelFromIndex,
+  splitSeatLabel,
+} from "../../utils/seatView";
 import { money } from "../../utils/adminFormat";
 
 const withAlpha = (hex, alpha) => {
@@ -56,37 +61,67 @@ export default function HallSeatMap({
 
   return (
     <div
-      className="overflow-auto rounded-2xl bg-[#07111f] ring-1 ring-white/10"
+      className="mx-auto overflow-auto rounded-2xl bg-[#07111f] ring-1 ring-white/10"
+      style={{ maxWidth: 1000 }}
       data-testid="hall-seat-map"
     >
       <div
         className="relative mx-auto"
         style={{
           width: `${zoom * 100}%`,
-          minWidth: 620,
-          aspectRatio: `${HALL_WIDTH} / ${HALL_HEIGHT}`,
+          aspectRatio: `${HALL_VIEW_WIDTH} / ${HALL_VIEW_HEIGHT}`,
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.16) 1px, transparent 0)",
           backgroundSize: "26px 26px",
         }}
       >
         <div className="pointer-events-none absolute inset-x-[18%] top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
+
+        {/* Màn hình nằm trong khung đen, phía trên toàn bộ ghế */}
+        <div
+          className="pointer-events-none absolute left-1/2 top-[3%] z-20 h-[4.2%] min-h-[10px] w-[82%] -translate-x-1/2 overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#dbe3ec_58%,#94a3b8_100%)] shadow-[0_0_45px_rgba(226,232,240,0.2)] ring-1 ring-white/25"
+          style={{ borderRadius: "50% 50% 8px 8px / 100% 100% 8px 8px" }}
+        >
+          <div className="absolute inset-x-6 top-1 h-0.5 rounded-full bg-white/80 blur-[1px]" />
+        </div>
+        <p className="pointer-events-none absolute inset-x-0 top-[8.4%] z-20 text-center text-[8px] font-black uppercase tracking-[0.42em] text-slate-400/80">
+          Màn hình
+        </p>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-[1.5%] z-20 flex justify-center">
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.3em] text-white/30">
+            Lối vào
+          </span>
+        </div>
+        <div className="pointer-events-none absolute left-1 top-1/2 z-20 -translate-y-1/2 -rotate-90 text-[8px] font-bold uppercase tracking-[0.3em] text-white/20">
+          Lối đi
+        </div>
+        <div className="pointer-events-none absolute right-1 top-1/2 z-20 -translate-y-1/2 rotate-90 text-[8px] font-bold uppercase tracking-[0.3em] text-white/20">
+          Lối đi
+        </div>
+
         {zones.map((zone) => {
           const zoneSeats = seatsByZone.get(zone.id) || [];
           const rows = [...new Set(zoneSeats.map((seat) => seat.gridRow))].sort((a, b) => a - b);
           const rowIndex = new Map(rows.map((row, index) => [row, index + 1]));
           const color = zone.color?.bg || "#3b82f6";
           const cols = Math.max(zone.matrixCol || 1, 1);
+          const hasCenterAisle = cols >= 8;
+          const half = Math.ceil(cols / 2);
+          const gridTemplateColumns = hasCenterAisle
+            ? `repeat(${half}, minmax(0, 1fr)) 0.38fr repeat(${cols - half}, minmax(0, 1fr))`
+            : `repeat(${cols}, minmax(0, 1fr))`;
+          const visualColumn = (gridCol) => (hasCenterAisle && gridCol > half ? gridCol + 1 : gridCol);
 
           return (
             <div
               key={zone.id}
               className="absolute rounded-xl"
               style={{
-                left: `${((zone.positionX || 0) / HALL_WIDTH) * 100}%`,
-                top: `${((zone.positionY || 0) / HALL_HEIGHT) * 100}%`,
-                width: `${(((zone.visualWidth || 160) / HALL_WIDTH) * 100)}%`,
-                height: `${(((zone.visualHeight || 120) / HALL_HEIGHT) * 100)}%`,
+                left: `${((zone.positionX || 0) / HALL_VIEW_WIDTH) * 100}%`,
+                top: `${((zone.positionY || 0) / HALL_VIEW_HEIGHT) * 100}%`,
+                width: `${((zone.visualWidth || 160) / HALL_VIEW_WIDTH) * 100}%`,
+                height: `${((zone.visualHeight || 120) / HALL_VIEW_HEIGHT) * 100}%`,
                 backgroundColor: withAlpha(color, 0.1),
                 border: `1px solid ${withAlpha(color, 0.42)}`,
                 boxShadow: `inset 0 0 30px ${withAlpha(color, 0.08)}`,
@@ -121,7 +156,7 @@ export default function HallSeatMap({
                   <div
                     className="grid min-h-0 flex-1 gap-[2px]"
                     style={{
-                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                      gridTemplateColumns,
                       gridTemplateRows: `repeat(${Math.max(rows.length, 1)}, minmax(0, 1fr))`,
                     }}
                   >
@@ -152,7 +187,7 @@ export default function HallSeatMap({
                           onMouseLeave={() => onSeatPreview(null)}
                           onFocus={() => onSeatPreview(seat)}
                           className={`flex min-h-0 min-w-0 items-center justify-center rounded-[4px] border text-[7px] font-black leading-none transition-all ${classes}`}
-                          style={{ gridColumn: seat.gridCol, gridRow: rowIndex.get(seat.gridRow) }}
+                          style={{ gridColumn: visualColumn(seat.gridCol), gridRow: rowIndex.get(seat.gridRow) }}
                         >
                           {isSelected ? (
                             seatNumber

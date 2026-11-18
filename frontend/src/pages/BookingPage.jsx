@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "../lib/toast";
 import { money } from "../utils/adminFormat";
+import { fitHallLayout, HALL_VIEW_HEIGHT, HALL_VIEW_WIDTH } from "../utils/seatView";
 
 const ZONE_COLORS = [
   { bg: "#3b82f6", text: "#ffffff", name: "blue" },
@@ -64,8 +65,9 @@ export default function BookingPage() {
   const maxTickets = event?.maxTicketsPerOrder ?? 4;
   const selectedSeatIds = useMemo(() => new Set(selectedSeats.map((seat) => seat.id)), [selectedSeats]);
   const isAtLimit = selectedSeats.length >= maxTickets;
+  const hallLayout = useMemo(() => fitHallLayout(zones), [zones]);
   const activeSeat = previewSeat || selectedSeats[selectedSeats.length - 1] || null;
-  const activeZone = zones.find((zone) => zone.id === activeSeat?.zoneId) || null;
+  const activeZone = hallLayout.zones.find((zone) => zone.id === activeSeat?.zoneId) || null;
 
   useEffect(() => {
     if (savedSeats.current === selectedSeats || creatingCheckout.current) return;
@@ -347,7 +349,7 @@ export default function BookingPage() {
                   {event?.eventName}
                 </h1>
                 <p className="mt-1 text-xs font-medium text-slate-400">
-                  Chọn ghế chính xác trên toàn bộ rạp. Rê chuột hoặc chạm để xem vị trí.
+                  Màn hình ở trên, hàng A gần màn hình nhất. Chạm hoặc rê chuột lên ghế để xem vị trí.
                 </p>
               </div>
 
@@ -382,13 +384,8 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="mb-5 flex flex-col items-center">
-              <div className="h-2.5 w-[74%] rounded-[50%] bg-gradient-to-r from-slate-200 via-slate-500 to-slate-200 shadow-[0_8px_22px_rgba(15,23,42,0.18)]" />
-              <span className="mt-2 text-[9px] font-black uppercase tracking-[0.45em] text-slate-400">Màn hình</span>
-            </div>
-
             <HallSeatMap
-              zones={zones}
+              zones={hallLayout.zones}
               seats={seats}
               selectedSeatIds={selectedSeatIds}
               maxTickets={maxTickets}
@@ -401,7 +398,7 @@ export default function BookingPage() {
               <SeatLegend />
             </div>
             <p className="mt-3 text-[11px] font-medium text-slate-400">
-              Khu vực có màu nền riêng theo hạng vé. Ghế trống màu trắng, ghế đang chọn màu xanh, ghế đã bán hoặc đang bị giữ sẽ không chọn được.
+              Khu vực có màu nền riêng theo hạng vé. Hàng ghế được xếp từ màn hình ra sau, có lối đi giữa và lối vào ở cuối sơ đồ.
             </p>
           </section>
         </main>
@@ -453,7 +450,11 @@ export default function BookingPage() {
             </div>
           </section>
 
-          <ViewFromSeat seat={activeSeat} zone={activeZone} />
+          <ViewFromSeat
+            seat={activeSeat}
+            zone={activeZone}
+            canvas={{ width: HALL_VIEW_WIDTH, height: HALL_VIEW_HEIGHT }}
+          />
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">

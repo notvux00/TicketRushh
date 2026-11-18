@@ -7,8 +7,8 @@ const sideLabel = (lateralMeters) => {
   return `${absolute.toFixed(1)} m ${lateralMeters < 0 ? "trái" : "phải"}`;
 };
 
-export default function ViewFromSeat({ seat, zone }) {
-  const metrics = seat && zone ? seatViewMetrics(zone, seat) : null;
+export default function ViewFromSeat({ seat, zone, canvas }) {
+  const metrics = seat && zone ? seatViewMetrics(zone, seat, canvas) : null;
 
   return (
     <section aria-label="Góc nhìn từ ghế" className="flex flex-col gap-3">
