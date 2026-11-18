@@ -13,6 +13,7 @@ import com.ticketrush.repository.SeatRepository;
 import com.ticketrush.repository.ShowtimeRepository;
 import com.ticketrush.repository.ZoneRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -28,6 +29,12 @@ public class ZoneService {
     private final SeatRepository seatRepository;
     private final ShowtimeRepository showtimeRepository;
     private final TicketRepository ticketRepository;
+
+    @Value("${app.catalog.max-seats-per-zone:5000}")
+    private int maxSeatsPerZone;
+
+    @Value("${app.catalog.max-seats-per-request:100000}")
+    private int maxSeatsPerRequest;
 
     // 1. Lấy danh sách Zone theo Showtime
     public List<ZoneResponse> getZonesByShowtime(UUID showtimeId) {
@@ -50,6 +57,7 @@ public class ZoneService {
     @Transactional
     public void createZone(UUID showtimeId, ZoneRequest request) {
         PriceValidation.requireValid(request.getPrice());
+        requireSeatBudget(request, 1, maxSeatsPerZone);
         Showtime showtime = showtimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy suất diễn"));
 
@@ -65,24 +73,7 @@ public class ZoneService {
         zone.setVisualWidth(request.getVisualWidth() != null ? request.getVisualWidth() : 160);
         zone.setVisualHeight(request.getVisualHeight() != null ? request.getVisualHeight() : 120);
         Zone savedZone = zoneRepository.save(zone);
-
-        // LOGIC TỰ ĐỘNG SINH GHẾ (Auto-generate Seats)
-        List<Seat> seats = new ArrayList<>();
-        for (int r = 1; r <= request.getMatrixRow(); r++) {
-            for (int c = 1; c <= request.getMatrixCol(); c++) {
-                Seat seat = new Seat();
-                seat.setZone(savedZone);
-                seat.setGridRow(r);
-                seat.setGridCol(c);
-                seat.setStatus("AVAILABLE"); // Mặc định là ghế trống
-
-                // Tạo nhãn tự động (Ví dụ: A-1, B-2)
-                String rowLabel = String.valueOf((char) ('A' + r - 1));
-                seat.setSeatLabel(rowLabel + "-" + c);
-                seats.add(seat);
-            }
-        }
-        seatRepository.saveAll(seats); // Lưu hàng loạt ghế vào Database
+        seatRepository.saveAll(generateSeats(savedZone, request.getMatrixRow(), request.getMatrixCol()));
     }
 
     // 2.1. Tạo ĐỒNG LOẠT Zone và Ghế
@@ -91,10 +82,17 @@ public class ZoneService {
         if (showtimes == null || showtimes.isEmpty()) {
             return;
         }
-        
+        long totalSeats = 0;
+        for (ZoneRequest request : zoneRequests) {
+            PriceValidation.requireValid(request.getPrice());
+            totalSeats += requireSeatBudget(request, showtimes.size(), maxSeatsPerZone);
+        }
+        if (totalSeats > maxSeatsPerRequest) {
+            throw new IllegalArgumentException("Tổng số ghế vượt quá giới hạn " + maxSeatsPerRequest);
+        }
+
         for (Showtime showtime : showtimes) {
             for (ZoneRequest request : zoneRequests) {
-                PriceValidation.requireValid(request.getPrice());
                 Zone zone = new Zone();
                 zone.setName(request.getName());
                 zone.setMatrixRow(request.getMatrixRow());
@@ -106,21 +104,7 @@ public class ZoneService {
                 zone.setVisualWidth(request.getVisualWidth() != null ? request.getVisualWidth() : 160);
                 zone.setVisualHeight(request.getVisualHeight() != null ? request.getVisualHeight() : 120);
                 Zone savedZone = zoneRepository.save(zone);
-
-                List<Seat> seats = new ArrayList<>();
-                for (int r = 1; r <= request.getMatrixRow(); r++) {
-                    for (int c = 1; c <= request.getMatrixCol(); c++) {
-                        Seat seat = new Seat();
-                        seat.setZone(savedZone);
-                        seat.setGridRow(r);
-                        seat.setGridCol(c);
-                        seat.setStatus("AVAILABLE");
-                        String rowLabel = String.valueOf((char) ('A' + r - 1));
-                        seat.setSeatLabel(rowLabel + "-" + c);
-                        seats.add(seat);
-                    }
-                }
-                seatRepository.saveAll(seats);
+                seatRepository.saveAll(generateSeats(savedZone, request.getMatrixRow(), request.getMatrixCol()));
             }
         }
         seatRepository.flush();
@@ -134,6 +118,11 @@ public class ZoneService {
         if (ticketRepository.protectedTicketsForZone(zoneId, LocalDateTime.now()) > 0) {
             throw new IllegalStateException("Cannot delete a zone with issued tickets or active checkouts");
         }
+        // Draft tickets from expired checkouts still reference the seats; remove
+        // them first, then delete seats in one statement instead of loading the
+        // whole collection through CascadeType.ALL.
+        ticketRepository.deleteDraftTicketsForZone(zoneId);
+        seatRepository.deleteByZoneId(zoneId);
         zoneRepository.deleteById(zoneId);
     }
 
@@ -168,5 +157,51 @@ public class ZoneService {
                     });
             }
         }
+    }
+
+    private List<Seat> generateSeats(Zone zone, int rows, int cols) {
+        List<Seat> seats = new ArrayList<>(rows * cols);
+        for (int r = 1; r <= rows; r++) {
+            String rowLabel = rowLabel(r);
+            for (int c = 1; c <= cols; c++) {
+                Seat seat = new Seat();
+                seat.setZone(zone);
+                seat.setGridRow(r);
+                seat.setGridCol(c);
+                seat.setStatus("AVAILABLE");
+                seat.setSeatLabel(rowLabel + "-" + c);
+                seats.add(seat);
+            }
+        }
+        return seats;
+    }
+
+    /**
+     * Excel-style row labels: A..Z, AA..AZ, BA.. and so on.
+     */
+    static String rowLabel(int row) {
+        if (row < 1) {
+            throw new IllegalArgumentException("Row must be positive");
+        }
+        StringBuilder label = new StringBuilder();
+        int value = row;
+        while (value > 0) {
+            int remainder = (value - 1) % 26;
+            label.insert(0, (char) ('A' + remainder));
+            value = (value - 1) / 26;
+        }
+        return label.toString();
+    }
+
+    private static long requireSeatBudget(ZoneRequest request, int copies, int maxSeatsPerZone) {
+        if (request.getMatrixRow() == null || request.getMatrixCol() == null) {
+            throw new IllegalArgumentException("Số hàng và số cột không được để trống");
+        }
+        long perZone = (long) request.getMatrixRow() * request.getMatrixCol();
+        if (perZone > maxSeatsPerZone) {
+            throw new IllegalArgumentException(
+                    "Khu vực vượt quá giới hạn " + maxSeatsPerZone + " ghế");
+        }
+        return perZone * copies;
     }
 }

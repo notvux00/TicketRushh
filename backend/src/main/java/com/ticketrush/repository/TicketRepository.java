@@ -34,6 +34,14 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
 
     List<Ticket> findByOrderId(UUID orderId);
     List<Ticket> findBySeatIdIn(List<UUID> seatIds);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("""
+            delete from Ticket t
+            where t.seat.zone.id = :zoneId
+              and t.order.status = 'EXPIRED'
+            """)
+    int deleteDraftTicketsForZone(@org.springframework.data.repository.query.Param("zoneId") UUID zoneId);
     Optional<Ticket> findByQrPayload(String qrPayload);
     Optional<Ticket> findByQrCode(String qrCode);
 }

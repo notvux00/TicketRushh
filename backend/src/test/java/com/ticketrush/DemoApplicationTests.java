@@ -108,6 +108,33 @@ class DemoApplicationTests {
     }
 
     @Test
+    void zoneCreationRejectsOversizedCatalogAndDeletesSeatsInBulk() throws Exception {
+        var f = fixture();
+
+        var tooBig = postApi("/api/admin/showtimes/"+f.showtime()+"/zones", admin(f),
+                Map.of("name", "Huge", "price", 1000, "matrixRow", 100, "matrixCol", 100));
+        assertEquals(400, tooBig.code());
+
+        var created = mvc.perform(post("/api/admin/showtimes/"+f.showtime()+"/zones")
+                .header("Authorization", "Bearer "+admin(f))
+                .contentType("application/json")
+                .content(json.writeValueAsString(
+                        Map.of("name", "BigRows", "price", 1000, "matrixRow", 27, "matrixCol", 1))))
+                .andReturn().getResponse();
+        assertEquals(200, created.getStatus(), created.getContentAsString());
+        UUID zoneId = db.queryForObject(
+                "select id from zones where showtime_id=? and name='BigRows'", UUID.class, f.showtime());
+        assertEquals("AA-1", db.queryForObject(
+                "select seat_label from seats where zone_id=? and grid_row=27", String.class, zoneId));
+        assertEquals(27, db.queryForObject("select count(*) from seats where zone_id=?", Integer.class, zoneId));
+
+        var deleted = mvc.perform(delete("/api/admin/showtimes/"+f.showtime()+"/zones/"+zoneId)
+                .header("Authorization", "Bearer "+admin(f))).andReturn().getResponse();
+        assertEquals(200, deleted.getStatus(), deleted.getContentAsString());
+        assertEquals(0, db.queryForObject("select count(*) from seats where zone_id=?", Integer.class, zoneId));
+    }
+
+    @Test
     void availableVoucherListOnlyContainsCurrentlyUsableCodes() throws Exception {
         var f = fixture();
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();

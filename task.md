@@ -133,14 +133,15 @@
 - **Test:** repository/service test với 4 trạng thái voucher; Playwright checkout voucher.
 
 ### P1-04 — An toàn khi sinh zone/ghế
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P1-04-zone-generation`)
+- **Test:** `./mvnw -B verify` (84 tests), `ZoneServiceTest` + integration tạo/xoá zone.
 - **Vấn đề:** `matrixRow × matrixCol` không giới hạn → OOM; label hỏng khi > 26 hàng; logic tạo ghế copy 2 nơi; xoá zone cascade từng ghế.
 - **File:** `service/ZoneService.java`, `model/dto/ZoneRequest.java`, `repository/SeatRepository.java`.
 - **Việc cần làm:**
-  - [ ] Giới hạn tổng ghế/zone và tổng ghế/request (cấu hình), trả 400.
-  - [ ] Hàm `seatLabel(row, col)` hỗ trợ `A..Z, AA..`.
-  - [ ] Tách `generateSeats(zone, request)` dùng chung.
-  - [ ] Xoá ghế theo `zone_id` bằng bulk query trước khi xoá zone.
+  - [x] Giới hạn tổng ghế/zone và tổng ghế/request (cấu hình), trả 400.
+  - [x] Hàm `rowLabel` hỗ trợ `A..Z, AA..` và test tới `AAA`.
+  - [x] Tách `generateSeats(zone, rows, cols)` dùng chung.
+  - [x] Xoá draft ticket hết hạn + xoá ghế theo `zone_id` bằng bulk query trước khi xoá zone.
 - **Acceptance:** request 10^6 ghế bị từ chối nhanh; label hàng 27 đúng; xoá zone không N+1.
 - **Test:** unit test label/limit; integration test tạo/xoá zone.
 
