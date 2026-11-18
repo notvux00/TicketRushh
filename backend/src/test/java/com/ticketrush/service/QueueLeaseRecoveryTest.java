@@ -34,9 +34,7 @@ class QueueLeaseRecoveryTest {
         var factory = new LettuceConnectionFactory(new RedisStandaloneConfiguration(redis.getHost(), redis.getMappedPort(6379)));
         factory.afterPropertiesSet();
         var cache = new StringRedisTemplate(factory);
-        var queues = new VirtualQueueService();
-        ReflectionTestUtils.setField(queues, "redisTemplate", cache);
-        ReflectionTestUtils.setField(queues, "realtimePublisher", mock(RealtimePublisher.class));
+        var queues = new VirtualQueueService(cache, mock(RealtimePublisher.class));
         ReflectionTestUtils.setField(queues, "passTtlSeconds", ttl);
         return new Harness(factory, cache, queues);
     }

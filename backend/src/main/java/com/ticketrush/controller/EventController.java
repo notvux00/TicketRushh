@@ -1,30 +1,36 @@
 package com.ticketrush.controller;
 
 import com.ticketrush.model.dto.EventResponse;
-import com.ticketrush.model.dto.ZoneResponse;
+import com.ticketrush.model.dto.LockSeatRequest;
+import com.ticketrush.model.dto.LockSeatResponse;
 import com.ticketrush.model.dto.SeatResponse;
+import com.ticketrush.model.dto.ZoneResponse;
+import com.ticketrush.service.CheckoutService;
 import com.ticketrush.service.EventService;
-import com.ticketrush.service.ZoneService;
+import com.ticketrush.service.SeatLockService;
 import com.ticketrush.service.SeatService;
+import com.ticketrush.service.VirtualQueueService;
+import com.ticketrush.service.ZoneService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/events")
+@RequiredArgsConstructor
 public class EventController {
 
-    @Autowired
-    private EventService eventService;
-
-    @Autowired
-    private ZoneService zoneService;
-
-    @Autowired
-    private SeatService seatService;
+    private final EventService eventService;
+    private final ZoneService zoneService;
+    private final SeatService seatService;
+    private final SeatLockService seatLockService;
+    private final VirtualQueueService virtualQueueService;
+    private final CheckoutService checkoutService;
 
     @GetMapping
     public List<EventResponse> getEvents() {
@@ -36,7 +42,6 @@ public class EventController {
         return eventService.getEventById(id);
     }
 
-    // New Public Endpoints
     @GetMapping("/showtimes/{showtimeId}/zones")
     public List<ZoneResponse> getZonesByShowtime(@PathVariable UUID showtimeId) {
         return zoneService.getZonesByShowtime(showtimeId);
@@ -45,60 +50,46 @@ public class EventController {
     @GetMapping("/zones/{zoneId}/seats")
     public List<SeatResponse> getSeatsByZone(
             @PathVariable UUID zoneId,
-            org.springframework.security.core.Authentication authentication) {
+            Authentication authentication) {
         String userId = (authentication != null && authentication.isAuthenticated()) ? authentication.getName() : null;
         return seatService.getSeatsByZoneForBooking(zoneId, userId);
     }
 
-    @Autowired
-    private com.ticketrush.service.SeatLockService seatLockService;
-
-    @Autowired
-    private com.ticketrush.service.VirtualQueueService virtualQueueService;
-
     @PostMapping("/seats/lock")
-    public com.ticketrush.model.dto.LockSeatResponse lockSeats(
-            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
-            org.springframework.security.core.Authentication authentication) {
-        
-        // Use user email or ID from JWT as locker identity
-        String userId = authentication.getName(); 
-        
+    public LockSeatResponse lockSeats(
+            @Valid @RequestBody LockSeatRequest request,
+            Authentication authentication) {
+
+        String userId = authentication.getName();
+
         // Queue guard: kiểm tra thẻ vào cửa nếu queue đang hoạt động
         if (!virtualQueueService.canBook(request.getShowtimeId(), userId)) {
-            return new com.ticketrush.model.dto.LockSeatResponse(false, "QUEUE_ACCESS_REQUIRED", null);
+            return new LockSeatResponse(false, "QUEUE_ACCESS_REQUIRED", null);
         }
 
         boolean success = seatLockService.lockSeats(request.getShowtimeId(), request.getSeatIds(), userId);
         if (success) {
             // Expires in 10 minutes
-            java.time.Instant expiresAt = java.time.Instant.now().plusSeconds(600);
-            return new com.ticketrush.model.dto.LockSeatResponse(true, "Seats locked successfully", expiresAt);
-        } else {
-            return new com.ticketrush.model.dto.LockSeatResponse(false, "Seats are already locked or max limit exceeded", null);
+            Instant expiresAt = Instant.now().plusSeconds(600);
+            return new LockSeatResponse(true, "Seats locked successfully", expiresAt);
         }
+        return new LockSeatResponse(false, "Seats are already locked or max limit exceeded", null);
     }
 
     @PostMapping("/seats/unlock")
-    public com.ticketrush.model.dto.LockSeatResponse unlockSeats(
-            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
-            org.springframework.security.core.Authentication authentication) {
-        
-        String userId = authentication.getName();
-        seatLockService.unlockSeats(request.getShowtimeId(), request.getSeatIds(), userId);
-        
-        return new com.ticketrush.model.dto.LockSeatResponse(true, "Seats unlocked", null);
+    public LockSeatResponse unlockSeats(
+            @Valid @RequestBody LockSeatRequest request,
+            Authentication authentication) {
+        seatLockService.unlockSeats(request.getShowtimeId(), request.getSeatIds(), authentication.getName());
+        return new LockSeatResponse(true, "Seats unlocked", null);
     }
 
-    @Autowired
-    private com.ticketrush.service.CheckoutService checkoutService;
-
     @PostMapping("/seats/confirm")
-    public com.ticketrush.model.dto.LockSeatResponse confirmSeats(
-            @Valid @RequestBody com.ticketrush.model.dto.LockSeatRequest request,
-            org.springframework.security.core.Authentication authentication) {
+    public LockSeatResponse confirmSeats(
+            @Valid @RequestBody LockSeatRequest request,
+            Authentication authentication) {
         var session = checkoutService.createAndConfirmSession(request, authentication.getName());
-        return new com.ticketrush.model.dto.LockSeatResponse(
+        return new LockSeatResponse(
                 "COMPLETED".equals(session.getStatus()), "Booking confirmed", null, session.getOrderId());
     }
 }

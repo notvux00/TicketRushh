@@ -4,7 +4,7 @@ import com.ticketrush.model.dto.QueueStatusResponse;
 import com.ticketrush.service.VirtualQueueService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -16,10 +16,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/queue")
 @Validated
+@RequiredArgsConstructor
 public class QueueController {
 
-    @Autowired
-    private VirtualQueueService virtualQueueService;
+    private final VirtualQueueService virtualQueueService;
 
     // ═══════════════════════════════════════════
     // User Endpoints

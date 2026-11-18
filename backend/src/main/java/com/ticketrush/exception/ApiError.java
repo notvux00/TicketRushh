@@ -1,4 +1,4 @@
-package com.ticketrush.exeption;
+package com.ticketrush.exception;
 
 import java.util.Map;
 
