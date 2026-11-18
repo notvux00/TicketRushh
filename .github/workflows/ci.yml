@@ -39,20 +39,20 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
-      - name: Test SPA routing
-        run: node --test ../tests/spa_fallback.test.cjs
-      - name: Test event time across timezones
-        run: node --test ../tests/event_time.test.cjs
-      - name: Test session request guards
-        run: node --test ../tests/session_store.test.cjs
-      - name: Test checkout recovery ownership
-        run: node --test ../tests/booking_storage.test.cjs
+      - name: Test utilities and SPA routing
+        run: node --test ../tests/*.test.cjs
       - name: Install browser for session regression tests
         run: npx playwright install --with-deps chromium
       - name: Test sessions, checkout recovery and admin tools
         run: npm run test:browser
       - name: Build
         run: npm run build
+      - name: Check entry bundle size
+        run: |
+          entry=$(ls dist/assets/index-*.js)
+          size=$(stat -c%s "$entry")
+          echo "entry=$entry bytes=$size"
+          test "$size" -le 512000
 
   deployment:
     runs-on: ubuntu-latest

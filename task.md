@@ -298,13 +298,14 @@
 - **Test:** toàn bộ gate.
 
 ### P3-04 — Siết CI và dọn môi trường local
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-18, branch `task/P3-04-ci-gate`)
+- **Test:** `node --test tests/*.test.cjs` (16), lint `--max-warnings=0`, build + size check, Playwright 16/16, python 12.
 - **Vấn đề:** ESLint còn 4 warning nhưng CI không fail; `backend/target` root-owned chặn `mvnw test` local.
 - **File:** `frontend/package.json`, `.github/workflows/ci.yml`, `.gitignore`.
 - **Việc cần làm:**
-  - [ ] Đổi lint thành `eslint . --max-warnings=0` sau khi sửa warning.
-  - [ ] Thêm bước `npm run build` size check (cảnh báo > 500 kB).
-  - [ ] `sudo rm -rf backend/target` (local only) và xác nhận `./mvnw test` chạy.
+  - [x] Lint `eslint . --max-warnings=0`; sửa 4 warning hook ở Checkout/WaitingRoom.
+  - [x] CI build + check entry bundle <= 512000 bytes; gộp chạy toàn bộ node tests.
+  - [x] Dọn `backend/target` root-owned (chuyển ra ngoài repo), `./mvnw verify` chạy local với JDK 17.
 - **Acceptance:** CI fail khi có warning mới; local chạy được backend test.
 - **Test:** chạy lại CI local equivalent.
 

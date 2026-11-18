@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
 import {
@@ -91,6 +91,20 @@ export default function CheckoutPage() {
     };
   }, [authLoading, isAuthenticated, navigate, orderId, user.id]);
 
+  const handleExpire = useCallback(async () => {
+    if (!checkout || checkout.status !== "PENDING" || expiring.current) return;
+    expiring.current = true;
+    try {
+      await eventApi.cancelCheckout(orderId);
+      finishCheckout(user.id, checkout.showtimeId, orderId);
+    } catch (error) {
+      // Keep the reference if the server's terminal state could not be confirmed.
+      console.warn("Failed to cancel expired checkout", error);
+    } finally {
+      if (active.current) navigate(checkout.event?.id ? `/event/${checkout.event.id}` : "/");
+    }
+  }, [checkout, orderId, user.id, navigate]);
+
   useEffect(() => {
     if (!checkout?.expiresAt || checkout.status !== "PENDING") {
       setTimeLeft(0);
@@ -108,9 +122,9 @@ export default function CheckoutPage() {
     updateTimeLeft();
     const timer = setInterval(updateTimeLeft, 1000);
     return () => clearInterval(timer);
-  }, [checkout?.expiresAt, checkout?.status]);
+  }, [checkout?.expiresAt, checkout?.status, handleExpire]);
 
-  const selectedSeats = checkout?.selectedSeats ?? [];
+  const selectedSeats = useMemo(() => checkout?.selectedSeats ?? [], [checkout?.selectedSeats]);
   const event = checkout?.event;
   const showtime = checkout?.showtime;
 
@@ -168,20 +182,6 @@ export default function CheckoutPage() {
       setVoucherMessage({ type: "error", text: msg });
     } finally {
       setVoucherLoading(false);
-    }
-  };
-
-  const handleExpire = async () => {
-    if (!checkout || checkout.status !== "PENDING" || expiring.current) return;
-    expiring.current = true;
-    try {
-      await eventApi.cancelCheckout(orderId);
-      finishCheckout(user.id, checkout.showtimeId, orderId);
-    } catch (error) {
-      // Keep the reference if the server's terminal state could not be confirmed.
-      console.warn("Failed to cancel expired checkout", error);
-    } finally {
-      if (active.current) navigate(checkout.event?.id ? `/event/${checkout.event.id}` : "/");
     }
   };
 
