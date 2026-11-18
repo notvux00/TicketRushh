@@ -4,6 +4,8 @@ import { useAuth } from "./hooks/useAuth";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import AuthModal from "./components/auth/AuthModal";
+import ToastHost from "./components/ui/ToastHost";
+import ConfirmHost from "./components/ui/ConfirmHost";
 import { AuthProvider } from "./context/AuthContext";
 import AdminLayout from "./components/layout/AdminLayout";
 import Home from "./pages/Home";
@@ -85,6 +87,8 @@ function App() {
       </Suspense>
 
       <AuthModal />
+      <ToastHost />
+      <ConfirmHost />
     </AuthProvider>
   );
 }

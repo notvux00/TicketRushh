@@ -19,6 +19,8 @@ import {
   Grid,
 } from "lucide-react";
 import { adminApi } from "../api/adminApi";
+import { toast } from "../lib/toast";
+import { confirmAction } from "../lib/confirm";
 import { uploadMedia } from "../api/mediaApi";
 import { Resizable } from "re-resizable";
 
@@ -162,7 +164,7 @@ function AdminAddEvent() {
 
     // Kiểm tra định dạng
     if (!file.type.startsWith("image/")) {
-      alert("Vui lòng chọn file hình ảnh!");
+      toast.error("Vui lòng chọn file hình ảnh!");
       return;
     }
 
@@ -172,7 +174,7 @@ function AdminAddEvent() {
       handleInputChange("coverImage", publicUrl);
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Lỗi tải ảnh lên S3: " + error.message);
+      toast.error("Lỗi tải ảnh lên S3: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -186,13 +188,13 @@ function AdminAddEvent() {
 
     // Kiểm tra định dạng video
     if (!file.type.startsWith("video/")) {
-      alert("Vui lòng chọn file video!");
+      toast.error("Vui lòng chọn file video!");
       return;
     }
 
     // Giới hạn dung lượng (ví dụ 50MB)
     if (file.size > 50 * 1024 * 1024) {
-      alert("Video quá lớn! Vui lòng chọn file dưới 50MB.");
+      toast.error("Video quá lớn! Vui lòng chọn file dưới 50MB.");
       return;
     }
 
@@ -202,7 +204,7 @@ function AdminAddEvent() {
       handleInputChange("trailerUrl", publicUrl);
     } catch (error) {
       console.error("Video upload error:", error);
-      alert("Lỗi tải video lên S3: " + error.message);
+      toast.error("Lỗi tải video lên S3: " + error.message);
     } finally {
       setUploadingVideo(false);
     }
@@ -218,10 +220,10 @@ function AdminAddEvent() {
         // formData.zones đã có sẵn các thông số positionX, visualWidth từ Step 3
       });
 
-      alert("Chúc mừng! Sự kiện của bạn đã được xuất bản và khởi tạo dữ liệu thành công.");
+      toast.success("Chúc mừng! Sự kiện của bạn đã được xuất bản và khởi tạo dữ liệu thành công.");
       navigate("/admin/events");
     } catch (error) {
-      alert("Lỗi: " + (error.response?.data || "Không thể hoàn tất"));
+      toast.error("Lỗi: " + (error.response?.data || "Không thể hoàn tất"));
     } finally {
       setLoading(false);
     }
@@ -1202,13 +1204,9 @@ function AdminAddEvent() {
                     <div className="w-8 h-px bg-slate-100"></div>
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (formData.zones.length === 0) return;
-                        if (
-                          window.confirm(
-                            "Bạn có chắc chắn muốn xóa TOÀN BỘ các khu vực trên sơ đồ?",
-                          )
-                        ) {
+                        if (await confirmAction("Bạn có chắc chắn muốn xóa TOÀN BỘ các khu vực trên sơ đồ?")) {
                           setFormData((p) => ({ ...p, zones: [] }));
                           setEditingZone(null);
                         }
@@ -1398,8 +1396,8 @@ function AdminAddEvent() {
                             <Info size={14} strokeWidth={2.5} /> THUỘC TÍNH ZONE
                           </h3>
                           <button
-                            onClick={() => {
-                              if (window.confirm("Bạn có chắc chắn muốn xóa khu vực này?")) {
+                            onClick={async () => {
+                              if (await confirmAction("Bạn có chắc chắn muốn xóa khu vực này?")) {
                                 setFormData((p) => ({
                                   ...p,
                                   zones: p.zones.filter(

@@ -63,8 +63,8 @@ test("voucher create, toggle and safe deletion", async ({ context, page }) => {
   await page.getByRole("button", { name: "Lưu voucher" }).click();
   await expect(page.getByRole("status")).toContainText("Đã tạo voucher");
   expect(fixture.writes[0]).toMatchObject({ code: "NEWCODE", maxUsage: null, expiresAt: null, discountValue: 10000 });
-  page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Xóa NEWCODE" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
   await expect(page.getByRole("region", { name: "Danh sách voucher" })).not.toContainText("NEWCODE");
 });
 

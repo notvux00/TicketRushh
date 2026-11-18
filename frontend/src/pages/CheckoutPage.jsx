@@ -19,6 +19,8 @@ import { finishCheckout } from "../utils/bookingStorage";
 import { useAuth } from "../hooks/useAuth";
 import { eventApi } from "../api/eventApi";
 import { DEFAULT_QR_URL } from "../lib/mediaUrl";
+import { toast } from "../lib/toast";
+import { confirmAction } from "../lib/confirm";
 
 const PAYMENT_QR = DEFAULT_QR_URL;
 
@@ -184,7 +186,7 @@ export default function CheckoutPage() {
   };
 
   const handleCancelOrder = async () => {
-    if (!checkout || !window.confirm("Bạn có chắc muốn hủy đơn hàng này?")) return;
+    if (!checkout || !(await confirmAction("Bạn có chắc muốn hủy đơn hàng này?"))) return;
 
     setActionLoading(true);
     try {
@@ -193,7 +195,7 @@ export default function CheckoutPage() {
       if (active.current) navigate(`/event/${checkout.event.id}`);
     } catch (error) {
       console.error("Cancel checkout failed:", error);
-      alert("Không thể hủy đơn hàng. Vui lòng thử lại.");
+      toast.error("Không thể hủy đơn hàng. Vui lòng thử lại.");
     } finally {
       if (active.current) setActionLoading(false);
     }
@@ -203,7 +205,7 @@ export default function CheckoutPage() {
     if (!checkout) return;
 
     if (!navigator.onLine) {
-      alert("Bạn đang mất kết nối mạng. Thanh toán chưa được xác nhận.");
+      toast.error("Bạn đang mất kết nối mạng. Thanh toán chưa được xác nhận.");
       return;
     }
 
@@ -228,7 +230,7 @@ export default function CheckoutPage() {
       throw new Error(response.message || "Khong the xac nhan thanh toan.");
     } catch (error) {
       console.error("Confirm checkout failed:", error);
-      alert("Không thể xác nhận thanh toán. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại.");
+      toast.error("Không thể xác nhận thanh toán. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại.");
     } finally {
       if (active.current) setActionLoading(false);
     }

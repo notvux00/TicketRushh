@@ -12,6 +12,7 @@ import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
 import Navbar from "../components/layout/Navbar";
 import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
+import { confirmAction } from "../lib/confirm";
 
 export default function WaitingRoomPage() {
   const { eventId, showtimeId } = useParams();
@@ -56,7 +57,6 @@ export default function WaitingRoomPage() {
         console.error("Additional details: " + frame.body);
       },
       onWebSocketClose: () => {
-        console.log("Queue WebSocket: Connection closed");
       },
     });
 
@@ -109,7 +109,7 @@ export default function WaitingRoomPage() {
   }, [eventId, showtimeId, isAuthenticated, navigate]);
 
   const handleLeaveQueue = async () => {
-    if (window.confirm("Bạn có chắc chắn muốn rời hàng chờ? Bạn sẽ mất vị trí hiện tại.")) {
+    if (await confirmAction("Bạn có chắc chắn muốn rời hàng chờ? Bạn sẽ mất vị trí hiện tại.")) {
       try {
         await eventApi.leaveQueue(showtimeId);
         navigate(`/event/${eventId}`);

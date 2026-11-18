@@ -53,8 +53,8 @@ for (const action of ["completed", "expired", "confirm", "cancel", "expire", "ex
       await expect(page).toHaveURL(/payment-success/);
     }
     if (action === "cancel") {
-      page.once("dialog", dialog => dialog.accept());
       await page.getByRole("button", { name: /Hủy đơn/i }).click();
+      await page.getByRole("alertdialog").getByRole("button", { name: "Xác nhận", exact: true }).click();
       await expect(page).toHaveURL(/\/event\/event$/);
     }
     if (action === "expire" || action === "expire-failure") {
