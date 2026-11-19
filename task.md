@@ -405,22 +405,22 @@
 - **Test:** `npm run lint`, `npm run build` (font Vietnamese subset bundled), `npm run test:browser` 19/19; screenshot 390/1440 không lỗi console.
 
 ### UI-02 — Discovery: Home và Event Detail
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-02-discovery`)
 - **Vấn đề:** hero mobile bị cắt title; hero desktop thiếu thông tin ngày/địa điểm; filter
   category không reset được; nút “Xem thêm”, tab “Giới thiệu” và nhiều CTA là trang trí;
   event card/related event chưa thống nhất.
 - **File:** `frontend/src/pages/Home.jsx`, `frontend/src/pages/EventDetail.jsx`,
   `frontend/src/components/common/EventCard.jsx`.
 - **Việc cần làm:**
-  - [ ] Hero: `clamp()` type, `min-h` thay chiều cao cố định, scrim đủ tương phản, hiển thị
+  - [x] Hero: `clamp()` type, `min-h` thay chiều cao cố định, scrim đủ tương phản, hiển thị
     ngày/địa điểm; một CTA chính; countdown gọn hơn trên mobile.
-  - [ ] Category: map class literal, filter reset “Tất cả”, đồng bộ query param; “Xem thêm”
+  - [x] Category: map class literal, filter reset “Tất cả”, đồng bộ query param; “Xem thêm”
     hoạt động hoặc bỏ.
-  - [ ] Event Detail: title/date/venue trên hero, bỏ tab giả hoặc làm tab thật, sidebar
+  - [x] Event Detail: title/date/venue trên hero, bỏ tab giả hoặc làm tab thật, sidebar
     sticky, CTA mobile cố định; related events dùng chung `EventCard`.
 - **Acceptance:** 390px không cắt chữ/không tràn ngang; mọi control hiển thị đều có hành vi;
   event detail đọc được title/ngày/địa điểm/giá mà không cần scroll ngược.
-- **Test:** lint/build + Playwright + screenshot 390/1440.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 320/390/1440 không tràn ngang, không lỗi console.
 
 ### UI-03 — Booking flow và sơ đồ ghế
 - **Trạng thái:** todo

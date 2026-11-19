@@ -127,8 +127,8 @@
     top: var(--notch-top, 50%);
     width: 1.25rem;
     height: 1.25rem;
-    background: var(--color-background);
-    border: 1px solid var(--color-line);
+    background: var(--notch-bg, var(--color-background));
+    border: 1px solid var(--notch-border, var(--color-line));
     border-radius: 9999px;
     transform: translateY(-50%);
   }
