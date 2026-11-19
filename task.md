@@ -439,19 +439,19 @@
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 390/1440; sơ đồ mobile scroll ngang, sticky bar chỉ render dưới 1024px.
 
 ### UI-04 — Waiting Room và Checkout
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-04-queue-checkout`)
 - **Vấn đề:** waiting room ưu tiên media giả (“Highlights Concert 2026”, “04:12”) hơn vị trí
   và ETA; checkout mất countdown khi scroll, thiếu stepper, chữ phụ 9–10px khó đọc.
 - **File:** `frontend/src/pages/WaitingRoomPage.jsx`, `frontend/src/pages/CheckoutPage.jsx`.
 - **Việc cần làm:**
-  - [ ] Queue: hero là vị trí + số người phía trước + ETA + progress %; trạng thái kết nối
+  - [x] Queue: hero là vị trí + số người phía trước + ETA + progress %; trạng thái kết nối
     WebSocket/polling; media thật của event (hoặc bỏ khối trailer giả).
-  - [ ] Checkout: stepper 3 bước; timer/tổng tiền/CTA luôn nhìn thấy (sticky rail desktop,
+  - [x] Checkout: stepper 3 bước; timer/tổng tiền/CTA luôn nhìn thấy (sticky rail desktop,
     bottom bar mobile); tăng size/contrast label; tóm tắt vé thu gọn trên mobile.
-  - [ ] Xử lý trạng thái hết hạn/đã thanh toán rõ ràng, không mất ngữ cảnh.
+  - [x] Xử lý trạng thái hết hạn/đã thanh toán rõ ràng, không mất ngữ cảnh.
 - **Acceptance:** người dùng luôn biết mình đang ở bước nào, còn bao lâu, còn bao nhiêu tiền;
   queue không còn nội dung hard-code sai sự kiện; Playwright checkout pass.
-- **Test:** lint/build + Playwright `checkout-recovery.spec.js` + screenshot 390/1440.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 390/1440; không còn trailer/cover hard-code sai sự kiện.
 
 ### UI-05 — Accessibility, account và polish cuối
 - **Trạng thái:** todo

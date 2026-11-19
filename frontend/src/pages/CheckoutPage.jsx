@@ -288,16 +288,36 @@ export default function CheckoutPage() {
     <div className="bg-slate-50 text-slate-900 min-h-screen font-sans pb-12">
       <Navbar />
 
-      <main className="pt-24 px-4 flex flex-col items-center">
-        <div className="w-full max-w-2xl mb-8 flex items-center justify-center gap-4 py-6 px-8 rounded-2xl bg-amber-50 text-amber-900 border border-amber-200 shadow-lg shadow-amber-900/5">
-          <Clock className="w-8 h-8 animate-pulse text-amber-600" />
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight">Hoàn tất thanh toán trong {formatTime(timeLeft)}</span>
-            <span className="text-xs font-medium text-amber-700/80 uppercase tracking-widest">Đơn hàng đang được giữ chỗ</span>
-          </div>
-        </div>
+      <main className="px-4 pb-32 pt-20">
+        <div className="mx-auto w-full max-w-2xl">
+          <ol className="mb-5 flex items-center gap-2 text-xs font-semibold text-muted" aria-label="Tiến trình thanh toán">
+            <li className="flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-success-soft text-[11px] font-extrabold text-success">1</span>
+              <span className="hidden sm:inline">Chọn ghế</span>
+            </li>
+            <span className="h-px flex-1 bg-line" aria-hidden="true" />
+            <li className="flex items-center gap-2" aria-current="step">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-[11px] font-extrabold text-white">2</span>
+              <span className="text-text">Thanh toán</span>
+            </li>
+            <span className="h-px flex-1 bg-line" aria-hidden="true" />
+            <li className="flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-line/60 text-[11px] font-extrabold text-muted">3</span>
+              <span className="hidden sm:inline">Nhận vé</span>
+            </li>
+          </ol>
 
-        <div className="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 overflow-hidden border border-slate-200">
+          <div className="mb-6 flex items-center justify-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-amber-900 shadow-sm sm:gap-4 sm:px-6">
+            <Clock className="h-6 w-6 shrink-0 animate-pulse text-amber-600" aria-hidden="true" />
+            <div className="flex min-w-0 flex-col">
+              <span className="price text-base font-bold tracking-tight sm:text-lg">
+                Thanh toán trong {formatTime(timeLeft)}
+              </span>
+              <span className="text-[11px] font-medium text-amber-700/80">Đơn hàng đang được giữ chỗ</span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
           <div className="relative h-48 w-full overflow-hidden bg-slate-900">
             {event?.coverImage ? (
               <EventImage alt="Event header" className="w-full h-full object-cover opacity-60" src={event.coverImage} loading="eager" />
@@ -317,7 +337,7 @@ export default function CheckoutPage() {
                   <Calendar className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Thời gian</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Thời gian</p>
                   <p className="text-sm font-semibold text-slate-900">
                     {showtime?.startTime
                       ? new Date(showtime.startTime).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh",
@@ -337,7 +357,7 @@ export default function CheckoutPage() {
                   <MapPin className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Địa điểm</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Địa điểm</p>
                   <p className="text-sm font-semibold text-slate-900">{event?.venueName || "Venue"}</p>
                 </div>
               </div>
@@ -372,11 +392,11 @@ export default function CheckoutPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Họ và tên</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Họ và tên</p>
                   <p className="text-sm font-semibold text-slate-900">{user?.user_metadata?.full_name || "Khách hàng"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Email</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Email</p>
                   <p className="text-sm font-semibold text-slate-900">{user?.email}</p>
                 </div>
               </div>
@@ -414,12 +434,12 @@ export default function CheckoutPage() {
                   }}
                   placeholder="Nhập mã giảm giá"
                   disabled={voucherLoading}
-                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold uppercase text-slate-900 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors disabled:bg-slate-100"
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-mono font-bold uppercase text-slate-900 placeholder:normal-case placeholder:font-sans placeholder:font-normal placeholder:text-slate-500 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors disabled:bg-slate-100"
                 />
                 <button
                   onClick={() => handleApplyVoucher()}
                   disabled={voucherLoading || !voucherCodeInput.trim()}
-                  className="px-6 py-2.5 bg-blue-700 hover:bg-blue-800 active:scale-[0.98] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 disabled:pointer-events-none"
+                  className="whitespace-nowrap rounded-xl bg-blue-700 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-blue-800 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
                 >
                   {voucherLoading ? "Đang áp dụng..." : "Áp dụng"}
                 </button>
@@ -438,7 +458,7 @@ export default function CheckoutPage() {
 
               {/* Danh sách Voucher tick chọn 1 mã (Shopee Style) */}
               <div className="space-y-2 pt-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Chọn 1 mã giảm giá
                 </p>
 
@@ -482,7 +502,7 @@ export default function CheckoutPage() {
                                 ? "bg-blue-700 text-white"
                                 : isEligible
                                 ? "bg-blue-50 text-blue-700 border border-blue-100"
-                                : "bg-slate-200 text-slate-400"
+                                : "bg-slate-200 text-slate-500"
                             }`}
                           >
                             <span className="text-[9px] font-bold uppercase tracking-tighter">GIẢM</span>
@@ -500,7 +520,7 @@ export default function CheckoutPage() {
                                 {v.code}
                               </span>
                               {v.maxDiscount && (
-                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                                   Tối đa {new Intl.NumberFormat("vi-VN").format(v.maxDiscount)} đ
                                 </span>
                               )}
@@ -508,7 +528,7 @@ export default function CheckoutPage() {
                             <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
                               {v.description}
                             </p>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
+                            <p className="text-[11px] text-slate-500 mt-0.5">
                               {v.minOrderPrice
                                 ? `Đơn tối thiểu ${new Intl.NumberFormat("vi-VN").format(v.minOrderPrice)} đ`
                                 : "Mọi giá trị đơn hàng"}
@@ -564,9 +584,9 @@ export default function CheckoutPage() {
               <div className="flex items-end justify-between px-1">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-slate-500">Đã bao gồm thuế phí</p>
-                  <p className="text-2xl font-black text-blue-900 tracking-tighter">TỔNG TIỀN</p>
+                  <p className="whitespace-nowrap text-xl font-black tracking-tighter text-blue-900 sm:text-2xl">TỔNG TIỀN</p>
                 </div>
-                <p className="text-4xl font-black text-blue-900 tracking-tighter">
+                <p className="price whitespace-nowrap text-right text-3xl font-black tracking-tighter text-blue-900 sm:text-4xl">
                   {new Intl.NumberFormat("vi-VN").format(checkout?.totalPrice ?? totalPrice)} đ
                 </p>
               </div>
@@ -595,19 +615,19 @@ export default function CheckoutPage() {
 
                 <div className="flex-1 space-y-4 w-full">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Ngân hàng</p>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Ngân hàng</p>
                     <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-[#0047ab] text-[10px] text-white font-bold rounded">MB</span>
+                      <span className="px-2 py-0.5 bg-[#0047ab] text-[11px] text-white font-bold rounded">MB</span>
                       MB Bank
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Người thụ hưởng</p>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Người thụ hưởng</p>
                     <p className="text-sm font-bold text-slate-900 uppercase">CÔNG TY TICKETRUSH</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Số tài khoản</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Số tài khoản</p>
                       <p className="text-lg font-mono font-black text-blue-700 tracking-wider">1900 8888 6666</p>
                     </div>
                     <button
@@ -624,7 +644,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Nội dung chuyển khoản</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Nội dung chuyển khoản</p>
                       <p className="text-base font-mono font-bold text-slate-900">
                         {`ORDER ${orderId.replace(/-/g, "").slice(0, 8).toUpperCase()}`}
                       </p>
@@ -647,26 +667,41 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="pt-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleCancelOrder}
-                  disabled={actionLoading}
-                  className="flex-1 py-5 bg-white border border-red-500 text-red-600 font-black text-sm sm:text-base tracking-widest rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  <XCircle className="w-5 h-5" />
-                  HỦY ĐƠN
-                </button>
-                <button
-                  onClick={handleConfirmPayment}
-                  disabled={actionLoading || timeLeft <= 0}
-                  className="flex-[2] py-5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-black text-sm sm:text-base tracking-widest rounded-xl shadow-xl shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Lock className="w-5 h-5" />
-                  XÁC NHẬN ĐÃ CHUYỂN
-                </button>
-              </div>
+          </div>
+        </div>
+        </div>
+
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-2xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="price text-xs font-bold text-urgency">Còn {formatTime(timeLeft)}</p>
+              <p className="price truncate text-lg font-extrabold leading-tight text-primary">
+                {new Intl.NumberFormat("vi-VN").format(checkout?.totalPrice ?? totalPrice)} đ
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={handleCancelOrder}
+              disabled={actionLoading}
+              aria-label="Hủy đơn"
+              className="h-12 shrink-0 rounded-xl border border-danger/40 px-3 text-sm font-bold text-danger disabled:opacity-50"
+            >
+              <span className="flex items-center gap-1.5">
+                <XCircle className="h-4 w-4" />
+                <span>Hủy</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmPayment}
+              disabled={actionLoading || timeLeft <= 0}
+              className="h-12 shrink-0 rounded-xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Xác nhận đã chuyển
+            </button>
           </div>
         </div>
       </main>

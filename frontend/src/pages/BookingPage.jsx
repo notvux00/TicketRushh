@@ -29,6 +29,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "../lib/toast";
 import { money } from "../utils/adminFormat";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { fitHallLayout, HALL_VIEW_HEIGHT, HALL_VIEW_WIDTH } from "../utils/seatView";
 
 const ZONE_COLORS = [
@@ -42,22 +43,6 @@ const ZONE_COLORS = [
 ];
 
 const normalizeStatus = (status) => String(status || "AVAILABLE").toLowerCase();
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window === "undefined" ? false : window.matchMedia("(max-width: 1023px)").matches,
-  );
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 1023px)");
-    const handleChange = () => setIsMobile(query.matches);
-    handleChange();
-    query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
-  }, []);
-
-  return isMobile;
-}
 
 export default function BookingPage() {
   const { eventId, showtimeId } = useParams();
