@@ -69,6 +69,7 @@ export default function HallSeatMap({
         className="relative mx-auto"
         style={{
           width: `${zoom * 100}%`,
+          minWidth: 720,
           aspectRatio: `${HALL_VIEW_WIDTH} / ${HALL_VIEW_HEIGHT}`,
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.16) 1px, transparent 0)",
@@ -186,7 +187,7 @@ export default function HallSeatMap({
                           onMouseEnter={() => onSeatPreview(seat)}
                           onMouseLeave={() => onSeatPreview(null)}
                           onFocus={() => onSeatPreview(seat)}
-                          className={`flex min-h-0 min-w-0 items-center justify-center rounded-[4px] border text-[7px] font-black leading-none transition-all ${classes}`}
+                          className={`flex min-h-0 min-w-0 items-center justify-center rounded-[4px] border text-[8px] font-black leading-none transition-all ${classes}`}
                           style={{ gridColumn: visualColumn(seat.gridCol), gridRow: rowIndex.get(seat.gridRow) }}
                         >
                           {isSelected ? (

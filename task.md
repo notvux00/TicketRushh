@@ -423,20 +423,20 @@
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 320/390/1440 không tràn ngang, không lỗi console.
 
 ### UI-03 — Booking flow và sơ đồ ghế
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-03-booking`)
 - **Vấn đề:** sơ đồ 24 cột bị ép còn ~10px trên mobile; CTA thanh toán nằm cuối trang;
   thiếu dấu hiệu “ghế đang được giữ”, bước hiện tại và tổng tiền luôn nhìn thấy.
 - **File:** `frontend/src/pages/BookingPage.jsx`, `frontend/src/components/booking/HallSeatMap.jsx`,
   `SeatLegend.jsx`, `ViewFromSeat.jsx`.
 - **Việc cần làm:**
-  - [ ] Sơ đồ có min-width/scroll ngang + zoom hiện có; hit target ghế >= 24px; tooltip/focus.
-  - [ ] Sticky bottom bar mobile: tổng tiền + CTA, không che legend/ghế.
-  - [ ] Step indicator 1/3; nhắc thời gian giữ ghế; phân biệt trạng thái trống/đang chọn/
+  - [x] Sơ đồ có min-width/scroll ngang + zoom hiện có; hit target ghế >= 24px; tooltip/focus.
+  - [x] Sticky bottom bar mobile: tổng tiền + CTA, không che legend/ghế.
+  - [x] Step indicator 1/3; nhắc thời gian giữ ghế; phân biệt trạng thái trống/đang chọn/
     người khác giữ/đã bán bằng màu + icon + text (không chỉ màu).
-  - [ ] Desktop giữ layout 2 cột, sidebar sticky; Playwright cũ vẫn pass.
+  - [x] Desktop giữ layout 2 cột, sidebar sticky; Playwright cũ vẫn pass.
 - **Acceptance:** chọn/bỏ ghế được trên mobile bằng một tay; tổng tiền cập nhật ngay;
   không có control trùng nghĩa gây nhầm; 0 lỗi console.
-- **Test:** lint/build + Playwright `seat-map.spec.js` + screenshot 390/1440.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 390/1440; sơ đồ mobile scroll ngang, sticky bar chỉ render dưới 1024px.
 
 ### UI-04 — Waiting Room và Checkout
 - **Trạng thái:** todo
