@@ -290,7 +290,7 @@ export default function EventDetail() {
                           {zone.name}
                         </span>
                         <span className="price whitespace-nowrap text-base font-extrabold text-primary">
-                          {new Intl.NumberFormat("vi-VN").format(zone.price)}đ
+                          {zone.price > 0 ? `${new Intl.NumberFormat("vi-VN").format(zone.price)}đ` : "Giá liên hệ"}
                         </span>
                       </div>
                     ))}
@@ -400,7 +400,9 @@ export default function EventDetail() {
               <div className="mt-5 border-t border-dashed border-line pt-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-muted">Giá vé từ</p>
+                    <p className="text-xs font-semibold text-muted">
+                      {event.minPrice > 0 ? "Giá vé từ" : "Giá vé"}
+                    </p>
                     <p className="price text-2xl font-extrabold tracking-tight text-primary">
                       {event.minPrice > 0 ? `${new Intl.NumberFormat("vi-VN").format(event.minPrice)}đ` : "Giá liên hệ"}
                     </p>
