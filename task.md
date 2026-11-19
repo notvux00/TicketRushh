@@ -374,6 +374,116 @@
 
 ---
 
+## UI — Cải thiện giao diện và phát hành live (2026-11-19)
+
+> Mục tiêu: giao diện phục vụ đúng bài toán đặt vé đồng thời cao, có sơ đồ ghế realtime,
+> hàng chờ và thanh toán giới hạn thời gian; kết thúc bằng bản chạy thật tại
+> `https://ticketrush.sudothanh.me`.
+>
+> Hướng thiết kế: **box-office editorial** cho phần khám phá, **operational calm** cho
+> phần giao dịch. Một font tiếng Việt, token màu/bo góc/shadow thống nhất, bỏ
+> glassmorphism, CTA và trạng thái ghế phải nổi bật hơn hiệu ứng trang trí.
+
+### UI-01 — Nền tảng thiết kế và shared shell
+- **Trạng thái:** todo
+- **Vấn đề:** chưa load font (UI phụ thuộc font OS); token thiếu success/warning/danger,
+  radius/shadow rời rạc; class Tailwind động ở Home không được generate; `text-on-surface`,
+  `bg-primary-container`, `animate-in`, `prose` không tồn tại; navbar mobile không có
+  search/menu; footer nhiều link chết.
+- **File:** `frontend/index.html`, `frontend/src/index.css`, `frontend/src/components/layout/Navbar.jsx`,
+  `frontend/src/components/layout/Footer.jsx`, `frontend/src/main.jsx`, các page dùng class lỗi.
+- **Việc cần làm:**
+  - [ ] Self-host/import `Be Vietnam Pro` (Vietnamese subset) và khai báo `--font-sans`.
+  - [ ] Bổ sung token: ink/paper/action/urgency/success/danger/line, radius 8/12/20/999,
+    shadow 2 mức; `tabular-nums` cho giá/tiền; focus-visible, selection, reduced-motion.
+  - [ ] Thay class động bằng map literal; định nghĩa hoặc thay `on-surface`/`primary-container`.
+  - [ ] Bỏ `animate-in/prose` không có plugin hoặc thay bằng CSS/typography tối giản.
+  - [ ] Navbar mobile: search + menu, keyboard/Escape, `aria-expanded`, target >= 44px.
+  - [ ] Footer: link category thật (URL filter), bỏ link chết; gọn hơn trên mobile.
+- **Acceptance:** không còn class không được generate; font hiển thị nhất quán trên Linux/CI;
+  navbar dùng được ở 320/390/768/1440; `npm run lint && npm run build` pass; Playwright pass.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser`.
+
+### UI-02 — Discovery: Home và Event Detail
+- **Trạng thái:** todo
+- **Vấn đề:** hero mobile bị cắt title; hero desktop thiếu thông tin ngày/địa điểm; filter
+  category không reset được; nút “Xem thêm”, tab “Giới thiệu” và nhiều CTA là trang trí;
+  event card/related event chưa thống nhất.
+- **File:** `frontend/src/pages/Home.jsx`, `frontend/src/pages/EventDetail.jsx`,
+  `frontend/src/components/common/EventCard.jsx`.
+- **Việc cần làm:**
+  - [ ] Hero: `clamp()` type, `min-h` thay chiều cao cố định, scrim đủ tương phản, hiển thị
+    ngày/địa điểm; một CTA chính; countdown gọn hơn trên mobile.
+  - [ ] Category: map class literal, filter reset “Tất cả”, đồng bộ query param; “Xem thêm”
+    hoạt động hoặc bỏ.
+  - [ ] Event Detail: title/date/venue trên hero, bỏ tab giả hoặc làm tab thật, sidebar
+    sticky, CTA mobile cố định; related events dùng chung `EventCard`.
+- **Acceptance:** 390px không cắt chữ/không tràn ngang; mọi control hiển thị đều có hành vi;
+  event detail đọc được title/ngày/địa điểm/giá mà không cần scroll ngược.
+- **Test:** lint/build + Playwright + screenshot 390/1440.
+
+### UI-03 — Booking flow và sơ đồ ghế
+- **Trạng thái:** todo
+- **Vấn đề:** sơ đồ 24 cột bị ép còn ~10px trên mobile; CTA thanh toán nằm cuối trang;
+  thiếu dấu hiệu “ghế đang được giữ”, bước hiện tại và tổng tiền luôn nhìn thấy.
+- **File:** `frontend/src/pages/BookingPage.jsx`, `frontend/src/components/booking/HallSeatMap.jsx`,
+  `SeatLegend.jsx`, `ViewFromSeat.jsx`.
+- **Việc cần làm:**
+  - [ ] Sơ đồ có min-width/scroll ngang + zoom hiện có; hit target ghế >= 24px; tooltip/focus.
+  - [ ] Sticky bottom bar mobile: tổng tiền + CTA, không che legend/ghế.
+  - [ ] Step indicator 1/3; nhắc thời gian giữ ghế; phân biệt trạng thái trống/đang chọn/
+    người khác giữ/đã bán bằng màu + icon + text (không chỉ màu).
+  - [ ] Desktop giữ layout 2 cột, sidebar sticky; Playwright cũ vẫn pass.
+- **Acceptance:** chọn/bỏ ghế được trên mobile bằng một tay; tổng tiền cập nhật ngay;
+  không có control trùng nghĩa gây nhầm; 0 lỗi console.
+- **Test:** lint/build + Playwright `seat-map.spec.js` + screenshot 390/1440.
+
+### UI-04 — Waiting Room và Checkout
+- **Trạng thái:** todo
+- **Vấn đề:** waiting room ưu tiên media giả (“Highlights Concert 2026”, “04:12”) hơn vị trí
+  và ETA; checkout mất countdown khi scroll, thiếu stepper, chữ phụ 9–10px khó đọc.
+- **File:** `frontend/src/pages/WaitingRoomPage.jsx`, `frontend/src/pages/CheckoutPage.jsx`.
+- **Việc cần làm:**
+  - [ ] Queue: hero là vị trí + số người phía trước + ETA + progress %; trạng thái kết nối
+    WebSocket/polling; media thật của event (hoặc bỏ khối trailer giả).
+  - [ ] Checkout: stepper 3 bước; timer/tổng tiền/CTA luôn nhìn thấy (sticky rail desktop,
+    bottom bar mobile); tăng size/contrast label; tóm tắt vé thu gọn trên mobile.
+  - [ ] Xử lý trạng thái hết hạn/đã thanh toán rõ ràng, không mất ngữ cảnh.
+- **Acceptance:** người dùng luôn biết mình đang ở bước nào, còn bao lâu, còn bao nhiêu tiền;
+  queue không còn nội dung hard-code sai sự kiện; Playwright checkout pass.
+- **Test:** lint/build + Playwright `checkout-recovery.spec.js` + screenshot 390/1440.
+
+### UI-05 — Accessibility, account và polish cuối
+- **Trạng thái:** todo
+- **Vấn đề:** nhiều label 9–10px, `text-slate-400` trên trắng; modal MyTickets/AuthModal
+  thiếu `role=dialog`/focus trap/Escape; nút icon thiếu aria; MyTickets có nút chết.
+- **File:** `frontend/src/pages/MyTickets.jsx`, `Profile.jsx`, `components/auth/AuthModal.jsx`,
+  `components/ui/*`, các file còn sót text quá nhỏ.
+- **Việc cần làm:**
+  - [ ] Tăng size tối thiểu 12px cho label phụ, 14px cho body; thay slate-400 bằng slate-500/600.
+  - [ ] Modal: role/aria-modal, focus trap, Escape, trả focus; nút icon có aria-label.
+  - [ ] Bỏ hoặc hoàn thiện “Tải thêm”/`MoreVertical`; empty state rõ hành động.
+  - [ ] Rà `prefers-reduced-motion`, hover lift, focus ring toàn app.
+- **Acceptance:** keyboard đi hết flow chính; không còn text < 12px mang thông tin;
+  Lighthouse a11y không có lỗi contrast/name/role nghiêm trọng.
+- **Test:** lint/build + Playwright toàn bộ + kiểm tra keyboard thủ công.
+
+### DEPLOY-01 — Phát hành live và xác minh
+- **Trạng thái:** todo
+- **Vấn đề:** bản live hiện là build cũ; cần phát hành đúng artifact và xác minh trên domain thật.
+- **File:** `frontend/`, `docs/AWS_DEPLOY.md`, `README.md`.
+- **Việc cần làm:**
+  - [ ] Build với `VITE_API_URL=/api`, `VITE_WS_URL=""`, `VITE_MEDIA_BASE_URL=""`.
+  - [ ] Sync asset hash trước, `index.html` sau, `--cache-control` đúng; invalidate `/`.
+  - [ ] Smoke live: `/api/status`, `/`, assets, login, event detail, booking, queue, checkout,
+    admin; ghi 0 console error và HTTP status.
+  - [ ] Ghi URL + thời điểm deploy vào task.md/README nếu cần.
+- **Acceptance:** `https://ticketrush.sudothanh.me` chạy bản mới, flow chính hoạt động,
+  asset không 404, không lỗi console/CSP.
+- **Test:** build + `aws s3 sync` + CloudFront invalidation + Playwright live smoke.
+
+---
+
 ## Thứ tự thực hiện đề xuất
 
 1. **Sprint 1 (P0):** P0-01 → P0-02 → P0-04 → P0-05 → P0-03.
