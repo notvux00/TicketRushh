@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Calendar,
+  ChevronUp,
   CreditCard,
   Info,
   Maximize2,
@@ -57,6 +58,7 @@ export default function BookingPage() {
   const [previewSeat, setPreviewSeat] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [focusedZoneId, setFocusedZoneId] = useState(null);
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
 
   const [initialCart] = useState(() => readCart(user.id, showtimeId));
   const [selectedSeats, setSelectedSeats] = useState(initialCart.seats);
@@ -84,6 +86,10 @@ export default function BookingPage() {
   const totalAvailable = zoneStats.reduce((sum, zone) => sum + zone.availableSeats, 0);
   const activeSeat = previewSeat || selectedSeats[selectedSeats.length - 1] || null;
   const activeZone = hallLayout.zones.find((zone) => zone.id === activeSeat?.zoneId) || null;
+
+  useEffect(() => {
+    if (selectedSeats.length === 0) setCartSheetOpen(false);
+  }, [selectedSeats.length]);
 
   useEffect(() => {
     if (savedSeats.current === selectedSeats || creatingCheckout.current) return;
@@ -600,26 +606,90 @@ export default function BookingPage() {
       </div>
 
       {isMobile && (
-      <div
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-      >
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-muted">
-              {selectedSeats.length > 0 ? `${selectedSeats.length}/${maxTickets} vé đã chọn` : "Chưa chọn ghế"}
-            </p>
-            <p className="price truncate text-lg font-extrabold leading-tight text-primary">{money(totalPrice)}</p>
-          </div>
-          <button
-            type="button"
-            onClick={handleCheckout}
-            disabled={selectedSeats.length === 0}
-            aria-label={`Thanh toán ${money(totalPrice)}`}
-            className="h-12 shrink-0 rounded-xl bg-primary px-6 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+      <div className="fixed inset-x-0 bottom-0 z-50">
+        {cartSheetOpen && (
+          <section
+            id="mobile-cart-sheet"
+            aria-label="Ghế đã chọn"
+            className="max-h-[55vh] overflow-y-auto rounded-t-2xl border-x border-t border-line bg-surface px-4 pb-2 pt-3 shadow-lift"
           >
-            Thanh toán
-          </button>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold text-text">
+                Ghế đã chọn · {selectedSeats.length}/{maxTickets}
+              </p>
+              {selectedSeats.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSeats([])}
+                  className="text-[11px] font-semibold text-muted underline underline-offset-2 hover:text-danger"
+                >
+                  Bỏ tất cả
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {selectedSeats.map((seat) => (
+                <div
+                  key={seat.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-semibold text-muted">{seat.zoneName}</p>
+                    <p className="text-sm font-extrabold text-text">Ghế {seat.seatLabel}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="price text-xs font-bold text-muted">{money(seat.price)}</span>
+                    <button
+                      type="button"
+                      aria-label={`Bỏ ghế ${seat.seatLabel} khỏi giỏ`}
+                      onClick={() => handleRemoveSeat(seat.id)}
+                      className="grid h-8 w-8 place-items-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-danger"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div
+          className="border-t border-line bg-surface/95 px-4 py-3 backdrop-blur"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-7xl items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setCartSheetOpen((open) => !open)}
+              disabled={selectedSeats.length === 0}
+              aria-expanded={cartSheetOpen}
+              aria-controls="mobile-cart-sheet"
+              aria-label={cartSheetOpen ? "Thu gọn ghế đã chọn" : "Mở ghế đã chọn"}
+              className="min-w-0 flex-1 text-left disabled:cursor-default"
+            >
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+                {selectedSeats.length > 0 ? `${selectedSeats.length}/${maxTickets} vé đã chọn` : "Chưa chọn ghế"}
+                {selectedSeats.length > 0 && (
+                  <ChevronUp
+                    size={14}
+                    aria-hidden="true"
+                    className={`transition-transform ${cartSheetOpen ? "rotate-180" : ""}`}
+                  />
+                )}
+              </p>
+              <p className="price truncate text-lg font-extrabold leading-tight text-primary">{money(totalPrice)}</p>
+            </button>
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={selectedSeats.length === 0}
+              aria-label={`Thanh toán ${money(totalPrice)}`}
+              className="h-12 shrink-0 rounded-xl bg-primary px-6 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+            >
+              Thanh toán
+            </button>
+          </div>
         </div>
       </div>
       )}

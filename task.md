@@ -577,16 +577,17 @@
   chip `VIP`/`Tất cả` trong `seat-map.spec.js` (pass 2026-11-19).
 
 ### UR-03 — Bottom sheet giỏ ghế trên mobile
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-03-mobile-cart`)
 - **Vấn đề:** bottom bar hiện chỉ có tổng tiền và CTA; muốn xem/bỏ từng ghế phải scroll
   lên sidebar (bị đẩy xuống dưới map trên mobile).
 - **File:** `frontend/src/pages/BookingPage.jsx`.
 - **Việc cần làm:**
-  - [ ] Thêm trạng thái mở/đóng; collapsed giữ nguyên bar hiện tại.
-  - [ ] Expanded hiện danh sách ghế, zone, giá, nút bỏ từng ghế; cao tối đa ~55vh.
-  - [ ] `aria-expanded`, `aria-controls`, đóng khi hết ghế; CTA luôn hiển thị.
+  - [x] Thêm trạng thái mở/đóng; collapsed giữ nguyên bar hiện tại.
+  - [x] Expanded hiện danh sách ghế, zone, giá, nút bỏ từng ghế; cao tối đa ~55vh.
+  - [x] `aria-expanded`, `aria-controls`, đóng khi hết ghế; CTA luôn hiển thị.
 - **Acceptance:** một tay mở/đóng được; bỏ ghế cập nhật tổng tiền ngay; không che CTA.
-- **Test:** lint/build + Playwright + kiểm tra 390px.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; thêm assertion
+  mở sheet, bỏ ghế và tự đóng ở viewport 390px (pass 2026-11-19).
 
 ### UR-04 — Card/detail: giá và thời gian quyết định rõ hơn
 - **Trạng thái:** todo
