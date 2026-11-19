@@ -5,6 +5,8 @@
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
 > **Kết quả 2026-11-18:** 25/25 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
+> **Kết quả 2026-11-19:** UI-01…UI-06 + DEPLOY-01 `verified`; bản mới đang chạy tại
+> https://ticketrush.sudothanh.me (CloudFront/S3, smoke test 0 lỗi console).
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -484,18 +486,22 @@
 - **Test:** lint/build + Playwright với fixture category live + kiểm tra trên domain sau deploy.
 
 ### DEPLOY-01 — Phát hành live và xác minh
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/DEPLOY-01-live`)
 - **Vấn đề:** bản live hiện là build cũ; cần phát hành đúng artifact và xác minh trên domain thật.
 - **File:** `frontend/`, `docs/AWS_DEPLOY.md`, `README.md`.
 - **Việc cần làm:**
-  - [ ] Build với `VITE_API_URL=/api`, `VITE_WS_URL=""`, `VITE_MEDIA_BASE_URL=""`.
-  - [ ] Sync asset hash trước, `index.html` sau, `--cache-control` đúng; invalidate `/`.
-  - [ ] Smoke live: `/api/status`, `/`, assets, login, event detail, booking, queue, checkout,
+  - [x] Build với `VITE_API_URL=/api`, `VITE_WS_URL=""`, `VITE_MEDIA_BASE_URL=""`.
+  - [x] Sync asset hash trước, `index.html` sau, `--cache-control` đúng; invalidate `/`.
+  - [x] Smoke live: `/api/status`, `/`, assets, login, event detail, booking, queue, checkout,
     admin; ghi 0 console error và HTTP status.
-  - [ ] Ghi URL + thời điểm deploy vào task.md/README nếu cần.
+  - [x] Ghi URL + thời điểm deploy vào task.md/README nếu cần.
 - **Acceptance:** `https://ticketrush.sudothanh.me` chạy bản mới, flow chính hoạt động,
   asset không 404, không lỗi console/CSP.
-- **Test:** build + `aws s3 sync` + CloudFront invalidation + Playwright live smoke.
+- **Test:** production build `VITE_API_URL=/api`, `VITE_WS_URL=""`, `VITE_MEDIA_BASE_URL=""`;
+  `aws s3 sync` + CloudFront invalidation `IF0F58OH4IEBAKU2ER4047APDR`;
+  live smoke: font Be Vietnam Pro load, 4 sự kiện, filter `STAGE` trả 2 sự kiện, event detail,
+  admin login → `/admin`; booking live: chọn ghế A1 → checkout 09:59 → hủy đơn về event;
+  0 console error / 0 HTTP >= 400.
 
 ---
 

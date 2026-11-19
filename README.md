@@ -1,6 +1,6 @@
 # TicketRush
 
-Ứng dụng đặt vé sự kiện với Spring Boot, React, PostgreSQL và Redis. Hạ tầng AWS được mô tả bằng Terraform; chưa xác nhận triển khai thành công trên AWS thật.
+Ứng dụng đặt vé sự kiện với Spring Boot, React, PostgreSQL và Redis. Bản demo đã triển khai trên AWS tại **https://ticketrush.sudothanh.me**; hạ tầng được quản lý bằng Terraform.
 
 ## Chức năng
 
