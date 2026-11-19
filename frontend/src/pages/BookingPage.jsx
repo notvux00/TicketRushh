@@ -43,6 +43,22 @@ const ZONE_COLORS = [
 
 const normalizeStatus = (status) => String(status || "AVAILABLE").toLowerCase();
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window === "undefined" ? false : window.matchMedia("(max-width: 1023px)").matches,
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const handleChange = () => setIsMobile(query.matches);
+    handleChange();
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  return isMobile;
+}
+
 export default function BookingPage() {
   const { eventId, showtimeId } = useParams();
   const navigate = useNavigate();
@@ -62,6 +78,7 @@ export default function BookingPage() {
   const savedSeats = useRef(initialCart.seats);
   const creatingCheckout = useRef(false);
 
+  const isMobile = useIsMobile();
   const maxTickets = event?.maxTicketsPerOrder ?? 4;
   const selectedSeatIds = useMemo(() => new Set(selectedSeats.map((seat) => seat.id)), [selectedSeats]);
   const isAtLimit = selectedSeats.length >= maxTickets;
@@ -321,55 +338,67 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20">
+    <div className="min-h-screen bg-background pt-20">
       <Navbar />
 
-      <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 pb-28 lg:flex-row lg:items-start lg:py-6 lg:pb-10">
         <main className="min-w-0 flex-1 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-muted">
+              Bước <span className="font-extrabold text-text">1</span> / 3 · Chọn ghế
+            </p>
+            <div className="flex items-center gap-1.5" aria-hidden="true">
+              <span className="h-1.5 w-8 rounded-full bg-primary" />
+              <span className="h-1.5 w-8 rounded-full bg-line" />
+              <span className="h-1.5 w-8 rounded-full bg-line" />
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <button
               onClick={() => navigate(`/event/${eventId}`)}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 shadow-sm transition-colors hover:text-primary"
+              className="flex h-10 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-xs font-bold text-muted shadow-sm transition-colors hover:text-primary"
             >
               <ArrowLeft size={16} /> Quay lại sự kiện
             </button>
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Đã chọn</span>
-              <span className={`rounded-lg px-2.5 py-1 text-xs font-black ${isAtLimit ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
+            <div className="flex h-10 items-center gap-3 rounded-xl border border-line bg-surface px-4 shadow-sm">
+              <span className="text-xs font-semibold text-muted">Đã chọn</span>
+              <span className={`rounded-lg px-2.5 py-1 text-xs font-extrabold ${isAtLimit ? "bg-urgency-soft text-urgency" : "bg-primary/10 text-primary"}`}>
                 {selectedSeats.length} / {maxTickets}
               </span>
             </div>
           </div>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Sơ đồ hội trường</p>
-                <h1 className="mt-1 text-xl font-black leading-tight tracking-tight text-slate-900">
+                <p className="text-xs font-semibold text-muted">Sơ đồ hội trường</p>
+                <h1 className="mt-1 text-xl font-extrabold leading-tight tracking-tight text-text">
                   {event?.eventName}
                 </h1>
-                <p className="mt-1 text-xs font-medium text-slate-400">
+                <p className="mt-1 max-w-xl text-xs font-medium leading-5 text-muted">
                   Màn hình ở trên, hàng A gần màn hình nhất. Chạm hoặc rê chuột lên ghế để xem vị trí.
+                  Trên điện thoại, kéo ngang sơ đồ để xem toàn bộ hội trường.
                 </p>
               </div>
 
-              <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <div className="flex items-center gap-1 rounded-xl border border-line bg-background p-1">
                 <button
                   type="button"
                   aria-label="Thu nhỏ sơ đồ"
                   onClick={() => setZoom((value) => Math.max(1, Number((value - 0.2).toFixed(2))))}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface hover:text-primary"
                 >
                   <Minus size={15} />
                 </button>
-                <span className="min-w-[42px] text-center text-[10px] font-black text-slate-600">
+                <span className="price min-w-[42px] text-center text-[11px] font-bold text-text">
                   {Math.round(zoom * 100)}%
                 </span>
                 <button
                   type="button"
                   aria-label="Phóng to sơ đồ"
                   onClick={() => setZoom((value) => Math.min(2.4, Number((value + 0.2).toFixed(2))))}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface hover:text-primary"
                 >
                   <Plus size={15} />
                 </button>
@@ -377,7 +406,7 @@ export default function BookingPage() {
                   type="button"
                   aria-label="Đưa sơ đồ về vừa khung"
                   onClick={() => setZoom(1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface hover:text-primary"
                 >
                   <Maximize2 size={14} />
                 </button>
@@ -397,19 +426,19 @@ export default function BookingPage() {
             <div className="mt-4">
               <SeatLegend />
             </div>
-            <p className="mt-3 text-[11px] font-medium text-slate-400">
-              Khu vực có màu nền riêng theo hạng vé. Hàng ghế được xếp từ màn hình ra sau, có lối đi giữa và lối vào ở cuối sơ đồ.
+            <p className="mt-3 text-xs font-medium leading-5 text-muted">
+              Màu nền khu vực tương ứng hạng vé. Ghế đang chọn màu xanh, ghế người khác giữ màu vàng, ghế đã bán màu xám.
             </p>
           </section>
         </main>
 
-        <aside className="w-full space-y-4 lg:sticky lg:top-24 lg:w-[340px]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-              <Info size={14} /> Sự kiện
+        <aside className="w-full space-y-4 lg:sticky lg:top-24 lg:w-[350px]">
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-muted">
+              <Info size={15} className="text-primary" /> Sự kiện
             </div>
-            <h2 className="text-lg font-black leading-tight text-slate-800">{event?.eventName}</h2>
-            <div className="mt-3 space-y-1.5 text-xs font-medium text-slate-500">
+            <h2 className="text-lg font-extrabold leading-tight text-text">{event?.eventName}</h2>
+            <div className="mt-3 space-y-1.5 text-xs font-medium text-muted">
               <p className="flex items-center gap-2">
                 <MapPin size={13} className="text-primary" /> {event?.venueName}
               </p>
@@ -429,22 +458,22 @@ export default function BookingPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-              <CreditCard size={14} /> Hạng vé
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-muted">
+              <CreditCard size={15} className="text-primary" /> Hạng vé
             </div>
             <div className="space-y-2">
               {zones.map((zone) => (
                 <div
                   key={zone.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl border border-line bg-background/60 px-3 py-2.5"
                   style={{ borderLeftColor: zone.color?.bg, borderLeftWidth: 4 }}
                 >
-                  <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: zone.color?.bg }} />
+                  <span className="flex items-center gap-2 text-xs font-bold text-text">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: zone.color?.bg }} />
                     {zone.name}
                   </span>
-                  <span className="text-xs font-black text-slate-800">{money(zone.price)}</span>
+                  <span className="price text-xs font-extrabold text-text">{money(zone.price)}</span>
                 </div>
               ))}
             </div>
@@ -456,10 +485,10 @@ export default function BookingPage() {
             canvas={{ width: HALL_VIEW_WIDTH, height: HALL_VIEW_HEIGHT }}
           />
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
             <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                <Ticket size={14} /> Ghế đã chọn
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted">
+                <Ticket size={15} className="text-primary" /> Ghế đã chọn
               </div>
               <span className={`rounded-full px-2 py-1 text-[9px] font-black ${isAtLimit ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
                 {selectedSeats.length}/{maxTickets}
@@ -467,9 +496,9 @@ export default function BookingPage() {
             </div>
 
             {selectedSeats.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-6 text-center text-slate-400">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line py-6 text-center text-muted">
                 <Ticket size={24} />
-                <p className="text-[11px] font-medium">Chưa có ghế nào được chọn</p>
+                <p className="text-xs font-medium">Chưa có ghế nào được chọn</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -483,21 +512,21 @@ export default function BookingPage() {
                     >
                       <X size={13} />
                     </button>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-primary/60">{seat.zoneName}</p>
-                    <p className="text-sm font-black text-slate-800">Ghế {seat.seatLabel}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">{money(seat.price)}</p>
+                    <p className="text-[11px] font-semibold text-muted">{seat.zoneName}</p>
+                    <p className="text-sm font-extrabold text-text">Ghế {seat.seatLabel}</p>
+                    <p className="price mt-1 text-xs font-bold text-muted">{money(seat.price)}</p>
                   </div>
                 ))}
               </div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
             <div className="flex items-end justify-between">
-              <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Tổng cộng</span>
-              <span className="text-2xl font-black tracking-tighter text-primary">{money(totalPrice)}</span>
+              <span className="mb-1 text-xs font-semibold text-muted">Tổng cộng</span>
+              <span className="price text-2xl font-extrabold tracking-tight text-primary">{money(totalPrice)}</span>
             </div>
-            <div className={`mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${isAtLimit ? "border border-amber-200 bg-amber-50 text-amber-700" : "border border-slate-200 bg-slate-50 text-slate-500"}`}>
+            <div className={`mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold ${isAtLimit ? "border border-amber-200 bg-urgency-soft text-urgency" : "border border-line bg-background/70 text-muted"}`}>
               <Ticket size={14} />
               {isAtLimit ? `Đã chọn đủ ${selectedSeats.length}/${maxTickets} vé` : `Tối đa ${maxTickets} vé / đơn hàng`}
             </div>
@@ -505,13 +534,41 @@ export default function BookingPage() {
               type="button"
               onClick={handleCheckout}
               disabled={selectedSeats.length === 0}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-primary/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="mt-3 hidden h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-white shadow-lg shadow-primary/15 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none lg:flex"
             >
               Thanh toán
             </button>
+            <p className="mt-2.5 hidden text-center text-[11px] leading-4 text-muted lg:block">
+              Ghế được giữ tạm 10 phút sau khi bấm thanh toán.
+            </p>
           </section>
         </aside>
       </div>
+
+      {isMobile && (
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-muted">
+              {selectedSeats.length > 0 ? `${selectedSeats.length}/${maxTickets} vé đã chọn` : "Chưa chọn ghế"}
+            </p>
+            <p className="price truncate text-lg font-extrabold leading-tight text-primary">{money(totalPrice)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={selectedSeats.length === 0}
+            aria-label={`Thanh toán ${money(totalPrice)}`}
+            className="h-12 shrink-0 rounded-xl bg-primary px-6 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
+          >
+            Thanh toán
+          </button>
+        </div>
+      </div>
+      )}
     </div>
   );
 }
