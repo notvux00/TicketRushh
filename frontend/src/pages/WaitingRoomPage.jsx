@@ -23,7 +23,19 @@ import { confirmAction } from "../lib/confirm";
 function formatWait(seconds) {
   if (!seconds || seconds < 0) return "Đang cập nhật";
   if (seconds < 60) return "Dưới 1 phút";
-  return `~${Math.ceil(seconds / 60)} phút`;
+  const low = Math.max(1, Math.floor(seconds / 60));
+  const high = Math.max(low + 1, Math.ceil(seconds / 60) + 1);
+  return `Khoảng ${low}–${high} phút`;
+}
+
+function formatUpdatedAt(value) {
+  if (!value) return "đang cập nhật";
+  return value.toLocaleTimeString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function formatDate(dateString) {
@@ -74,11 +86,13 @@ export default function WaitingRoomPage() {
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   const [connection, setConnection] = useState("connecting");
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchStatus = useCallback(async () => {
     try {
       const data = await eventApi.getQueueStatus(showtimeId);
       setStatus(data);
+      setLastUpdated(new Date());
       if (data.accessGranted || !data.needQueue) {
         navigate(`/event/${eventId}/book/${showtimeId}`);
       }
@@ -255,10 +269,15 @@ export default function WaitingRoomPage() {
               </div>
             </dl>
 
-            <p className="mt-5 flex items-center gap-2 text-[11px] text-white/45">
+            <p className="mt-5 flex items-center gap-2 text-[11px] text-white/55">
               <RefreshCw size={12} aria-hidden="true" />
-              Tự động cập nhật mỗi 10 giây và qua WebSocket.
+              Cập nhật lúc {formatUpdatedAt(lastUpdated)} · tự động mỗi 10 giây và qua WebSocket.
             </p>
+            {connection === "offline" && (
+              <p className="mt-3 rounded-lg bg-white/10 px-3 py-2 text-[11px] leading-4 text-white/75 ring-1 ring-inset ring-white/10">
+                Mất kết nối tạm thời. Vị trí của bạn vẫn được giữ; hệ thống đang thử kết nối lại.
+              </p>
+            )}
           </section>
 
           <div className="space-y-4">
