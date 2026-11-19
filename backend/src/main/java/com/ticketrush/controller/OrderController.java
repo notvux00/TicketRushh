@@ -7,12 +7,16 @@ import com.ticketrush.model.dto.CheckoutSessionResponse;
 import com.ticketrush.model.dto.VoucherResponse;
 import com.ticketrush.model.dto.LockSeatRequest;
 import com.ticketrush.repository.OrderRepository;
+import com.ticketrush.repository.TicketRepository;
 import com.ticketrush.service.CheckoutService;
+import com.ticketrush.service.TicketSignatureService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -26,6 +30,12 @@ public class OrderController {
 
     @Autowired
     private CheckoutService checkoutService;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Autowired
+    private TicketSignatureService ticketSignatureService;
 
     @PostMapping("/checkout")
     public CheckoutSessionResponse createCheckout(@Valid @RequestBody LockSeatRequest request, Authentication authentication) {
@@ -114,5 +124,28 @@ public class OrderController {
         }
         
         return result;
+    }
+
+    @GetMapping("/my-tickets/{ticketId}/qr")
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRotatingTicketQr(@PathVariable UUID ticketId, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy vé"));
+
+        boolean owned = ticket.getOrder() != null
+                && ticket.getOrder().getUser() != null
+                && userId.equals(ticket.getOrder().getUser().getId())
+                && "COMPLETED".equalsIgnoreCase(ticket.getOrder().getStatus());
+        if (!owned || !"ACTIVE".equalsIgnoreCase(ticket.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy vé");
+        }
+
+        long window = ticketSignatureService.rotatingWindow();
+        String payload = ticketSignatureService.buildRotatingPayload(ticketId, ticket.getSeat().getId(), window);
+        return Map.of(
+                "payload", payload,
+                "expiresAt", (window + 1) * 60_000L,
+                "window", window);
     }
 }

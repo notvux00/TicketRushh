@@ -28,8 +28,9 @@ async function openTickets(page, ticketStatus) {
     const path = new URL(route.request().url()).pathname;
     if (!path.startsWith("/api/")) return route.continue();
     const data = path === "/api/orders/my-tickets" ? [order(ticketStatus)]
-      : path === "/api/profile" ? { fullName: "Owner" }
-        : [];
+      : path.endsWith("/qr") ? { payload: "TKRUSH:v3:fixture", expiresAt: 4102444800000 }
+        : path === "/api/profile" ? { fullName: "Owner" }
+          : [];
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) });
   });
   await page.goto("/my-tickets");
@@ -44,6 +45,7 @@ test("QR waits until two hours before the show and can open full screen", async 
 
   await page.getByRole("button", { name: "Hiển thị mã ngay" }).click();
   await expect(page.locator("canvas#my-ticket-qr-canvas")).toBeVisible();
+  await expect(page.getByText(/Mã tự động làm mới/)).toBeVisible();
 
   await page.getByRole("button", { name: "Phóng to mã QR" }).click();
   const fullscreen = page.getByRole("dialog", { name: "Mã QR vé" });

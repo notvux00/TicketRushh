@@ -650,6 +650,30 @@ class DemoApplicationTests {
     }
 
     @Test
+    void rotatingQrEndpointIssuesScannablePayloadAndRejectsOtherUsers() throws Exception {
+        var f = fixture();
+        var order = checkout(f, 0);
+        assertEquals(200, confirm(f, order).code());
+        var wallet = mvc.perform(get("/api/orders/my-tickets").header("Authorization", "Bearer " + f.userToken()))
+                .andReturn().getResponse();
+        String ticketId = json.readTree(wallet.getContentAsString()).at("/0/tickets/0/id").asText();
+
+        var qrResponse = mvc.perform(get("/api/orders/my-tickets/" + ticketId + "/qr")
+                .header("Authorization", "Bearer " + f.userToken())).andReturn().getResponse();
+        assertEquals(200, qrResponse.getStatus());
+        String payload = json.readTree(qrResponse.getContentAsString()).get("payload").asText();
+        assertTrue(payload.startsWith("TKRUSH:v3:"));
+
+        var scan = postApi("/api/checkin/scan", f.staffToken(), Map.of("qrPayload", payload, "showtimeId", f.showtime()));
+        assertEquals(200, scan.code());
+        assertEquals("CHECKED_IN", scan.body().get("status").asText());
+
+        var other = fixture();
+        assertEquals(404, mvc.perform(get("/api/orders/my-tickets/" + ticketId + "/qr")
+                .header("Authorization", "Bearer " + other.userToken())).andReturn().getResponse().getStatus());
+    }
+
+    @Test
     void unknownLegacyTicketPricesDoNotUseCurrentCatalog() throws Exception {
         var f=fixture(); var order=checkout(f,0);
         db.update("update tickets set unit_price=NULL where order_id=?",order);

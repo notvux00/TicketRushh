@@ -51,10 +51,12 @@ export default function MyTickets() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showQrEarly, setShowQrEarly] = useState(false);
   const [qrFullscreen, setQrFullscreen] = useState(false);
+  const [rotatingQr, setRotatingQr] = useState(null);
   const closeTicketModal = useCallback(() => {
     setIsModalOpen(false);
     setShowQrEarly(false);
     setQrFullscreen(false);
+    setRotatingQr(null);
   }, []);
   const dialogRef = useDialogA11y(isModalOpen, closeTicketModal);
 
@@ -77,6 +79,7 @@ export default function MyTickets() {
     });
     setShowQrEarly(false);
     setQrFullscreen(false);
+    setRotatingQr(null);
     setIsModalOpen(true);
   };
 
@@ -99,9 +102,29 @@ export default function MyTickets() {
   const ticketQrWindow = selectedTicket ? qrWindow(selectedTicket) : null;
   const isCheckedIn = selectedTicket?.status === "CHECKED_IN";
   const qrReady = Boolean(ticketQrWindow?.isOpen || showQrEarly);
-  const qrValue = selectedTicket
+  const staticQrValue = selectedTicket
     ? selectedTicket.qrPayload || selectedTicket.qrCode || `TKRUSH:v1:${selectedTicket.id || selectedTicket.ticketId}`
     : "";
+  const qrValue = rotatingQr?.payload || staticQrValue;
+
+  useEffect(() => {
+    if (!isModalOpen || !selectedTicket?.id || !qrReady || isCheckedIn) return;
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await eventApi.getTicketQr(selectedTicket.id);
+        if (active) setRotatingQr(data);
+      } catch {
+        if (active) setRotatingQr(null);
+      }
+    };
+    load();
+    const timer = window.setInterval(load, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [isModalOpen, selectedTicket?.id, qrReady, isCheckedIn]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -306,10 +329,18 @@ export default function MyTickets() {
                   ) : qrReady ? (
                     <>
                       <QRCodeRenderer value={qrValue} id="my-ticket-qr-canvas" size={150} />
+                      <div className="hidden" aria-hidden="true">
+                        <QRCodeRenderer value={staticQrValue} id="my-ticket-qr-download" size={150} />
+                      </div>
 
                       <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[220px]">
                         Mã QR sẵn sàng soát vé · ghế {selectedTicket.seatLabel}
                       </p>
+                      {rotatingQr?.expiresAt && (
+                        <p className="text-center text-[11px] font-medium text-muted">
+                          Mã tự động làm mới · hiệu lực đến {formatQrTime(rotatingQr.expiresAt)}
+                        </p>
+                      )}
 
                       <div className="mt-3 grid w-full grid-cols-2 gap-2">
                         <button
@@ -329,7 +360,7 @@ export default function MyTickets() {
                               startTime: selectedTicket.startTime,
                               customerName: selectedTicket.customerName || "Khách hàng",
                               orderId: selectedTicket.orderId,
-                              canvasId: "my-ticket-qr-canvas",
+                              canvasId: "my-ticket-qr-download",
                             })
                           }
                           className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-bold text-white shadow-md shadow-primary/20 transition-colors hover:bg-secondary active:scale-[0.98]"

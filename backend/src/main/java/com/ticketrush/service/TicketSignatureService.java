@@ -17,6 +17,8 @@ public class TicketSignatureService {
 
     static final String PAYLOAD_PREFIX_V1 = "TKRUSH:v1:";
     static final String PAYLOAD_PREFIX_V2 = "TKRUSH:v2:";
+    static final String PAYLOAD_PREFIX_V3 = "TKRUSH:v3:";
+    private static final long ROTATING_WINDOW_SECONDS = 60;
 
     private final String secretKey;
     private final String keyVersion;
@@ -62,11 +64,33 @@ public class TicketSignatureService {
     }
 
     /**
+     * Current 60-second window used by short-lived display tokens.
+     */
+    public long rotatingWindow() {
+        return System.currentTimeMillis() / 1000 / ROTATING_WINDOW_SECONDS;
+    }
+
+    /**
+     * Build a short-lived payload that is valid for the current and previous window.
+     * The static v2 payload remains the fallback for printed/downloaded tickets.
+     */
+    public String buildRotatingPayload(UUID ticketId, UUID seatId, long window) {
+        return PAYLOAD_PREFIX_V3 + ticketId + ":" + seatId + ":" + window + ":" + rotatingSignature(ticketId, seatId, window);
+    }
+
+    public String buildRotatingPayload(UUID ticketId, UUID seatId) {
+        return buildRotatingPayload(ticketId, seatId, rotatingWindow());
+    }
+
+    /**
      * Parse and verify either the current v2 payload or the legacy v1 payload.
      */
     public ParsedTicketPayload parseAndVerify(String qrPayload) {
         if (qrPayload == null) {
             return invalid();
+        }
+        if (qrPayload.startsWith(PAYLOAD_PREFIX_V3)) {
+            return verifyV3(qrPayload);
         }
         if (qrPayload.startsWith(PAYLOAD_PREFIX_V2)) {
             return verifyV2(qrPayload);
@@ -75,6 +99,26 @@ public class TicketSignatureService {
             return verifyV1(qrPayload);
         }
         return invalid();
+    }
+
+    private ParsedTicketPayload verifyV3(String qrPayload) {
+        String[] parts = qrPayload.split(":", 6);
+        if (parts.length != 6) {
+            return invalid();
+        }
+        try {
+            UUID ticketId = UUID.fromString(parts[2]);
+            UUID seatId = UUID.fromString(parts[3]);
+            long window = Long.parseLong(parts[4]);
+            String signature = parts[5];
+            long current = rotatingWindow();
+            boolean fresh = window == current || window == current - 1;
+            boolean match = constantTimeEquals(rotatingSignature(ticketId, seatId, window), signature);
+            return new ParsedTicketPayload(ticketId, seatId, signature, "3", match && fresh);
+        } catch (RuntimeException e) {
+            log.warn("Invalid rotating ticket QR payload format");
+            return invalid();
+        }
     }
 
     private ParsedTicketPayload verifyV2(String qrPayload) {
@@ -118,6 +162,10 @@ public class TicketSignatureService {
 
     private ParsedTicketPayload invalid() {
         return new ParsedTicketPayload(null, null, null, null, false);
+    }
+
+    private String rotatingSignature(UUID ticketId, UUID seatId, long window) {
+        return hmac("3:" + ticketId + ":" + seatId + ":" + window);
     }
 
     private String hmac(String data) {

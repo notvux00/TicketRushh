@@ -49,6 +49,32 @@ class TicketSignatureServiceTest {
     }
 
     @Test
+    void buildsAndVerifiesRotatingPayloadForCurrentAndPreviousWindow() {
+        UUID ticketId = UUID.randomUUID();
+        UUID seatId = UUID.randomUUID();
+        long current = service("1").rotatingWindow();
+
+        var currentParsed = service("1").parseAndVerify(service("1").buildRotatingPayload(ticketId, seatId, current));
+        var previousParsed = service("1").parseAndVerify(service("1").buildRotatingPayload(ticketId, seatId, current - 1));
+
+        assertTrue(currentParsed.validFormat());
+        assertTrue(previousParsed.validFormat());
+        assertEquals(ticketId, currentParsed.ticketId());
+        assertEquals(seatId, currentParsed.seatId());
+    }
+
+    @Test
+    void rejectsExpiredOrTamperedRotatingPayload() {
+        UUID ticketId = UUID.randomUUID();
+        UUID seatId = UUID.randomUUID();
+        long expired = service("1").rotatingWindow() - 5;
+        String payload = service("1").buildRotatingPayload(ticketId, seatId, expired);
+
+        assertFalse(service("1").parseAndVerify(payload).validFormat());
+        assertFalse(service("1").parseAndVerify(payload + "00").validFormat());
+    }
+
+    @Test
     void rejectsTamperedPayloads() {
         UUID ticketId = UUID.randomUUID();
         UUID seatId = UUID.randomUUID();

@@ -671,9 +671,19 @@
   action center trong `admin-tools.spec.js` (pass 2026-11-19).
 
 ### UR-10 — QR động (rotating token)
-- **Trạng thái:** todo
-- **File:** backend ticket service + `MyTickets.jsx`.
-- **Việc cần làm:** endpoint cấp token ngắn hạn, refresh 30–60 giây, vô hiệu token cũ.
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-10-rotating-qr`)
+- **File:** `TicketSignatureService.java`, `OrderController.java`,
+  `frontend/src/api/eventApi.js`, `MyTickets.jsx`, `my-tickets-qr.spec.js`.
+- **Việc cần làm:**
+  - [x] Payload v3 `TKRUSH:v3:{ticketId}:{seatId}:{window}:{sig}`, cửa sổ 60 giây,
+    chấp nhận cửa sổ hiện tại + trước đó để bù clock skew.
+  - [x] Endpoint `GET /api/orders/my-tickets/{ticketId}/qr` kiểm tra chủ vé + đơn COMPLETED.
+  - [x] Frontend refresh 30 giây khi QR đang mở; fallback payload tĩnh nếu lỗi.
+  - [x] Vé tải về dùng payload tĩnh qua canvas ẩn `my-ticket-qr-download`.
+  - [x] Quét vé v3 vẫn đi qua `CheckinService` hiện có, không đổi luồng soát vé.
+- **Test:** backend `mvn -B verify` **91 tests** pass (JDK 17 trong Docker, Testcontainers);
+  frontend lint/build + Playwright **23/23**; thêm unit test v3 + integration test
+  endpoint/scan/chủ vé khác (404).
 
 ### UR-11 — Email báo khi tới lượt queue
 - **Trạng thái:** todo
