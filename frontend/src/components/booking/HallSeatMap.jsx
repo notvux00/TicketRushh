@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Check, Lock, X } from "lucide-react";
 import {
   HALL_VIEW_HEIGHT,
@@ -42,9 +42,21 @@ export default function HallSeatMap({
   selectedSeatIds,
   maxTickets,
   zoom,
+  focusedZoneId = null,
   onSeatSelect,
   onSeatPreview,
 }) {
+  const scrollRef = useRef(null);
+  const zoneRefs = useRef({});
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    const target = focusedZoneId ? zoneRefs.current[focusedZoneId] : null;
+    if (!container || !target) return;
+    const left = target.offsetLeft + target.offsetWidth / 2 - container.clientWidth / 2;
+    container.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+  }, [focusedZoneId, zoom]);
+
   const seatsByZone = useMemo(() => {
     const grouped = new Map();
     for (const seat of seats) {
@@ -61,6 +73,7 @@ export default function HallSeatMap({
 
   return (
     <div
+      ref={scrollRef}
       className="mx-auto overflow-auto rounded-2xl bg-[#07111f] ring-1 ring-white/10"
       style={{ maxWidth: 1000 }}
       data-testid="hall-seat-map"
@@ -119,7 +132,10 @@ export default function HallSeatMap({
           return (
             <div
               key={zone.id}
-              className="absolute rounded-xl"
+              ref={(element) => {
+                zoneRefs.current[zone.id] = element;
+              }}
+              className="absolute rounded-xl transition-opacity duration-200"
               style={{
                 left: `${((zone.positionX || 0) / HALL_VIEW_WIDTH) * 100}%`,
                 top: `${((zone.positionY || 0) / HALL_VIEW_HEIGHT) * 100}%`,
@@ -128,6 +144,9 @@ export default function HallSeatMap({
                 backgroundColor: withAlpha(color, 0.1),
                 border: `1px solid ${withAlpha(color, 0.42)}`,
                 boxShadow: `inset 0 0 30px ${withAlpha(color, 0.08)}`,
+                opacity: focusedZoneId && focusedZoneId !== zone.id ? 0.25 : 1,
+                outline: focusedZoneId === zone.id ? "2px solid rgba(255,255,255,0.65)" : "none",
+                outlineOffset: 3,
               }}
             >
               <div className="flex h-full flex-col p-[3%]">

@@ -563,17 +563,18 @@
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19 pass (2026-11-19).
 
 ### UR-02 — Chọn khu vực trước khi chọn ghế
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-02-zone-selector`)
 - **Vấn đề:** sơ đồ hiển thị tất cả zone cùng lúc; mobile phải scroll ngang và khó biết
   nên xem khu nào trước.
 - **File:** `frontend/src/pages/BookingPage.jsx`, `frontend/src/components/booking/HallSeatMap.jsx`.
 - **Việc cần làm:**
-  - [ ] Thêm hàng chip “Tất cả” + từng zone (màu, tên, số ghế trống, giá).
-  - [ ] Chọn chip → làm nổi zone đó, làm mờ zone khác và scroll map tới zone.
-  - [ ] `aria-pressed`, focus ring, thao tác được bằng keyboard.
+  - [x] Thêm hàng chip “Tất cả” + từng zone (màu, tên, số ghế trống, giá).
+  - [x] Chọn chip → làm nổi zone đó, làm mờ zone khác và scroll map tới zone.
+  - [x] `aria-pressed`, focus ring, thao tác được bằng keyboard.
 - **Acceptance:** chọn zone không làm mất ghế đã chọn; “Tất cả” trả lại trạng thái ban đầu;
   mobile thấy zone đang chọn trong khung sau khi bấm.
-- **Test:** lint/build + Playwright seat-map + kiểm tra 390px.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; thêm assertion
+  chip `VIP`/`Tất cả` trong `seat-map.spec.js` (pass 2026-11-19).
 
 ### UR-03 — Bottom sheet giỏ ghế trên mobile
 - **Trạng thái:** todo
