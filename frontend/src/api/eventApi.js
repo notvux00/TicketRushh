@@ -91,6 +91,10 @@ export const eventApi = {
     return response.data;
   },
 
+  getTicketQr: async (ticketId) => {
+    const response = await axiosClient.get(`/orders/my-tickets/${ticketId}/qr`);
+    return response.data;
+  },
   getMyTickets: async () => {
     const response = await axiosClient.get(`/orders/my-tickets`);
     return response.data;
