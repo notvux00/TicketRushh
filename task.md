@@ -640,10 +640,25 @@
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 23/23; thêm
   `waiting-room.spec.js` kiểm tra ETA khoảng + thời điểm cập nhật (pass 2026-11-19).
 
-### UR-08 — Check-in: phản hồi giác quan và tìm khách
-- **Trạng thái:** todo
+### UR-08 — Check-in: phản hồi giác quan và quét tiếp
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-08-checkin-feedback`)
 - **File:** `frontend/src/pages/AdminCheckin.jsx`.
-- **Việc cần làm:** beep/rung pass-fail, nút “Quét tiếp”, tìm theo tên/email/mã đơn.
+- **Việc cần làm:**
+  - [x] Beep khác nhau cho pass/fail + rung (best-effort, không chặn luồng).
+  - [x] Nút “Quét tiếp” reset kết quả, ô nhập và debounce.
+  - [x] Icon + banner pass/fail rõ hơn.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 23/23; thêm assertion
+  “Quét tiếp” reset form trong `admin-tools.spec.js` (pass 2026-11-19).
+
+### UR-08b — Check-in: tra cứu khách bằng tên/email/mã đơn
+- **Trạng thái:** todo
+- **Vấn đề:** cần fallback khi khách không mở được QR; hiện chỉ nhập payload thủ công.
+- **File:** `backend/.../AdminCheckinController.java`, `frontend/src/api/adminApi.js`,
+  `frontend/src/pages/AdminCheckin.jsx`.
+- **Việc cần làm:**
+  - [ ] `GET /api/admin/checkin/search/{showtimeId}?q=` trả vé COMPLETED khớp tên/email/ghế.
+  - [ ] UI bảng kết quả + trạng thái vé; không tự check-in nếu chưa có endpoint an toàn.
+  - [ ] Test backend cho phân quyền và lọc đúng showtime.
 
 ### UR-09 — Dashboard admin theo việc cần xử lý
 - **Trạng thái:** todo

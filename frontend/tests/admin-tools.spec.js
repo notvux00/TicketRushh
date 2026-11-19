@@ -83,6 +83,9 @@ test("camera refusal has manual fallback, scan debounce and live stats", async (
   await page.getByRole("button", { name: "Xác minh vé", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Vé đã được sử dụng" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Lịch sử quét" }).locator("tbody tr")).toHaveCount(2);
+  await page.getByRole("button", { name: "Quét tiếp" }).click();
+  await expect(page.getByText("Kết quả xác minh sẽ xuất hiện tại đây.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Mã QR (nhập hoặc dán)")).toHaveValue("");
 });
 
 test("camera stream stops when leaving scanner", async ({ context, page }) => {
