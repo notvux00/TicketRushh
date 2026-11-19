@@ -186,7 +186,7 @@ export default function SeatMapStep({
                     className="w-2.5 h-2.5 rounded-full shadow-inner"
                     style={{ backgroundColor: colorMap[name] }}
                   />
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tighter">
                     {name || "Khu vực mới"}
                   </span>
                 </div>
@@ -235,7 +235,7 @@ export default function SeatMapStep({
                     }}
                   >
                     <div className="p-2 flex justify-between items-start bg-black/10 backdrop-blur-sm">
-                      <span className="text-[9px] font-black text-white uppercase truncate max-w-[80px]">
+                      <span className="text-[11px] font-black text-white uppercase truncate max-w-[80px]">
                         {zone.name}
                       </span>
                       <span className="text-[8px] text-white/70 font-bold uppercase">
@@ -289,7 +289,7 @@ export default function SeatMapStep({
         </div>
         <div className="space-y-3 mb-6">
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
               Tổng sức chứa
             </span>
             <span className="text-xl font-black text-slate-800">
@@ -297,7 +297,7 @@ export default function SeatMapStep({
             </span>
           </div>
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-center">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
               Doanh thu dự kiến
             </span>
             <span className="text-2xl font-black text-slate-900 tracking-tight">
@@ -330,14 +330,14 @@ export default function SeatMapStep({
                   }
                 }}
                 title="Xóa zone"
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-red-500 bg-red-50 hover:bg-red-500 hover:text-white shadow-sm border border-red-100 transition-all font-bold text-[10px] uppercase active:scale-95"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-red-500 bg-red-50 hover:bg-red-500 hover:text-white shadow-sm border border-red-100 transition-all font-bold text-[11px] uppercase active:scale-95"
               >
                 <Trash2 size={12} strokeWidth={2.5} /> Xóa Zone
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 block">
+                <label className="text-[11px] font-bold text-slate-400 uppercase mb-1.5 block">
                   Tên khu vực
                 </label>
                 <input
@@ -355,7 +355,7 @@ export default function SeatMapStep({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 block">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase mb-1.5 block">
                     Số hàng
                   </label>
                   <input
@@ -373,7 +373,7 @@ export default function SeatMapStep({
                   />
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 block">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase mb-1.5 block">
                     Số cột
                   </label>
                   <input
@@ -392,7 +392,7 @@ export default function SeatMapStep({
                 </div>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-slate-400 uppercase mb-1.5 block">
+                <label className="text-[11px] font-bold text-slate-400 uppercase mb-1.5 block">
                   Giá vé (VNĐ)
                 </label>
                 <input
@@ -422,10 +422,10 @@ export default function SeatMapStep({
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 py-10">
             <Info size={24} className="text-slate-400 mb-2" />
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
               Chưa chọn Zone
             </p>
-            <p className="text-[9px] text-slate-400 mt-1 px-4">
+            <p className="text-[11px] text-slate-400 mt-1 px-4">
               Bấm vào một khối trên sơ đồ để sửa thuộc tính
             </p>
           </div>

@@ -240,7 +240,7 @@ export default function EventDetailModal({ event, onClose }) {
                 loading="eager"
               />
               {isEditing && (
-                <label className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 cursor-pointer items-center rounded-full border border-white/40 bg-slate-950/85 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-lg transition hover:bg-white hover:text-slate-900">
+                <label className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 cursor-pointer items-center rounded-full border border-white/40 bg-slate-950/85 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white shadow-lg transition hover:bg-white hover:text-slate-900">
                   {isUploadingCover ? "Đang tải" : "Đổi ảnh"}
                   <input
                     type="file"
@@ -256,7 +256,7 @@ export default function EventDetailModal({ event, onClose }) {
               <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight leading-tight mb-1.5 line-clamp-2">
                 {displayEvent.eventName}
               </h2>
-              <div className="flex flex-wrap items-center gap-3 text-white/70 font-bold text-[10px] md:text-xs uppercase tracking-widest">
+              <div className="flex flex-wrap items-center gap-3 text-white/70 font-bold text-[11px] md:text-xs uppercase tracking-widest">
                 <span className="bg-white/90 text-blue-700 px-3 py-1 rounded-lg backdrop-blur-md border border-white/40 shadow-sm">
                   {displayEvent.category}
                 </span>

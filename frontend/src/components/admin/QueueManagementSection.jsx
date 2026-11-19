@@ -72,12 +72,12 @@ export default function QueueManagementSection({ showtimeId }) {
               <Activity className={`${isLoading ? 'animate-pulse' : ''} text-primary`} />
               Bộ điều khiển hàng chờ
             </h4>
-            <p className="text-muted text-[10px] font-bold mt-1 uppercase tracking-wider">Chế độ demo & flash sale</p>
+            <p className="text-muted text-[11px] font-bold mt-1 uppercase tracking-wider">Chế độ demo & flash sale</p>
           </div>
           <button
             onClick={() => resetMutation.mutate()}
             disabled={resetMutation.isPending}
-            className="px-4 py-2 bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-primary/20"
+            className="px-4 py-2 bg-primary/5 hover:bg-primary text-primary hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border border-primary/20"
           >
             Đặt lại hàng chờ
           </button>
@@ -90,7 +90,7 @@ export default function QueueManagementSection({ showtimeId }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-background rounded-2xl p-5 border border-border">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">Đang truy cập</p>
+              <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Đang truy cập</p>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-black text-primary">{queueInfo?.activeUsers ?? 0}</span>
                 <span className="text-xs font-bold text-muted mb-1.5">User</span>
@@ -98,7 +98,7 @@ export default function QueueManagementSection({ showtimeId }) {
             </div>
 
             <div className="bg-background rounded-2xl p-5 border border-border">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3">Kích hoạt Queue ở mức</p>
+              <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">Kích hoạt Queue ở mức</p>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -106,13 +106,13 @@ export default function QueueManagementSection({ showtimeId }) {
                   onChange={(e) => setThreshold(Number(e.target.value))}
                   className="w-full bg-white border border-border rounded-xl px-3 py-1.5 text-base font-bold outline-none focus:border-primary text-text"
                 />
-                <button onClick={() => setThresholdMutation.mutate()} className="bg-primary hover:bg-secondary text-white px-3 rounded-xl font-bold text-[10px] uppercase transition-colors">Set</button>
+                <button onClick={() => setThresholdMutation.mutate()} className="bg-primary hover:bg-secondary text-white px-3 rounded-xl font-bold text-[11px] uppercase transition-colors">Set</button>
               </div>
-              <p className="text-[9px] text-muted mt-2 italic">* &gt; {threshold} người sẽ phải xếp hàng</p>
+              <p className="text-[11px] text-muted mt-2 italic">* &gt; {threshold} người sẽ phải xếp hàng</p>
             </div>
 
             <div className="bg-background rounded-2xl p-5 border border-border">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3">Tốc độ vào (người/10s)</p>
+              <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">Tốc độ vào (người/10s)</p>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -120,13 +120,13 @@ export default function QueueManagementSection({ showtimeId }) {
                   onChange={(e) => setBatchSize(Number(e.target.value))}
                   className="w-full bg-white border border-border rounded-xl px-3 py-1.5 text-base font-bold outline-none focus:border-primary text-text"
                 />
-                <button onClick={() => setBatchSizeMutation.mutate()} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 rounded-xl font-bold text-[10px] uppercase transition-colors">Set</button>
+                <button onClick={() => setBatchSizeMutation.mutate()} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 rounded-xl font-bold text-[11px] uppercase transition-colors">Set</button>
               </div>
-              <p className="text-[9px] text-muted mt-2 italic">* Cho phép {batchSize} người vào mỗi đợt</p>
+              <p className="text-[11px] text-muted mt-2 italic">* Cho phép {batchSize} người vào mỗi đợt</p>
             </div>
 
             <div className="bg-background rounded-2xl p-5 border border-border">
-              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-3">Giả lập hàng chờ</p>
+              <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">Giả lập hàng chờ</p>
               <div className="flex gap-2">
                 <input
                   type="number"
@@ -134,7 +134,7 @@ export default function QueueManagementSection({ showtimeId }) {
                   onChange={(e) => setSimCount(Number(e.target.value))}
                   className="w-full bg-white border border-border rounded-xl px-3 py-1.5 text-base font-bold outline-none focus:border-primary text-text"
                 />
-                <button onClick={() => simulateMutation.mutate()} className="bg-amber-500 hover:bg-amber-600 text-white px-3 rounded-xl font-bold text-[10px] uppercase transition-colors">Inject</button>
+                <button onClick={() => simulateMutation.mutate()} className="bg-amber-500 hover:bg-amber-600 text-white px-3 rounded-xl font-bold text-[11px] uppercase transition-colors">Inject</button>
               </div>
             </div>
           </div>

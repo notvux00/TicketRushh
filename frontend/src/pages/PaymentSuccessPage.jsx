@@ -65,10 +65,10 @@ export default function PaymentSuccessPage() {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 bg-blue-900/10 text-blue-900 text-[10px] font-extrabold uppercase tracking-widest rounded-lg">
+                        <span className="px-2.5 py-1 bg-blue-900/10 text-blue-900 text-[11px] font-extrabold uppercase tracking-widest rounded-lg">
                           {seat.zoneName?.includes("VIP") ? "VIP ACCESS" : "STANDARD"}
                         </span>
-                        <span className="text-slate-400 text-xs font-medium">#TR-{String(100000 + index)}</span>
+                        <span className="text-slate-500 text-xs font-medium">#TR-{String(100000 + index)}</span>
                       </div>
                     </div>
 
@@ -76,11 +76,11 @@ export default function PaymentSuccessPage() {
 
                     <div className="grid grid-cols-2 gap-8">
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Chỗ ngồi</p>
+                        <p className="text-[11px] uppercase font-bold text-slate-500 tracking-widest mb-1">Chỗ ngồi</p>
                         <p className="text-xl font-black text-blue-900">{seat.zoneName} - Ghế {seat.label}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Thời gian</p>
+                        <p className="text-[11px] uppercase font-bold text-slate-500 tracking-widest mb-1">Thời gian</p>
                         <p className="text-lg font-bold text-slate-900">
                           {showtime ? new Date(showtime.startTime).toLocaleTimeString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit' }) : "N/A"}, {showtime ? new Date(showtime.startTime).toLocaleDateString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", day: '2-digit', month: 'long' }) : "N/A"}
                         </p>
@@ -109,7 +109,7 @@ export default function PaymentSuccessPage() {
                       size={96}
                     />
                   </div>
-                  <span className="text-[9px] font-black text-slate-400 tracking-[0.2em] uppercase">Mã cửa vào</span>
+                  <span className="text-[11px] font-black text-slate-500 tracking-[0.2em] uppercase">Mã cửa vào</span>
                 </div>
               </div>
             ))}
@@ -153,22 +153,22 @@ export default function PaymentSuccessPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="flex gap-12">
                 <div>
-                  <p className="font-bold text-slate-900 mb-3 uppercase tracking-widest text-[10px]">Hỗ trợ</p>
+                  <p className="font-bold text-slate-900 mb-3 uppercase tracking-widest text-[11px]">Hỗ trợ</p>
                   <ul className="space-y-2">
-                    <li><a className="hover:text-primary transition-colors" href="#">Hotline: 1900 8888</a></li>
-                    <li><a className="hover:text-primary transition-colors" href="#">Trung tâm trợ giúp</a></li>
+                    <li><a className="transition-colors hover:text-primary" href="tel:19008888">Hotline: 1900 8888</a></li>
+                    <li><a className="transition-colors hover:text-primary" href="mailto:support@ticketrush.vn">Trung tâm trợ giúp</a></li>
                   </ul>
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 mb-3 uppercase tracking-widest text-[10px]">Pháp lý</p>
+                  <p className="font-bold text-slate-900 mb-3 uppercase tracking-widest text-[11px]">Pháp lý</p>
                   <ul className="space-y-2">
-                    <li><a className="hover:text-primary transition-colors" href="#">Điều khoản dịch vụ</a></li>
-                    <li><a className="hover:text-primary transition-colors" href="#">Chính sách hoàn tiền</a></li>
+                    <li>Điều khoản dịch vụ</li>
+                    <li>Chính sách hoàn tiền</li>
                   </ul>
                 </div>
               </div>
               <div className="md:text-right">
-                <p>© 2024 TicketRush. All rights reserved.</p>
+                <p>© 2026 TicketRush. Bản quyền đã được bảo hộ.</p>
               </div>
             </div>
           </footer>

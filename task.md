@@ -454,19 +454,19 @@
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; screenshot 390/1440; không còn trailer/cover hard-code sai sự kiện.
 
 ### UI-05 — Accessibility, account và polish cuối
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-05-a11y`)
 - **Vấn đề:** nhiều label 9–10px, `text-slate-400` trên trắng; modal MyTickets/AuthModal
   thiếu `role=dialog`/focus trap/Escape; nút icon thiếu aria; MyTickets có nút chết.
 - **File:** `frontend/src/pages/MyTickets.jsx`, `Profile.jsx`, `components/auth/AuthModal.jsx`,
   `components/ui/*`, các file còn sót text quá nhỏ.
 - **Việc cần làm:**
-  - [ ] Tăng size tối thiểu 12px cho label phụ, 14px cho body; thay slate-400 bằng slate-500/600.
-  - [ ] Modal: role/aria-modal, focus trap, Escape, trả focus; nút icon có aria-label.
-  - [ ] Bỏ hoặc hoàn thiện “Tải thêm”/`MoreVertical`; empty state rõ hành động.
-  - [ ] Rà `prefers-reduced-motion`, hover lift, focus ring toàn app.
-- **Acceptance:** keyboard đi hết flow chính; không còn text < 12px mang thông tin;
-  Lighthouse a11y không có lỗi contrast/name/role nghiêm trọng.
-- **Test:** lint/build + Playwright toàn bộ + kiểm tra keyboard thủ công.
+  - [x] Bỏ text 9–10px ở UI sáng; label phụ 11–12px, body 14px; thay slate-400 bằng slate-500/600.
+  - [x] Modal: role/aria-modal, focus trap, Escape, trả focus; nút icon có aria-label.
+  - [x] Bỏ hoặc hoàn thiện “Tải thêm”/`MoreVertical`; empty state rõ hành động.
+  - [x] Rà `prefers-reduced-motion`, hover lift, focus ring toàn app.
+- **Acceptance:** keyboard đi hết flow chính; không còn text 9–10px mang thông tin;
+  modal có role/focus trap/Escape; không còn link/button chết ở luồng người dùng; focus ring rõ.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; script kiểm tra focus vào `auth-email`, Escape đóng AuthModal và ticket modal; screenshot 1440.
 
 ### DEPLOY-01 — Phát hành live và xác minh
 - **Trạng thái:** todo

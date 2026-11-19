@@ -297,7 +297,7 @@ export default function EventInfoStep({
                 ) : (
                   <div className="text-slate-300 flex flex-col items-center gap-1">
                     <ImageIcon size={24} />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
                       No Preview
                     </span>
                   </div>
@@ -349,7 +349,7 @@ export default function EventInfoStep({
                 ) : (
                   <div className="text-slate-300 flex flex-col items-center gap-1">
                     <Play size={24} />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
                       No Preview
                     </span>
                   </div>
@@ -410,7 +410,7 @@ export default function EventInfoStep({
                 />
                 <div className="space-y-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                       Bắt đầu <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -429,13 +429,13 @@ export default function EventInfoStep({
                       }}
                     />
                     {stErr.startTime && (
-                      <p className="text-[10px] text-red-500 font-medium">
+                      <p className="text-[11px] text-red-500 font-medium">
                         ⚠ {stErr.startTime}
                       </p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                       Kết thúc <span className="text-red-400">*</span>
                     </label>
                     <input
@@ -454,7 +454,7 @@ export default function EventInfoStep({
                       }}
                     />
                     {stErr.endTime && (
-                      <p className="text-[10px] text-red-500 font-medium">
+                      <p className="text-[11px] text-red-500 font-medium">
                         ⚠ {stErr.endTime}
                       </p>
                     )}

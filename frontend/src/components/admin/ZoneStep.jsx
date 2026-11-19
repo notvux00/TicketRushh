@@ -64,7 +64,7 @@ export default function ZoneStep({
               <span className="text-sm font-semibold text-slate-700">
                 Thiết lập khu vực
               </span>
-              <span className="ml-1 px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-semibold rounded-full">
+              <span className="ml-1 px-2 py-0.5 bg-slate-100 text-slate-500 text-[11px] font-semibold rounded-full">
                 {formData.zones.length}
               </span>
             </div>
@@ -98,16 +98,16 @@ export default function ZoneStep({
             className="px-5 py-2.5 bg-slate-50/80 border-b border-slate-100"
             style={zoneGridStyle}
           >
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide pl-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide pl-1">
               Tên khu vực
             </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-center">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide text-center">
               Hàng
             </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-center">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide text-center">
               Cột
             </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right pr-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide text-right pr-1">
               Giá vé (₫)
             </span>
             <span />
@@ -138,7 +138,7 @@ export default function ZoneStep({
                       }}
                     />
                     {zErr.name && (
-                      <p className="text-[9px] text-red-500 mt-0.5 pl-1">
+                      <p className="text-[11px] text-red-500 mt-0.5 pl-1">
                         ⚠ {zErr.name}
                       </p>
                     )}
@@ -240,7 +240,7 @@ export default function ZoneStep({
               className="bg-slate-100/70 rounded-xl px-3 py-3 border border-slate-200"
               style={zoneGridStyle}
             >
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide pl-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide pl-1">
                 Tổng cộng
               </span>
               <span className="text-sm font-bold text-slate-600 text-center">
@@ -274,7 +274,7 @@ export default function ZoneStep({
           </div>
           <div className="space-y-3">
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                 Tổng sức chứa
               </span>
               <span className="text-xl font-black text-slate-800">
@@ -282,7 +282,7 @@ export default function ZoneStep({
               </span>
             </div>
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-center">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
                 Doanh thu dự kiến
               </span>
               <span className="text-2xl font-black text-slate-900 tracking-tight">
@@ -293,7 +293,7 @@ export default function ZoneStep({
           </div>
           <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-center">
             <div>
-              <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">
+              <p className="text-[11px] text-slate-400 uppercase font-bold tracking-widest mb-1">
                 Khu vực
               </p>
               <p className="text-xl font-black text-slate-800">
@@ -301,7 +301,7 @@ export default function ZoneStep({
               </p>
             </div>
             <div>
-              <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">
+              <p className="text-[11px] text-slate-400 uppercase font-bold tracking-widest mb-1">
                 Suất diễn
               </p>
               <p className="text-xl font-black text-slate-800">

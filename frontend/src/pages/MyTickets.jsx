@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   Calendar,
   MapPin,
-  MoreVertical, X,
+  X,
   Ticket,
   ArrowRight,
   Timer,
@@ -20,6 +20,7 @@ import { eventApi } from "../api/eventApi";
 import QRCodeRenderer from "../components/ticket/QRCodeRenderer";
 import EventImage from "../components/common/EventImage";
 import { downloadETicketCard } from "../utils/ticketExporter";
+import { useDialogA11y } from "../hooks/useDialogA11y";
 
 export default function MyTickets() {
   const [activeFilter, setActiveFilter] = useState("upcoming");
@@ -27,6 +28,8 @@ export default function MyTickets() {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const closeTicketModal = useCallback(() => setIsModalOpen(false), []);
+  const dialogRef = useDialogA11y(isModalOpen, closeTicketModal);
 
   const openTicketModal = (order, ticket) => {
     setSelectedTicket({
@@ -73,13 +76,13 @@ export default function MyTickets() {
           <div className="flex border-b border-slate-50">
             <button
               onClick={() => setActiveFilter("upcoming")}
-              className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "upcoming" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-400 hover:text-slate-600"}`}
+              className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "upcoming" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-500 hover:text-slate-600"}`}
             >
               Sắp diễn ra
             </button>
             <button
               onClick={() => setActiveFilter("past")}
-              className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "past" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-400 hover:text-slate-600"}`}
+              className={`flex-1 py-4 text-sm font-bold transition-all ${activeFilter === "past" ? "text-primary border-b-2 border-primary bg-primary/5" : "text-slate-500 hover:text-slate-600"}`}
             >
               Đã kết thúc
             </button>
@@ -99,7 +102,7 @@ export default function MyTickets() {
                   return (
                     <div className="text-center py-16">
                       <Ticket className="mx-auto text-slate-200 mb-4" size={48} />
-                      <p className="text-slate-400 font-medium">Không có vé nào trong mục này.</p>
+                      <p className="text-slate-500 font-medium">Không có vé nào trong mục này.</p>
                       {activeFilter === "upcoming" && (
                         <Link to="/" className="text-primary font-bold mt-4 inline-block hover:underline">Khám phá sự kiện ngay</Link>
                       )}
@@ -117,19 +120,17 @@ export default function MyTickets() {
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <h3 className="text-xl font-bold text-[#2563eb] mb-1">{order.eventName}</h3>
-                          <button className="text-slate-300 hover:text-slate-500 transition-colors">
-                            <MoreVertical size={20} />
-                          </button>
+
                         </div>
                         <p className="text-sm text-slate-500 mb-4">Mã đơn hàng: #{order.id.substring(0, 8).toUpperCase()}</p>
 
                         <div className="flex flex-wrap gap-8 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
-                            <Calendar size={16} className="text-slate-400" />
+                            <Calendar size={16} className="text-slate-500" />
                             <span>{new Date(order.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'long', year: 'numeric' })}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <MapPin size={16} className="text-slate-400" />
+                            <MapPin size={16} className="text-slate-500" />
                             <span>{order.venueName}</span>
                           </div>
                         </div>
@@ -145,7 +146,7 @@ export default function MyTickets() {
                               <Ticket size={24} />
                             </div>
                             <div>
-                              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-0.5">Vị trí ghế</p>
+                              <p className="text-[11px] text-slate-500 uppercase font-bold tracking-widest mb-0.5">Vị trí ghế</p>
                               <p className="text-[#1e293b] font-bold text-lg">{ticket.zoneName} - {ticket.seatLabel}</p>
                             </div>
                           </div>
@@ -169,16 +170,23 @@ export default function MyTickets() {
         {/* Ticket Detail Modal */}
         {isModalOpen && selectedTicket && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade"
-            onClick={() => setIsModalOpen(false)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md animate-fade"
+            onClick={closeTicketModal}
           >
             <div
-              className="bg-white w-full max-w-[360px] rounded-[28px] overflow-hidden shadow-2xl animate-dropdown relative flex flex-col"
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ticket-modal-title"
+              className="animate-dropdown relative flex w-full max-w-[360px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-3 right-3 p-1.5 hover:bg-black/10 rounded-full transition-colors z-20 text-white/80"
+                type="button"
+                onClick={closeTicketModal}
+                aria-label="Đóng vé"
+                data-autofocus
+                className="absolute right-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-xl bg-black/10 text-white/90 transition-colors hover:bg-black/20"
               >
                 <X size={20} />
               </button>
@@ -193,8 +201,8 @@ export default function MyTickets() {
                   <Ticket size={20} className="text-white" />
                 </div>
 
-                <h2 className="text-lg font-black text-white leading-tight mb-1 relative z-10 line-clamp-2">{selectedTicket.eventName}</h2>
-                <p className="text-blue-100 text-[9px] font-black uppercase tracking-[0.2em] relative z-10">Vé chính thức</p>
+                <h2 id="ticket-modal-title" className="relative z-10 mb-1 line-clamp-2 text-lg font-black leading-tight text-white">{selectedTicket.eventName}</h2>
+                <p className="text-blue-100 text-[11px] font-black uppercase tracking-[0.2em] relative z-10">Vé chính thức</p>
               </div>
 
               {/* Ticket Middle - Info Grid */}
@@ -205,24 +213,24 @@ export default function MyTickets() {
 
                 <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-4">
                   <div>
-                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Thời gian</p>
+                    <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest mb-1">Thời gian</p>
                     <p className="text-slate-900 font-black text-xs">
                       {new Date(selectedTicket.startTime).toLocaleTimeString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", hour: '2-digit', minute: '2-digit' })}
                     </p>
-                    <p className="text-slate-500 font-bold text-[10px]">
+                    <p className="text-slate-500 font-bold text-[11px]">
                       {new Date(selectedTicket.startTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Khu vực</p>
+                    <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest mb-1">Khu vực</p>
                     <p className="text-[#2563eb] font-black text-sm uppercase">{selectedTicket.zoneName}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Vị trí ghế</p>
+                    <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest mb-1">Vị trí ghế</p>
                     <p className="text-slate-900 font-black text-xl tracking-tighter">{selectedTicket.seatLabel}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Mã đơn</p>
+                    <p className="text-[11px] text-slate-500 uppercase font-black tracking-widest mb-1">Mã đơn</p>
                     <p className="text-slate-900 font-mono font-bold text-[11px]">#{selectedTicket.orderId ? selectedTicket.orderId.substring(0, 6).toUpperCase() : ""}</p>
                   </div>
                 </div>
@@ -248,7 +256,7 @@ export default function MyTickets() {
                     size={150}
                   />
 
-                  <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[200px]">
+                  <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[200px]">
                     Mã định danh riêng ghế {selectedTicket.seatLabel}
                   </p>
 
@@ -276,14 +284,6 @@ export default function MyTickets() {
           </div>
         )}
 
-        {/* Load More Link */}
-        {tickets.length > 5 && (
-          <div className="text-center">
-            <button className="text-slate-400 font-bold text-sm hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto">
-              Tải thêm <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
       </main>
     </div>
   );

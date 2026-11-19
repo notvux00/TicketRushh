@@ -10,6 +10,18 @@ export default function ConfirmHost() {
     return () => window.removeEventListener("ticketrush:confirm", onConfirm);
   }, []);
 
+  useEffect(() => {
+    if (!request) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setRequest(null);
+      resolveConfirm(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [request]);
+
   if (!request) return null;
 
   const finish = (value) => {

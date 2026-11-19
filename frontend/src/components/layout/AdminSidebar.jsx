@@ -38,7 +38,7 @@ function AdminSidebar() {
             <UserIcon size={20} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">
+            <p className="text-[11px] font-bold uppercase tracking-widest opacity-50">
               Admin Panel
             </p>
             <p className="font-bold truncate text-sm">

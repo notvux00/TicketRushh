@@ -48,16 +48,16 @@ function EventCard({ event }) {
           />
 
           <div className="absolute left-3 top-3 rounded-xl border border-white/60 bg-surface/95 px-2.5 py-1.5 text-center shadow-sm backdrop-blur">
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-muted">{month}</span>
+            <span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{month}</span>
             <span className="price block text-lg font-extrabold leading-none text-primary">{day}</span>
           </div>
 
           {expired ? (
-            <span className="absolute right-3 top-3 rounded-lg bg-ink/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="absolute right-3 top-3 rounded-lg bg-ink/85 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
               Đã diễn ra
             </span>
           ) : (
-            <span className="absolute bottom-3 left-3 rounded-full bg-ink/80 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+            <span className="absolute bottom-3 left-3 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
               {CATEGORY_LABELS[event.category] || event.category || "Sự kiện"}
             </span>
           )}
@@ -74,7 +74,7 @@ function EventCard({ event }) {
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-4">
             <div className="min-w-0">
-              <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted">Từ</span>
+              <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Từ</span>
               <span className="price whitespace-nowrap text-sm font-extrabold text-primary">
                 {formatMoney(event.minPrice)}
               </span>

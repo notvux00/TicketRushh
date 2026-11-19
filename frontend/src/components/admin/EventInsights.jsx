@@ -89,7 +89,7 @@ export function RevenueChart({ points = [] }) {
           <h4 className="text-lg font-black text-slate-800">Biến động doanh thu</h4>
           <p className="text-sm font-bold text-slate-500">Theo các ngày phát sinh đơn hoàn tất</p>
         </div>
-        <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-600">
           Live
         </span>
       </div>
@@ -198,7 +198,7 @@ export function OccupancyPanel({ zones = [] }) {
         )}
       </div>
       <div className="mt-6 rounded-2xl bg-slate-50 p-4">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Legend</p>
+        <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Legend</p>
         <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-slate-500">
           <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-primary" />Đã bán</span>
           <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-slate-200" />Còn lại</span>
@@ -218,7 +218,7 @@ export function SeatMatrix({ zones = [], seatsByZone = [] }) {
           <h4 className="text-lg font-black text-slate-800">Real-time Seat Matrix</h4>
           <p className="text-sm font-bold text-slate-500">Theo dõi trạng thái từng ghế trong suất diễn đang chọn</p>
         </div>
-        <div className="flex flex-wrap gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
+        <div className="flex flex-wrap gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500">
           <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-md border border-slate-200 bg-white" />Trống</span>
           <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-md bg-amber-400" />Giữ</span>
           <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-md bg-primary" />Đã bán</span>
@@ -239,7 +239,7 @@ export function SeatMatrix({ zones = [], seatsByZone = [] }) {
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-xs font-black uppercase tracking-widest text-slate-700">{zone.name}</p>
-                    <p className="text-[10px] font-bold text-slate-400">
+                    <p className="text-[11px] font-bold text-slate-400">
                       {zone.matrixRow} hàng x {zone.matrixCol} cột
                     </p>
                   </div>
@@ -257,7 +257,7 @@ export function SeatMatrix({ zones = [], seatsByZone = [] }) {
                           key={seat.id}
                           type="button"
                           title={`${seat.seatLabel} - ${meta.label}`}
-                          className={`flex h-8 w-8 items-center justify-center rounded-lg border text-[9px] font-black shadow-sm transition-all ${meta.className}`}
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg border text-[11px] font-black shadow-sm transition-all ${meta.className}`}
                         >
                           <span className="sr-only">{meta.label}</span>
                           {meta.icon}
@@ -313,7 +313,7 @@ export function DonutChart({ data = [] }) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-black text-slate-800">{formatNumber(total)}</span>
-            <span className="text-[10px] font-black uppercase text-slate-400">vé</span>
+            <span className="text-[11px] font-black uppercase text-slate-400">vé</span>
           </div>
         </div>
         <div className="w-full space-y-4">
@@ -351,7 +351,7 @@ export function AgeBarChart({ data = [] }) {
                 className="w-full max-w-12 rounded-t-2xl bg-cyan-500"
                 style={{ height: `${Math.max(((item.value || 0) / maxValue) * 132, 8)}px` }}
               />
-              <span className="pb-3 text-[10px] font-black uppercase text-slate-400">{item.label}</span>
+              <span className="pb-3 text-[11px] font-black uppercase text-slate-400">{item.label}</span>
             </div>
           ))
         ) : (
