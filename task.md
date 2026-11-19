@@ -590,16 +590,17 @@
   mở sheet, bỏ ghế và tự đóng ở viewport 390px (pass 2026-11-19).
 
 ### UR-04 — Card/detail: giá và thời gian quyết định rõ hơn
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-04-discovery-clarity`)
 - **Vấn đề:** card hiện nhãn “Từ” cả khi chưa có giá; chưa hiện giờ suất gần nhất;
   detail luôn ghi “Giá vé từ” kể cả khi chỉ có một mức giá.
 - **File:** `frontend/src/components/common/EventCard.jsx`, `frontend/src/pages/EventDetail.jsx`.
 - **Việc cần làm:**
-  - [ ] Ẩn nhãn “Từ” khi `minPrice <= 0`; giữ “Giá liên hệ”.
-  - [ ] Card hiện giờ + ngày của suất gần nhất; aria-label cho link.
-  - [ ] Detail đổi nhãn “Giá vé”/“Giá vé từ” theo dữ liệu zone.
+  - [x] Ẩn nhãn “Từ” khi `minPrice <= 0`; giữ “Giá liên hệ”.
+  - [x] Card hiện giờ + ngày của suất gần nhất; aria-label cho link.
+  - [x] Detail đổi nhãn “Giá vé”/“Giá vé từ” theo dữ liệu zone.
 - **Acceptance:** không còn chuỗi “Từ Giá liên hệ”; card có đủ ngày/giờ/địa điểm/giá.
-- **Test:** lint/build + Playwright home.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 20/20; thêm
+  `event-card.spec.js` kiểm tra giá/suất gần nhất/nhãn “Từ” (pass 2026-11-19).
 
 ### UR-05 — Checkout: một countdown, một hệ token
 - **Trạng thái:** todo

@@ -1,4 +1,4 @@
-import { MapPin } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { isEventExpired } from "../../utils/eventUtils";
 import EventImage from "./EventImage";
@@ -28,9 +28,25 @@ function EventCard({ event }) {
     ? date.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", month: "short" }).replace(".", "")
     : "TBA";
   const day = date ? date.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit" }) : "—";
+  const time = date
+    ? date.toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })
+    : null;
+  const fullDate = date
+    ? date.toLocaleDateString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      })
+    : null;
+  const hasPrice = Number(event.minPrice) > 0;
 
   return (
-    <Link to={`/event/${event.id}`} className="group block h-full">
+    <Link
+      to={`/event/${event.id}`}
+      aria-label={`Xem chi tiết ${event.eventName}`}
+      className="group block h-full"
+    >
       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition-[box-shadow,border-color] duration-200 hover:border-primary/20 hover:shadow-lift">
         <div className="relative aspect-[16/10] overflow-hidden bg-background">
           <EventImage
@@ -65,10 +81,18 @@ function EventCard({ event }) {
             <MapPin size={14} className="shrink-0 text-primary/70" aria-hidden="true" />
             <span className="line-clamp-1">{event.venueName}</span>
           </p>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-muted">
+            <Calendar size={13} className="shrink-0 text-primary/70" aria-hidden="true" />
+            <span className="line-clamp-1">
+              {date ? `Suất gần nhất · ${time} · ${fullDate}` : "Chưa có lịch diễn"}
+            </span>
+          </p>
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-4">
             <div className="min-w-0">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Từ</span>
+              {hasPrice && (
+                <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Từ</span>
+              )}
               <span className="price whitespace-nowrap text-sm font-extrabold text-primary">
                 {formatMoney(event.minPrice)}
               </span>
