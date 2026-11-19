@@ -701,9 +701,11 @@
   cấu hình SES + IAM + bounce handling; không gửi mail giả trong demo.
 
 ### UR-12 — Thêm vé vào Apple/Google Wallet
-- **Trạng thái:** todo
-- **File:** `MyTickets.jsx`, backend PKPass.
-- **Việc cần làm:** tạo PKPass, nút “Thêm vào Wallet”, fallback tải PDF.
+- **Trạng thái:** blocked — cần Apple Developer Pass Type ID + certificate và Google Wallet
+  issuer account/keys; không thể tạo pass hợp lệ trong môi trường demo.
+- **Đã có thay thế:** tải vé PNG qua `downloadETicketCard`, QR toàn màn hình, QR động khi mở vé.
+- **Khi mở lại:** tạo PKPass server-side, ký bằng certificate; Google Wallet dùng JWT issuer;
+  thêm deep link “Thêm vào Wallet” + fallback tải ảnh/PDF. Không tạo pass giả.
 
 ---
 
