@@ -32,6 +32,10 @@ async function setup(context, { role = "ADMIN", camera = "deny" } = {}) {
     if (path.endsWith("/toggle")) { vouchers[0].active = !vouchers[0].active; data = vouchers[0]; }
     if (path === "/api/admin/vouchers/new" && request.method() === "DELETE") { vouchers = vouchers.filter(v => v.id !== "new"); return route.fulfill({ status: 204 }); }
     if (path.includes("/checkin/stats/")) data = { totalTickets: 2, checkedIn: scans ? 1 : 0, pendingEntry: scans ? 1 : 2 };
+    if (path.includes("/checkin/search/")) {
+      const q = new URL(request.url()).searchParams.get("q") || "";
+      data = q ? [{ ticketId: "t1", customerName: "Guest", email: "guest@example.com", seatLabel: "A1", zoneName: "VIP", status: "ACTIVE", checkedInAt: null }] : [];
+    }
     if (path === "/api/checkin/scan") {
       writes.push(request.postDataJSON()); scans++;
       data = { success: scans === 1, status: scans === 1 ? "CHECKED_IN" : "ALREADY_CHECKED_IN", message: scans === 1 ? "Mời vào cổng" : "Vé đã dùng", ticketInfo: { customerName: "Guest", zoneName: "VIP", seatLabel: "A1", eventName: "Live show" } };
@@ -89,6 +93,19 @@ test("camera refusal has manual fallback, scan debounce and live stats", async (
   await page.getByRole("button", { name: "Quét tiếp" }).click();
   await expect(page.getByText("Kết quả xác minh sẽ xuất hiện tại đây.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Mã QR (nhập hoặc dán)")).toHaveValue("");
+});
+
+test("check-in search finds a guest by name or email", async ({ context, page }) => {
+  await setup(context);
+  await page.goto("/admin/checkin");
+  await page.getByRole("combobox", { name: "Suất diễn", exact: true }).selectOption("show");
+  await page.getByLabel("Tên, email, ghế hoặc mã vé").fill("guest");
+  await page.getByRole("button", { name: "Tìm khách" }).click();
+  const results = page.getByRole("region", { name: "Kết quả tra cứu khách" });
+  await expect(results).toContainText("Guest");
+  await expect(results).toContainText("guest@example.com");
+  await expect(results).toContainText("VIP · A1");
+  await expect(results).toContainText("Chưa vào cổng");
 });
 
 test("camera stream stops when leaving scanner", async ({ context, page }) => {

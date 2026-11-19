@@ -651,14 +651,16 @@
   “Quét tiếp” reset form trong `admin-tools.spec.js` (pass 2026-11-19).
 
 ### UR-08b — Check-in: tra cứu khách bằng tên/email/mã đơn
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-08b-checkin-search`)
 - **Vấn đề:** cần fallback khi khách không mở được QR; hiện chỉ nhập payload thủ công.
 - **File:** `backend/.../AdminCheckinController.java`, `frontend/src/api/adminApi.js`,
   `frontend/src/pages/AdminCheckin.jsx`.
 - **Việc cần làm:**
-  - [ ] `GET /api/admin/checkin/search/{showtimeId}?q=` trả vé COMPLETED khớp tên/email/ghế.
-  - [ ] UI bảng kết quả + trạng thái vé; không tự check-in nếu chưa có endpoint an toàn.
-  - [ ] Test backend cho phân quyền và lọc đúng showtime.
+  - [x] `GET /api/admin/checkin/search/{showtimeId}?q=` trả vé COMPLETED khớp tên/email/ghế/mã vé.
+  - [x] UI bảng kết quả + trạng thái vé; không tự check-in nếu chưa có endpoint an toàn.
+  - [x] Test backend cho phân quyền, lọc đúng showtime và query không khớp.
+- **Test:** backend `mvn -B verify` **91 tests** pass; frontend lint/build + Playwright **24/24**;
+  thêm test `admin-tools.spec.js` cho tìm khách (pass 2026-11-19).
 
 ### UR-09 — Dashboard admin theo việc cần xử lý
 - **Trạng thái:** verified (2026-11-19, branch `task/UR-09-admin-actions`)

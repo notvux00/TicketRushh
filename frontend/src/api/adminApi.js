@@ -15,6 +15,8 @@ export const adminApi = {
   toggleVoucher: async id => (await axios.patch(`/admin/vouchers/${id}/toggle`)).data,
   deleteVoucher: async id => axios.delete(`/admin/vouchers/${id}`),
   stats: async id => (await axios.get(`/admin/checkin/stats/${id}`)).data,
+  searchCheckin: async (showtimeId, q) =>
+    (await axios.get(`/admin/checkin/search/${showtimeId}`, { params: { q } })).data,
   scan: async body => {
     try { return (await axios.post("/checkin/scan", body)).data; }
     catch (error) {

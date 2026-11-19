@@ -45,6 +45,11 @@ export default function AdminCheckin() {
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchBusy, setSearchBusy] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const lifecycle = useRef({ active: true, busy: false, code: "", at: 0 });
   useEffect(() => { lifecycle.current.active = true; const state = lifecycle.current; return () => { state.active = false; }; }, []);
   const events = useQuery({ queryKey: ["admin-checkin-events", user.id], queryFn: eventApi.getAllEvents });
@@ -69,12 +74,40 @@ export default function AdminCheckin() {
     setResult(null); setPayload(""); lifecycle.current.code = ""; lifecycle.current.at = 0;
     if (!camera) document.getElementById("checkin-payload")?.focus();
   }, [camera]);
+  const searchAttendees = async (event) => {
+    event.preventDefault();
+    const term = searchQuery.trim();
+    if (!showtime || !term) return;
+    setSearchBusy(true);
+    setSearchError("");
+    try {
+      const rows = await adminApi.searchCheckin(showtime, term);
+      setSearchResults(Array.isArray(rows) ? rows : []);
+      setSearchPerformed(true);
+    } catch (error) {
+      setSearchError(errorText(error));
+      setSearchResults([]);
+      setSearchPerformed(true);
+    } finally {
+      setSearchBusy(false);
+    }
+  };
   return <div className="admin-page">
     <PageHeader title="Soát vé tại cổng" description="Chọn suất diễn trước khi quét. Chỉ vé đã thanh toán và đúng suất được chấp nhận." />
     <QueryState query={events}>
-      <div className="admin-form mb-6"><label>Suất diễn<select value={showtime} disabled={busy} onChange={e => { setCamera(false); setShowtime(e.target.value); setResult(null); setHistory([]); lifecycle.current.code = ""; }}><option value="">Chọn suất diễn</option>{events.data?.flatMap(event => (event.showtimes || []).map(st => <option key={st.id} value={st.id}>{event.eventName} — {st.name || dateTime(st.startTime)}</option>))}</select></label><label>Tên cổng<input value={gate} maxLength={100} disabled={busy} onChange={e => setGate(e.target.value)} /></label></div>
+      <div className="admin-form mb-6"><label>Suất diễn<select value={showtime} disabled={busy} onChange={e => { setCamera(false); setShowtime(e.target.value); setResult(null); setHistory([]); setSearchQuery(""); setSearchResults([]); setSearchPerformed(false); setSearchError(""); lifecycle.current.code = ""; }}><option value="">Chọn suất diễn</option>{events.data?.flatMap(event => (event.showtimes || []).map(st => <option key={st.id} value={st.id}>{event.eventName} — {st.name || dateTime(st.startTime)}</option>))}</select></label><label>Tên cổng<input value={gate} maxLength={100} disabled={busy} onChange={e => setGate(e.target.value)} /></label></div>
     </QueryState>
     {showtime && <QueryState query={stats}>{stats.data && <dl className="admin-metrics mb-6"><div><dt>Đã vào cổng</dt><dd>{stats.data.checkedIn}</dd></div><div><dt>Chưa vào</dt><dd>{stats.data.pendingEntry}</dd></div><div><dt>Vé đã thanh toán</dt><dd>{stats.data.totalTickets}</dd></div></dl>}</QueryState>}
+    {showtime && <section className="admin-section" aria-label="Tra cứu khách">
+      <h2>Tra cứu khách</h2>
+      <p className="admin-muted">Dùng khi khách không mở được QR. Tìm theo tên, email, ghế hoặc mã vé; chỉ vé đã thanh toán của suất đang chọn.</p>
+      <form className="admin-form mt-4" onSubmit={searchAttendees}>
+        <label>Tên, email, ghế hoặc mã vé<input value={searchQuery} maxLength={100} onChange={event => setSearchQuery(event.target.value)} placeholder="VD: Nguyễn, guest@example.com, A1" /></label>
+        <button className="admin-primary" type="submit" disabled={searchBusy || !searchQuery.trim()}>{searchBusy ? "Đang tìm…" : "Tìm khách"}</button>
+      </form>
+      {searchError && <p role="alert" className="admin-notice admin-error mt-4">{searchError}</p>}
+      {searchResults.length ? <Table label="Kết quả tra cứu khách"><thead><tr><th>Khách hàng</th><th>Khu vực / ghế</th><th>Trạng thái</th><th>Check-in</th></tr></thead><tbody>{searchResults.map(row => <tr key={row.ticketId}><td>{row.customerName || "Khách"}<span className="admin-muted block">{row.email}</span></td><td>{row.zoneName} · {row.seatLabel}</td><td>{row.status === "CHECKED_IN" ? "Đã vào cổng" : row.status === "ACTIVE" ? "Chưa vào cổng" : row.status}</td><td>{row.checkedInAt ? dateTime(row.checkedInAt) : "—"}</td></tr>)}</tbody></Table> : searchPerformed && !searchError ? <p className="admin-notice mt-4">Không tìm thấy vé phù hợp trong suất diễn này.</p> : null}
+    </section>}
     <div className="admin-scanner-grid"><section aria-label="Quét hoặc nhập mã vé">
       <QRScanner enabled={camera && !!showtime} onCode={scan} />
       <div className="admin-actions mt-4"><button className="admin-primary" disabled={!showtime} onClick={() => setCamera(value => !value)}>{camera ? "Tắt camera" : "Bật camera"}</button>{busy && <span role="status">Đang xác minh vé…</span>}</div>
