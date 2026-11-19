@@ -468,6 +468,21 @@
   modal có role/focus trap/Escape; không còn link/button chết ở luồng người dùng; focus ring rõ.
 - **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19; script kiểm tra focus vào `auth-email`, Escape đóng AuthModal và ticket modal; screenshot 1440.
 
+### UI-06 — Tương thích category giữa seed và form admin
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-06-category-live`)
+- **Vấn đề:** seed live dùng `Concert`, `Phim`, `Sân khấu`, `Thể thao`; form admin dùng
+  `MUSIC`, `STAGE`, `SPORTS`, `WORKSHOP`. Filter so khớp tuyệt đối nên trên live bấm
+  thể loại trả 0 kết quả; badge thể loại ở card/detail cũng sai.
+- **File:** `frontend/src/utils/category.js`, `Home.jsx`, `components/common/EventCard.jsx`,
+  `pages/EventDetail.jsx`, `components/layout/Footer.jsx`.
+- **Việc cần làm:**
+  - [x] Gom nhóm category với alias cho cả dữ liệu seed và mã admin.
+  - [x] Filter/label dùng chung utility, hỗ trợ query `?category=` cũ và mới.
+  - [x] Đồng bộ link category ở Footer và nhãn card/detail.
+- **Acceptance:** 4 nhóm filter trả đúng sự kiện trên dữ liệu live; mã admin vẫn hoạt động;
+  badge hiển thị đúng `Phim`/`Sân khấu`/`Thể thao`/`Âm nhạc`.
+- **Test:** lint/build + Playwright với fixture category live + kiểm tra trên domain sau deploy.
+
 ### DEPLOY-01 — Phát hành live và xác minh
 - **Trạng thái:** todo
 - **Vấn đề:** bản live hiện là build cũ; cần phát hành đúng artifact và xác minh trên domain thật.
