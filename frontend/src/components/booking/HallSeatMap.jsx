@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Lock, X } from "lucide-react";
+import { Check, Lock, X } from "lucide-react";
 import {
   HALL_VIEW_HEIGHT,
   HALL_VIEW_WIDTH,
@@ -64,12 +64,14 @@ export default function HallSeatMap({
       className="mx-auto overflow-auto rounded-2xl bg-[#07111f] ring-1 ring-white/10"
       style={{ maxWidth: 1000 }}
       data-testid="hall-seat-map"
+      role="region"
+      aria-label="Sơ đồ ghế hội trường. Dùng nút phóng to nếu ghế khó chạm."
     >
       <div
         className="relative mx-auto"
         style={{
           width: `${zoom * 100}%`,
-          minWidth: 720,
+          minWidth: 900,
           aspectRatio: `${HALL_VIEW_WIDTH} / ${HALL_VIEW_HEIGHT}`,
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.16) 1px, transparent 0)",
@@ -85,12 +87,12 @@ export default function HallSeatMap({
         >
           <div className="absolute inset-x-6 top-1 h-0.5 rounded-full bg-white/80 blur-[1px]" />
         </div>
-        <p className="pointer-events-none absolute inset-x-0 top-[8.4%] z-20 text-center text-[8px] font-black uppercase tracking-[0.42em] text-slate-400/80">
+        <p className="pointer-events-none absolute inset-x-0 top-[8.4%] z-20 text-center text-[10px] font-black uppercase tracking-[0.42em] text-slate-300/90">
           Màn hình
         </p>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-[1.5%] z-20 flex justify-center">
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.3em] text-white/30">
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">
             Lối vào
           </span>
         </div>
@@ -131,19 +133,19 @@ export default function HallSeatMap({
               <div className="flex h-full flex-col p-[3%]">
                 <div className="mb-1 flex items-center justify-between gap-1 overflow-hidden">
                   <span
-                    className="truncate text-[8px] font-black uppercase tracking-[0.12em]"
+                    className="truncate text-[10px] font-black uppercase tracking-[0.12em]"
                     style={{ color }}
                   >
                     {zone.name}
                   </span>
-                  <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[7px] font-bold text-white/70">
+                  <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/80">
                     {money(zone.price)}
                   </span>
                 </div>
 
                 <div className="flex min-h-0 flex-1 gap-1">
                   <div
-                    className="grid w-3 shrink-0 py-[2px] text-[7px] font-black leading-none text-white/35"
+                    className="grid w-4 shrink-0 py-[2px] text-[9px] font-black leading-none text-white/45"
                     style={{ gridTemplateRows: `repeat(${Math.max(rows.length, 1)}, minmax(0, 1fr))` }}
                     aria-hidden="true"
                   >
@@ -167,14 +169,24 @@ export default function HallSeatMap({
                       const unavailable = seat.status === "sold" || (seat.status === "locked" && !seat.lockedByMe);
                       const blockedByLimit = !isSelected && !unavailable && atLimit;
                       const classes = isSelected
-                        ? "border-accent bg-accent text-white shadow-[0_0_10px_rgba(30,94,255,0.7)] ring-1 ring-white/50"
+                        ? "border-accent bg-accent text-white shadow-[0_0_10px_rgba(30,94,255,0.7)] ring-2 ring-white/70"
                         : unavailable
                           ? seat.status === "sold"
                             ? "cursor-not-allowed border-slate-700/60 bg-slate-800/80 text-slate-600"
-                            : "cursor-not-allowed border-amber-400/25 bg-amber-400/15 text-amber-300"
+                            : "cursor-not-allowed border-amber-400/40 bg-amber-400/15 text-amber-300"
                           : blockedByLimit
                             ? "cursor-not-allowed border-white/10 bg-white/5 text-white/20"
                             : "border-white/25 bg-white/90 text-slate-600 hover:-translate-y-px hover:border-accent hover:bg-white hover:text-accent";
+
+                      const stateLabel = isSelected
+                        ? "selected"
+                        : seat.status === "sold"
+                          ? "sold"
+                          : seat.status === "locked" && !seat.lockedByMe
+                            ? "held"
+                            : blockedByLimit
+                              ? "limit"
+                              : "available";
 
                       return (
                         <button
@@ -183,15 +195,21 @@ export default function HallSeatMap({
                           disabled={unavailable}
                           aria-label={seatAriaLabel(seat, isSelected, atLimit)}
                           aria-pressed={isSelected}
+                          data-seat-state={stateLabel}
                           onClick={() => onSeatSelect(seat)}
                           onMouseEnter={() => onSeatPreview(seat)}
                           onMouseLeave={() => onSeatPreview(null)}
                           onFocus={() => onSeatPreview(seat)}
-                          className={`flex min-h-0 min-w-0 items-center justify-center rounded-[4px] border text-[8px] font-black leading-none transition-all ${classes}`}
+                          className={`relative flex min-h-0 min-w-0 items-center justify-center rounded-[5px] border text-[10px] font-black leading-none transition-all ${classes}`}
                           style={{ gridColumn: visualColumn(seat.gridCol), gridRow: rowIndex.get(seat.gridRow) }}
                         >
                           {isSelected ? (
-                            seatNumber
+                            <>
+                              {seatNumber}
+                              <span className="absolute -right-0.5 -top-0.5 grid h-3 w-3 place-items-center rounded-full bg-white text-accent shadow-sm">
+                                <Check className="h-2 w-2" strokeWidth={4} aria-hidden="true" />
+                              </span>
+                            </>
                           ) : seat.status === "sold" ? (
                             <X className="h-1/2 w-1/2" strokeWidth={3} />
                           ) : seat.status === "locked" && !seat.lockedByMe ? (
