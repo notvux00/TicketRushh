@@ -13,7 +13,9 @@ import {
   Download,
   CheckCircle2,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Maximize2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { eventApi } from "../api/eventApi";
@@ -22,14 +24,48 @@ import EventImage from "../components/common/EventImage";
 import { downloadETicketCard } from "../utils/ticketExporter";
 import { useDialogA11y } from "../hooks/useDialogA11y";
 
+const QR_LEAD_MS = 2 * 60 * 60 * 1000;
+
+function qrWindow(ticket) {
+  const start = new Date(ticket?.startTime || 0).getTime();
+  const opensAt = start - QR_LEAD_MS;
+  return { opensAt, isOpen: Number.isFinite(start) && Date.now() >= opensAt };
+}
+
+function formatQrTime(timestamp) {
+  if (!timestamp || !Number.isFinite(Number(timestamp))) return "trước giờ diễn";
+  return new Date(timestamp).toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function MyTickets() {
   const [activeFilter, setActiveFilter] = useState("upcoming");
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const closeTicketModal = useCallback(() => setIsModalOpen(false), []);
+  const [showQrEarly, setShowQrEarly] = useState(false);
+  const [qrFullscreen, setQrFullscreen] = useState(false);
+  const closeTicketModal = useCallback(() => {
+    setIsModalOpen(false);
+    setShowQrEarly(false);
+    setQrFullscreen(false);
+  }, []);
   const dialogRef = useDialogA11y(isModalOpen, closeTicketModal);
+
+  useEffect(() => {
+    if (!qrFullscreen) return;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setQrFullscreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [qrFullscreen]);
 
   const openTicketModal = (order, ticket) => {
     setSelectedTicket({
@@ -39,6 +75,8 @@ export default function MyTickets() {
       venueName: order.venueName,
       orderId: order.id,
     });
+    setShowQrEarly(false);
+    setQrFullscreen(false);
     setIsModalOpen(true);
   };
 
@@ -57,6 +95,13 @@ export default function MyTickets() {
     fetchTickets();
     return () => { active = false; };
   }, []);
+
+  const ticketQrWindow = selectedTicket ? qrWindow(selectedTicket) : null;
+  const isCheckedIn = selectedTicket?.status === "CHECKED_IN";
+  const qrReady = Boolean(ticketQrWindow?.isOpen || showQrEarly);
+  const qrValue = selectedTicket
+    ? selectedTicket.qrPayload || selectedTicket.qrCode || `TKRUSH:v1:${selectedTicket.id || selectedTicket.ticketId}`
+    : "";
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -250,36 +295,113 @@ export default function MyTickets() {
 
                 {/* QR Code Section */}
                 <div className="flex flex-col items-center pt-3 border-t border-dashed border-slate-200">
-                  <QRCodeRenderer
-                    value={selectedTicket.qrPayload || selectedTicket.qrCode || `TKRUSH:v1:${selectedTicket.id || selectedTicket.ticketId}`}
-                    id="my-ticket-qr-canvas"
-                    size={150}
-                  />
+                  {isCheckedIn ? (
+                    <div className="w-full rounded-xl border border-purple-200 bg-purple-50 p-4 text-center">
+                      <CheckCircle2 className="mx-auto text-purple-600" size={28} aria-hidden="true" />
+                      <p className="mt-2 text-sm font-black text-purple-800">Vé đã được sử dụng</p>
+                      <p className="mt-1 text-[11px] leading-4 text-purple-700/80">
+                        Mã QR của vé này không còn hiệu lực. Liên hệ ban tổ chức nếu cần hỗ trợ.
+                      </p>
+                    </div>
+                  ) : qrReady ? (
+                    <>
+                      <QRCodeRenderer value={qrValue} id="my-ticket-qr-canvas" size={150} />
 
-                  <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[200px]">
-                    Mã định danh riêng ghế {selectedTicket.seatLabel}
-                  </p>
+                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-2 mb-1 text-center max-w-[220px]">
+                        Mã QR sẵn sàng soát vé · ghế {selectedTicket.seatLabel}
+                      </p>
 
-                  {/* Action Buttons */}
-                  <div className="w-full mt-4 pt-3 border-t border-slate-100">
-                    <button
-                      onClick={() =>
-                        downloadETicketCard(selectedTicket, {
-                          eventName: selectedTicket.eventName,
-                          venueName: selectedTicket.venueName,
-                          startTime: selectedTicket.startTime,
-                          customerName: selectedTicket.customerName || "Khách hàng",
-                          orderId: selectedTicket.orderId,
-                          canvasId: "my-ticket-qr-canvas",
-                        })
-                      }
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20"
-                    >
-                      <Download size={16} /> Tải Vé Về Máy
-                    </button>
-                  </div>
+                      <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setQrFullscreen(true)}
+                          aria-label="Phóng to mã QR"
+                          className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 py-3 text-xs font-bold text-text transition-colors hover:border-primary/30 hover:text-primary"
+                        >
+                          <Maximize2 size={15} /> Phóng to
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadETicketCard(selectedTicket, {
+                              eventName: selectedTicket.eventName,
+                              venueName: selectedTicket.venueName,
+                              startTime: selectedTicket.startTime,
+                              customerName: selectedTicket.customerName || "Khách hàng",
+                              orderId: selectedTicket.orderId,
+                              canvasId: "my-ticket-qr-canvas",
+                            })
+                          }
+                          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-xs font-bold text-white shadow-md shadow-primary/20 transition-colors hover:bg-secondary active:scale-[0.98]"
+                        >
+                          <Download size={15} /> Tải vé
+                        </button>
+                      </div>
+                      <p className="mt-2 text-center text-[11px] leading-4 text-muted">
+                        Không chia sẻ mã này cho người khác. Mỗi vé có mã riêng.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="w-full rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center">
+                      <Clock className="mx-auto text-slate-400" size={26} aria-hidden="true" />
+                      <p className="mt-2 text-sm font-black text-slate-800">
+                        Mã QR mở từ {formatQrTime(ticketQrWindow?.opensAt)}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                        Mã hiển thị trước giờ diễn 2 giờ để tránh vé bị chụp lại.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowQrEarly(true)}
+                        className="mt-3 w-full rounded-xl border border-primary/20 bg-white px-4 py-2.5 text-xs font-bold text-primary transition-colors hover:bg-primary/5"
+                      >
+                        Hiển thị mã ngay
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {qrFullscreen && selectedTicket && (
+          <div
+            className="fixed inset-0 z-[120] flex flex-col bg-white p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mã QR vé"
+            onClick={() => setQrFullscreen(false)}
+          >
+            <div className="flex items-start justify-between gap-3" onClick={(event) => event.stopPropagation()}>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted">Mã QR soát vé</p>
+                <h2 className="mt-1 line-clamp-2 text-lg font-black leading-tight text-text">
+                  {selectedTicket.eventName}
+                </h2>
+                <p className="mt-1 text-xs font-semibold text-muted">
+                  {selectedTicket.zoneName} · Ghế {selectedTicket.seatLabel}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrFullscreen(false)}
+                aria-label="Đóng mã QR"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div
+              className="flex flex-1 flex-col items-center justify-center gap-4"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <QRCodeRenderer value={qrValue} id="my-ticket-qr-fullscreen" size={300} />
+              <p className="max-w-xs text-center text-sm font-semibold leading-6 text-text">
+                Đưa mã này cho nhân viên soát vé. Tăng độ sáng màn hình nếu cần.
+              </p>
+              <p className="text-[11px] text-muted">Nhấn Escape hoặc chạm ra ngoài để đóng.</p>
             </div>
           </div>
         )}

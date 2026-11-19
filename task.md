@@ -617,17 +617,18 @@
   “Ghế được giữ đến” và không còn “Thanh toán trong” (pass 2026-11-19).
 
 ### UR-06 — Trạng thái QR và chế độ toàn màn hình
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-06-ticket-qr`)
 - **Vấn đề:** QR hiện ngay lập tức, không có trạng thái “chưa tới giờ/đã dùng”, không có
   chế độ toàn màn hình để đưa cho nhân viên soát vé.
 - **File:** `frontend/src/pages/MyTickets.jsx`, `frontend/src/components/ticket/QRCodeRenderer.jsx`.
 - **Việc cần làm:**
-  - [ ] Tính trạng thái: đã check-in / sẵn sàng / chưa tới giờ (mở trước 2 giờ).
-  - [ ] Chưa tới giờ: hiện thời điểm mở + nút “Hiển thị mã ngay” (không chặn demo).
-  - [ ] Nút “Phóng to QR” mở modal toàn màn hình, nền trắng, có nút đóng.
+  - [x] Tính trạng thái: đã check-in / sẵn sàng / chưa tới giờ (mở trước 2 giờ).
+  - [x] Chưa tới giờ: hiện thời điểm mở + nút “Hiển thị mã ngay” (không chặn demo).
+  - [x] Nút “Phóng to QR” mở modal toàn màn hình, nền trắng, có nút đóng.
 - **Acceptance:** vé đã dùng không hiện QR như vé hợp lệ; modal đóng bằng Escape/click ngoài;
   QR tải về vẫn dùng `my-ticket-qr-canvas`.
-- **Test:** lint/build + Playwright + kiểm tra modal 390px.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 22/22; thêm
+  `my-tickets-qr.spec.js` cho gating 2 giờ, full-screen và vé đã dùng (pass 2026-11-19).
 
 ### UR-07 — Queue: thông tin cập nhật và ETA khoảng
 - **Trạng thái:** todo
