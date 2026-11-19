@@ -1,6 +1,6 @@
 # Triển khai AWS demo
 
-Đây là hướng dẫn triển khai, không phải biên bản deploy thành công. Chưa apply AWS trong phiên làm việc này. Prod là profile tham chiếu, không triển khai mặc định.
+Bản demo đã được triển khai tại https://ticketrush.sudothanh.me (2026-11-19). Tài liệu này vẫn là hướng dẫn vận hành/tái triển khai; prod là profile tham chiếu, không triển khai mặc định.
 
 Các lệnh dưới đây dùng Bash và chạy từ repo root nếu không chỉ định khác.
 
