@@ -631,9 +631,14 @@
   `my-tickets-qr.spec.js` cho gating 2 giờ, full-screen và vé đã dùng (pass 2026-11-19).
 
 ### UR-07 — Queue: thông tin cập nhật và ETA khoảng
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-07-queue-eta`)
 - **File:** `frontend/src/pages/WaitingRoomPage.jsx`.
-- **Việc cần làm:** thêm “Cập nhật lúc”, ETA dạng khoảng, cảnh báo reconnect rõ hơn.
+- **Việc cần làm:**
+  - [x] ETA dạng khoảng (“Khoảng 3–4 phút”) thay vì một số tuyệt đối.
+  - [x] Hiện “Cập nhật lúc HH:mm:ss” theo lần fetch thành công.
+  - [x] Cảnh báo reconnect rõ hơn, nói vị trí vẫn được giữ.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 23/23; thêm
+  `waiting-room.spec.js` kiểm tra ETA khoảng + thời điểm cập nhật (pass 2026-11-19).
 
 ### UR-08 — Check-in: phản hồi giác quan và tìm khách
 - **Trạng thái:** todo
