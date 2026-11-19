@@ -120,4 +120,13 @@ test("unified seat map selects across zones and previews the physical view", asy
   await page.getByRole("button", { name: "Bỏ chọn ghế A1" }).click();
   await expect(page.getByText("Ghế A1", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Ghế B2", { exact: true })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Mở ghế đã chọn" }).click();
+  const cartSheet = page.getByRole("region", { name: "Ghế đã chọn" });
+  await expect(cartSheet).toBeVisible();
+  await expect(cartSheet.getByText("Ghế B2", { exact: true })).toBeVisible();
+  await cartSheet.getByRole("button", { name: "Bỏ ghế B2 khỏi giỏ" }).click();
+  await expect(cartSheet).toHaveCount(0);
+  await expect(page.getByText("Chưa chọn ghế")).toBeVisible();
 });
