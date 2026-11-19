@@ -534,8 +534,11 @@
 - **Kết quả dữ liệu:** 10 sự kiện, 17 showtime, 37 zone, 2.484 ghế (180 ghế SOLD demo).
 - **Acceptance:** migration chạy sạch trên DB trống; filter 4 nhóm trả đúng; ảnh local
   không 404; admin dashboard thấy 10 sự kiện; booking mở được sự kiện mới.
-- **Test:** apply V1→V11 trên PostgreSQL sạch; backend `./mvnw -B verify` 88 tests (JDK 17);
-  frontend lint/build + Playwright 19/19; live smoke sau deploy.
+- **Test:** apply V1→V11 trên PostgreSQL sạch: 10 events / 17 showtimes / 37 zones / 2.484 seats;
+  backend `./mvnw -B verify` 88 tests (JDK 17); frontend lint/build + Playwright 19/19.
+- **Deploy:** frontend run **44480588161** success, backend run **44480777380** success
+  (ASG refresh 8m47s). Live: `/api/events` 10 sự kiện, 8 ảnh load, filter Workshop = 1,
+  admin overview `totalEvents=10`, booking Indie Fest mở sơ đồ 3 zone, 0 console/HTTP lỗi.
 
 ---
 
