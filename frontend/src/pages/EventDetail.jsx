@@ -169,7 +169,7 @@ export default function EventDetail() {
               </div>
               
               <div className="p-6">
-                <div className="prose prose-slate max-w-none">
+                <div className="max-w-none">
                   <p className="text-muted leading-loose text-base mb-6">
                     {event.description || "Thông tin chi tiết về sự kiện này đang được cập nhật. Hãy quay lại sau để biết thêm chi tiết về chương trình, nghệ sĩ và các quy định tham gia."}
                   </p>

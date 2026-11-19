@@ -1,6 +1,16 @@
-import { useState, useRef, useEffect } from "react";
-import { Ticket, Search, User, LogOut, ChevronDown, Settings, TrendingUp } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import {
+  ChevronDown,
+  LogOut,
+  Menu,
+  Search,
+  Settings,
+  Ticket,
+  TrendingUp,
+  User,
+  X,
+} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { eventApi } from "../../api/eventApi";
@@ -8,23 +18,36 @@ import { eventApi } from "../../api/eventApi";
 function Navbar() {
   const { user, profile, logout, openAuthModal, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+  const mobileSearchInputRef = useRef(null);
 
   const { data: events } = useQuery({
     queryKey: ["events"],
     queryFn: eventApi.getAllEvents,
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
-  const filteredSuggestions = events?.filter(event => 
-    searchTerm && event.eventName.toLowerCase().includes(searchTerm.toLowerCase())
-  ).slice(0, 5);
+  const suggestions = Array.isArray(events)
+    ? events
+        .filter((event) => searchTerm && event.eventName?.toLowerCase().includes(searchTerm.toLowerCase()))
+        .slice(0, 5)
+    : [];
 
-  // Close dropdowns when clicking outside
+  const closeMenus = () => {
+    setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
+    setIsDropdownOpen(false);
+    setShowSuggestions(false);
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -34,162 +57,350 @@ function Navbar() {
         setShowSuggestions(false);
       }
     }
+    function handleEscape(event) {
+      if (event.key !== "Escape") return;
+      setIsDropdownOpen(false);
+      setShowSuggestions(false);
+      setMobileSearchOpen(false);
+      setMobileMenuOpen(false);
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
+  useEffect(() => {
+    if (!mobileSearchOpen) return;
+    const timer = setTimeout(() => mobileSearchInputRef.current?.focus(), 60);
+    return () => clearTimeout(timer);
+  }, [mobileSearchOpen]);
+
   const handleLogout = async () => {
-    setIsDropdownOpen(false);
+    closeMenus();
     await logout();
   };
 
-  const handleSearch = (e) => {
-    if (e.key === "Enter") {
-      navigate(`/?search=${searchTerm}`);
-      setShowSuggestions(false);
+  const submitSearch = (event) => {
+    event?.preventDefault();
+    const value = searchTerm.trim();
+    if (!value) return;
+    navigate(`/?search=${encodeURIComponent(value)}`);
+    closeMenus();
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "ArrowDown" && suggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion((current) => Math.min(current + 1, suggestions.length - 1));
+      return;
     }
+    if (event.key === "ArrowUp" && suggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion((current) => Math.max(current - 1, 0));
+      return;
+    }
+    if (event.key === "Enter" && activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+      event.preventDefault();
+      handleSuggestionClick(suggestions[activeSuggestion].id);
+      return;
+    }
+    if (event.key === "Enter") submitSearch(event);
   };
 
   const handleSuggestionClick = (eventId) => {
     navigate(`/event/${eventId}`);
     setSearchTerm("");
     setShowSuggestions(false);
+    setActiveSuggestion(-1);
+    setMobileSearchOpen(false);
   };
 
-  return (
-    <header className="flex items-center justify-between px-6 md:px-12 py-4 fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg transition-all duration-300">
-      <div className="flex items-center gap-10">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity"
-        >
-          <Ticket className="text-3xl font-bold rotate-[-15deg]" size={32} />
-          <h2 className="text-xl font-extrabold tracking-tight uppercase">
-            TicketRush
-          </h2>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-8">
-          <Link
-            to="/"
-            className="text-text hover:text-primary transition-colors text-sm font-semibold uppercase tracking-wider"
+  const suggestionList = (
+    <div className="py-1.5" role="listbox" aria-label="Gợi ý sự kiện">
+      {suggestions.length > 0 ? (
+        suggestions.map((suggestion, index) => (
+          <button
+            key={suggestion.id}
+            type="button"
+            role="option"
+            aria-selected={activeSuggestion === index}
+            onMouseEnter={() => setActiveSuggestion(index)}
+            onClick={() => handleSuggestionClick(suggestion.id)}
+            className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${
+              activeSuggestion === index ? "bg-background" : "hover:bg-background"
+            }`}
           >
-            Sự kiện
+            <TrendingUp size={17} className="shrink-0 text-primary/70" />
+            <span className="min-w-0 truncate text-sm font-semibold text-text">{suggestion.eventName}</span>
+          </button>
+        ))
+      ) : (
+        <p className="px-4 py-5 text-center text-sm font-medium text-muted">
+          Không tìm thấy sự kiện phù hợp.
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <header className="fixed inset-x-0 top-0 z-[100] border-b border-line bg-surface/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-8">
+          <Link to="/" onClick={closeMenus} className="flex shrink-0 items-center gap-2.5 text-primary" aria-label="TicketRush — trang chủ">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-white shadow-sm">
+              <Ticket size={20} className="-rotate-12" strokeWidth={2.4} />
+            </span>
+            <span className="text-lg font-extrabold tracking-tight">TicketRush</span>
           </Link>
-        </nav>
-      </div>
 
-      <div className="flex items-center gap-6">
-        {/* Search Bar & Suggestions */}
-        <div className="relative" ref={searchRef}>
-          <div className="hidden md:flex items-center gap-2 bg-white/50 border border-white/60 rounded-full px-4 py-1.5 focus-within:bg-white focus-within:w-72 lg:focus-within:w-96 transition-all shadow-sm">
-            <Search className="text-muted" size={20} />
-            <input
-              className="bg-transparent border-none text-sm focus:ring-0 w-40 lg:w-64 outline-none transition-all"
-              placeholder="Bạn tìm gì hôm nay?"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onKeyDown={handleSearch}
-            />
-          </div>
-
-          {/* Search Suggestions Dropdown */}
-          {showSuggestions && searchTerm && (
-            <div className="absolute left-0 right-0 mt-3 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden z-[120] animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="py-2">
-                {filteredSuggestions && filteredSuggestions.length > 0 ? (
-                  filteredSuggestions.map((suggestion) => (
-                    <button
-                      key={suggestion.id}
-                      onClick={() => handleSuggestionClick(suggestion.id)}
-                      className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-slate-50 transition-colors group"
-                    >
-                      <TrendingUp size={18} className="text-primary/70 group-hover:text-primary group-hover:scale-110 transition-all" />
-                      <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">
-                        {suggestion.eventName}
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-6 py-6 text-sm font-medium text-slate-400 italic text-center">
-                    Không tìm thấy kết quả phù hợp...
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <nav className="hidden items-center gap-6 lg:flex" aria-label="Điều hướng chính">
+            <Link
+              to="/"
+              onClick={closeMenus}
+              className={`text-sm font-semibold transition-colors hover:text-primary ${
+                location.pathname === "/" ? "text-primary" : "text-muted"
+              }`}
+            >
+              Sự kiện
+            </Link>
+            {isAuthenticated && (
+              <Link
+                to="/my-tickets"
+                onClick={closeMenus}
+                className={`text-sm font-semibold transition-colors hover:text-primary ${
+                  location.pathname === "/my-tickets" ? "text-primary" : "text-muted"
+                }`}
+              >
+                Vé của tôi
+              </Link>
+            )}
+          </nav>
         </div>
 
-        {/* Auth Section */}
-        {isAuthenticated ? (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-3 bg-white border border-gray-100 pl-2 pr-4 py-1.5 rounded-full shadow-sm hover:shadow-md transition-all active:scale-95"
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative hidden md:block" ref={searchRef}>
+            <form
+              onSubmit={submitSearch}
+              className="flex h-10 w-56 items-center gap-2 rounded-xl border border-line bg-background/70 px-3 transition-all focus-within:w-72 focus-within:border-accent/40 focus-within:bg-surface lg:w-64 lg:focus-within:w-80"
             >
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white shadow-inner overflow-hidden">
-                {profile?.avatarUrl && profile.avatarUrl.trim() !== "" ? (
-                  <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={18} />
-                )}
-              </div>
-              <span className="text-sm font-bold text-text hidden sm:inline">
-                {profile?.fullName || user.user_metadata?.full_name || "User"}
-              </span>
-              <ChevronDown 
-                size={16} 
-                className={`text-muted transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
+              <Search size={17} className="shrink-0 text-muted" aria-hidden="true" />
+              <input
+                aria-label="Tìm sự kiện"
+                role="combobox"
+                aria-expanded={showSuggestions && Boolean(searchTerm)}
+                aria-controls="navbar-search-suggestions"
+                aria-autocomplete="list"
+                className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-muted/80"
+                placeholder="Tìm sự kiện, nghệ sĩ..."
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setShowSuggestions(true);
+                  setActiveSuggestion(-1);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleSearchKeyDown}
               />
-            </button>
-
-            {/* Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-xl border border-gray-50 py-2 z-[110] animate-in fade-in zoom-in duration-150 origin-top-right">
-                <Link to="/profile" onClick={() => setIsDropdownOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-text hover:bg-gray-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Settings size={18} />
-                  </div>
-                  Hồ sơ
-                </Link>
-                <Link 
-                  to="/my-tickets" 
-                  onClick={() => setIsDropdownOpen(false)} 
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-text hover:bg-gray-50 transition-colors"
+              {searchTerm && (
+                <button
+                  type="button"
+                  aria-label="Xoá từ khoá"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setActiveSuggestion(-1);
+                  }}
+                  className="grid h-6 w-6 place-items-center rounded-md text-muted hover:bg-line/60 hover:text-text"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
-                    <Ticket size={18} />
-                  </div>
-                  Vé của tôi
-                </Link>
-                <div className="h-px bg-gray-100 my-1 mx-4" />
-                <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
-                    <LogOut size={18} />
-                  </div>
-                  Đăng xuất
+                  <X size={14} />
                 </button>
+              )}
+            </form>
+
+            {showSuggestions && searchTerm && (
+              <div
+                id="navbar-search-suggestions"
+                className="animate-dropdown absolute left-0 right-0 top-full z-[120] mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-lift"
+              >
+                {suggestionList}
               </div>
             )}
           </div>
-        ) : (
-          <button 
-            onClick={openAuthModal}
-            className="bg-primary text-white font-bold text-xs h-10 px-8 rounded-full hover:bg-accent transition-all uppercase tracking-widest shadow-lg shadow-primary/20"
+
+          <button
+            type="button"
+            aria-label={mobileSearchOpen ? "Đóng tìm kiếm" : "Mở tìm kiếm"}
+            aria-expanded={mobileSearchOpen}
+            onClick={() => {
+              setMobileSearchOpen((open) => !open);
+              setMobileMenuOpen(false);
+            }}
+            className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-surface text-muted transition-colors hover:text-primary md:hidden"
           >
-            Login
+            {mobileSearchOpen ? <X size={19} /> : <Search size={19} />}
           </button>
-        )}
+
+          {isAuthenticated ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen((open) => !open)}
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="menu"
+                className="flex h-10 items-center gap-2 rounded-xl border border-line bg-surface pl-1.5 pr-2.5 shadow-sm transition-colors hover:border-line hover:bg-background active:scale-[0.98]"
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-lg bg-primary text-white">
+                  {profile?.avatarUrl?.trim() ? (
+                    <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <User size={16} />
+                  )}
+                </span>
+                <span className="hidden max-w-32 truncate text-sm font-bold text-text sm:inline">
+                  {profile?.fullName || user?.user_metadata?.full_name || "Người dùng"}
+                </span>
+                <ChevronDown
+                  size={15}
+                  className={`text-muted transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isDropdownOpen && (
+                <div
+                  role="menu"
+                  className="animate-dropdown absolute right-0 mt-2 w-60 origin-top-right rounded-xl border border-line bg-surface p-1.5 shadow-lift"
+                >
+                  <Link
+                    to="/profile"
+                    role="menuitem"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-background"
+                  >
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-background text-primary">
+                      <Settings size={17} />
+                    </span>
+                    Hồ sơ
+                  </Link>
+                  <Link
+                    to="/my-tickets"
+                    role="menuitem"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-text transition-colors hover:bg-background"
+                  >
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-urgency-soft text-urgency">
+                      <Ticket size={17} />
+                    </span>
+                    Vé của tôi
+                  </Link>
+                  <div className="my-1 h-px bg-line" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-danger transition-colors hover:bg-danger-soft"
+                  >
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-danger-soft text-danger">
+                      <LogOut size={17} />
+                    </span>
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="h-10 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-sm transition-colors hover:bg-secondary sm:px-5"
+            >
+              Login
+            </button>
+          )}
+
+          <button
+            type="button"
+            aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => {
+              setMobileMenuOpen((open) => !open);
+              setMobileSearchOpen(false);
+            }}
+            className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-surface text-muted transition-colors hover:text-primary lg:hidden"
+          >
+            {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
+          </button>
+        </div>
       </div>
+
+      {mobileSearchOpen && (
+        <div className="border-t border-line bg-surface px-4 py-3 md:hidden">
+          <form onSubmit={submitSearch} className="flex items-center gap-2 rounded-xl border border-line bg-background px-3">
+            <Search size={18} className="shrink-0 text-muted" aria-hidden="true" />
+            <input
+              ref={mobileSearchInputRef}
+              aria-label="Tìm sự kiện"
+              className="h-11 min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-muted/80"
+              placeholder="Tìm sự kiện, nghệ sĩ..."
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setShowSuggestions(true);
+                setActiveSuggestion(-1);
+              }}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <button type="submit" className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">
+              Tìm
+            </button>
+          </form>
+          {searchTerm && (
+            <div className="mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+              {suggestionList}
+            </div>
+          )}
+        </div>
+      )}
+
+      {mobileMenuOpen && (
+        <nav className="border-t border-line bg-surface px-4 py-3 lg:hidden" aria-label="Điều hướng di động">
+          <Link to="/" onClick={closeMenus} className="block rounded-lg px-3 py-3 text-sm font-semibold text-text hover:bg-background">
+            Sự kiện
+          </Link>
+          {isAuthenticated && (
+            <Link to="/my-tickets" onClick={closeMenus} className="block rounded-lg px-3 py-3 text-sm font-semibold text-text hover:bg-background">
+              Vé của tôi
+            </Link>
+          )}
+          {isAuthenticated ? (
+            <>
+              <Link to="/profile" onClick={closeMenus} className="block rounded-lg px-3 py-3 text-sm font-semibold text-text hover:bg-background">
+                Hồ sơ
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="block w-full rounded-lg px-3 py-3 text-left text-sm font-bold text-danger hover:bg-danger-soft"
+              >
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openAuthModal();
+              }}
+              className="block w-full rounded-lg px-3 py-3 text-left text-sm font-bold text-primary hover:bg-background"
+            >
+              Đăng nhập
+            </button>
+          )}
+        </nav>
+      )}
     </header>
   );
 }
