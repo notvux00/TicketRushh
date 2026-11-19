@@ -542,6 +542,27 @@
 
 ---
 
+## DATA — Mở rộng dữ liệu demo
+
+### DATA-02 — Catalog đợt 2: thêm sự kiện, suất diễn, ghế và voucher
+- **Trạng thái:** verified (2026-11-19, branch `task/DATA-02-more-catalog`)
+- **Vấn đề:** live mới có 10 sự kiện/17 suất diễn; danh sách, filter và dashboard
+  chưa đủ dày để đánh giá UI với dữ liệu thật.
+- **File:** `backend/src/main/resources/db/migration/V12__more_demo_catalog.sql`.
+- **Việc cần làm:**
+  - [x] Thêm 12 sự kiện thuộc 5 nhóm: concert, sân khấu, thể thao, phim, workshop.
+  - [x] Thêm 24 suất diễn trong 2–15 ngày tới, zone và sinh ghế tương ứng.
+  - [x] Đánh dấu ~10% ghế SOLD để sơ đồ trông thực tế, không tạo order giả.
+  - [x] Thêm 6 voucher demo với quota/hạn dùng hợp lệ.
+- **Kết quả dữ liệu (V1→V12, DB trống):** 22 sự kiện, 41 suất diễn, 93 zone,
+  6.684 ghế (660 SOLD), 6 voucher.
+- **Acceptance:** migration chạy sạch V1→V12 trên PostgreSQL trống; live có thêm
+  12 sự kiện, 24 suất; filter category trả đúng; không tạo order/ticket giả.
+- **Test:** backend `mvn -B verify` **91 tests** pass (Testcontainers PostgreSQL 16);
+  apply trực tiếp V1→V12 bằng `psql` và đếm dữ liệu như trên; smoke live sau deploy.
+
+---
+
 ## UR — UI/UX theo benchmark (nguồn: `docs/ui-benchmark-research.md`)
 
 > Nhóm task này bắt nguồn từ nghiên cứu UI/UX ngày 2026-11-19. Thứ tự ưu tiên
