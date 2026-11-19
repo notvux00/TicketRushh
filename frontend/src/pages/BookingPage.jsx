@@ -56,6 +56,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true);
   const [previewSeat, setPreviewSeat] = useState(null);
   const [zoom, setZoom] = useState(1);
+  const [focusedZoneId, setFocusedZoneId] = useState(null);
 
   const [initialCart] = useState(() => readCart(user.id, showtimeId));
   const [selectedSeats, setSelectedSeats] = useState(initialCart.seats);
@@ -68,6 +69,19 @@ export default function BookingPage() {
   const selectedSeatIds = useMemo(() => new Set(selectedSeats.map((seat) => seat.id)), [selectedSeats]);
   const isAtLimit = selectedSeats.length >= maxTickets;
   const hallLayout = useMemo(() => fitHallLayout(zones), [zones]);
+  const zoneStats = useMemo(
+    () =>
+      zones.map((zone) => {
+        const zoneSeats = seats.filter((seat) => seat.zoneId === zone.id);
+        return {
+          ...zone,
+          totalSeats: zoneSeats.length,
+          availableSeats: zoneSeats.filter((seat) => seat.status === "available").length,
+        };
+      }),
+    [zones, seats],
+  );
+  const totalAvailable = zoneStats.reduce((sum, zone) => sum + zone.availableSeats, 0);
   const activeSeat = previewSeat || selectedSeats[selectedSeats.length - 1] || null;
   const activeZone = hallLayout.zones.find((zone) => zone.id === activeSeat?.zoneId) || null;
 
@@ -398,12 +412,66 @@ export default function BookingPage() {
               </div>
             </div>
 
+            {zoneStats.length > 1 && (
+              <div
+                className="mb-4 flex gap-2 overflow-x-auto pb-1"
+                role="group"
+                aria-label="Chọn khu vực để xem sơ đồ"
+              >
+                <button
+                  type="button"
+                  aria-pressed={focusedZoneId === null}
+                  onClick={() => setFocusedZoneId(null)}
+                  className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                    focusedZoneId === null
+                      ? "border-primary bg-primary text-white"
+                      : "border-line bg-background text-muted hover:border-primary/40 hover:text-primary"
+                  }`}
+                >
+                  Tất cả
+                  <span className={`rounded-full px-1.5 py-0.5 text-[11px] ${focusedZoneId === null ? "bg-white/20" : "bg-surface"}`}>
+                    {totalAvailable}
+                  </span>
+                </button>
+                {zoneStats.map((zone) => {
+                  const active = focusedZoneId === zone.id;
+                  return (
+                    <button
+                      key={zone.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setFocusedZoneId((current) => (current === zone.id ? null : zone.id))}
+                      className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                        active
+                          ? "border-primary bg-primary text-white"
+                          : "border-line bg-background text-muted hover:border-primary/40 hover:text-primary"
+                      }`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: zone.color?.bg }}
+                        aria-hidden="true"
+                      />
+                      {zone.name}
+                      <span className={`text-[11px] font-semibold ${active ? "text-white/75" : "text-muted"}`}>
+                        {zone.availableSeats}/{zone.totalSeats}
+                      </span>
+                      <span className={`price text-[11px] ${active ? "text-white" : "text-text"}`}>
+                        {money(zone.price)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <HallSeatMap
               zones={hallLayout.zones}
               seats={seats}
               selectedSeatIds={selectedSeatIds}
               maxTickets={maxTickets}
               zoom={zoom}
+              focusedZoneId={focusedZoneId}
               onSeatSelect={handleSeatClick}
               onSeatPreview={setPreviewSeat}
             />

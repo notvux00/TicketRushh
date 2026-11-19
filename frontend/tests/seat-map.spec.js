@@ -86,6 +86,13 @@ test("unified seat map selects across zones and previews the physical view", asy
 
   await expect(page.getByRole("heading", { name: "Unified seat event", level: 1 })).toBeVisible();
   await expect(page.getByTestId("hall-seat-map")).toBeVisible();
+
+  const vipZoneChip = page.getByRole("button", { name: /^VIP/ });
+  await expect(vipZoneChip).toHaveAttribute("aria-pressed", "false");
+  await vipZoneChip.click();
+  await expect(vipZoneChip).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /^Tất cả/ }).click();
+  await expect(vipZoneChip).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByRole("button", { name: /Hàng A, ghế 1, VIP, 250\.000/ })).toBeEnabled();
   await expect(page.getByRole("button", { name: /Hàng A, ghế 2, VIP.*đã bán/ })).toBeDisabled();
   await expect(page.getByRole("button", { name: /Hàng A, ghế 3, VIP.*người khác đang giữ/ })).toBeDisabled();
