@@ -603,17 +603,18 @@
   `event-card.spec.js` kiểm tra giá/suất gần nhất/nhãn “Từ” (pass 2026-11-19).
 
 ### UR-05 — Checkout: một countdown, một hệ token
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-05-checkout-timer`)
 - **Vấn đề:** countdown lặp ở banner và bottom bar; page còn dùng `blue-700/slate-*`
   lệch với token chung; nút hủy đỏ nằm cạnh CTA.
 - **File:** `frontend/src/pages/CheckoutPage.jsx`.
 - **Việc cần làm:**
-  - [ ] Banner trên chỉ còn thông tin “giữ đến HH:mm”; bottom bar giữ countdown.
-  - [ ] Thay màu legacy bằng token `background/surface/text/muted/line/primary`.
-  - [ ] Nút hủy chuyển sang ghost/subtle, vẫn có confirm.
+  - [x] Banner trên chỉ còn thông tin “giữ đến HH:mm”; bottom bar giữ countdown.
+  - [x] Thay màu legacy bằng token `background/surface/text/muted/line/primary`.
+  - [x] Nút hủy chuyển sang ghost/subtle, vẫn có confirm.
 - **Acceptance:** chỉ một countdown sống; không còn `blue-700/slate-*` trong page;
   luồng confirm/cancel/expire Playwright vẫn pass.
-- **Test:** lint/build + Playwright checkout-recovery.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 20/20; thêm assertion
+  “Ghế được giữ đến” và không còn “Thanh toán trong” (pass 2026-11-19).
 
 ### UR-06 — Trạng thái QR và chế độ toàn màn hình
 - **Trạng thái:** todo

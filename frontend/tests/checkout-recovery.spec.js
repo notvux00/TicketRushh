@@ -49,6 +49,8 @@ for (const action of ["completed", "expired", "confirm", "cancel", "expire", "ex
     if (action === "completed") await expect(page.getByRole("heading", { name: "Thanh toán đã hoàn tất" })).toBeVisible();
     if (action === "expired") await expect(page.getByRole("heading", { name: "Phiên thanh toán đã kết thúc" })).toBeVisible();
     if (action === "confirm") {
+      await expect(page.getByText(/Ghế được giữ đến/)).toBeVisible();
+      await expect(page.getByText(/Thanh toán trong/)).toHaveCount(0);
       await page.getByRole("button", { name: /Xác nhận.*chuyển/i }).click();
       await expect(page).toHaveURL(/payment-success/);
     }
