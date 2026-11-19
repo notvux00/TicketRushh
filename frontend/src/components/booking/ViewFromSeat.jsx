@@ -13,11 +13,11 @@ export default function ViewFromSeat({ seat, zone, canvas }) {
   return (
     <section aria-label="Góc nhìn từ ghế" className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-primary font-black text-[10px] tracking-widest uppercase">
+        <div className="flex items-center gap-2 text-primary font-black text-xs tracking-widest uppercase">
           <Eye size={14} /> Góc nhìn từ ghế
         </div>
         {metrics && (
-          <span className="rounded-full border border-primary/10 bg-primary/5 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary/70">
+          <span className="rounded-full border border-primary/10 bg-primary/5 px-2 py-1 text-xs font-black uppercase tracking-widest text-primary/70">
             Mô phỏng
           </span>
         )}
@@ -43,7 +43,7 @@ export default function ViewFromSeat({ seat, zone, canvas }) {
               }}
             >
               <div className="absolute inset-2 rounded-[2px] bg-[radial-gradient(circle_at_50%_40%,rgba(255,255,255,0.55),transparent_65%)]" />
-              <span className="absolute inset-x-0 bottom-2 text-center text-[7px] font-black uppercase tracking-[0.35em] text-slate-400/80">
+              <span className="absolute inset-x-0 bottom-2 text-center text-[7px] font-black uppercase tracking-[0.35em] text-muted/80">
                 Màn hình
               </span>
             </div>
@@ -59,17 +59,17 @@ export default function ViewFromSeat({ seat, zone, canvas }) {
               ))}
             </div>
 
-            <div className="absolute left-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-sm">
+            <div className="absolute left-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-xs font-black uppercase tracking-widest text-white/70 backdrop-blur-sm">
               {metrics.quality}
             </div>
-            <div className="absolute bottom-3 right-3 rounded-full bg-black/45 px-2.5 py-1 text-[9px] font-bold text-white/60 backdrop-blur-sm">
+            <div className="absolute bottom-3 right-3 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white/60 backdrop-blur-sm">
               Hàng {metrics.rowLabel} · Ghế {metrics.seatNumber}
             </div>
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
             <Eye size={24} className="text-white/25" />
-            <p className="max-w-[220px] text-[11px] font-semibold leading-relaxed text-white/45">
+            <p className="max-w-[220px] text-xs font-semibold leading-relaxed text-white/45">
               Chọn hoặc rê chuột lên một ghế để xem góc nhìn từ vị trí đó.
             </p>
           </div>
@@ -79,27 +79,27 @@ export default function ViewFromSeat({ seat, zone, canvas }) {
       {metrics ? (
         <div className="grid grid-cols-3 gap-2" aria-live="polite">
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-            <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Hàng / Ghế</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted">Hàng / Ghế</p>
             <p className="mt-1 text-sm font-black text-slate-800">
               {metrics.rowLabel}
               {metrics.seatNumber}
             </p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-            <p className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">
+            <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-muted">
               <Ruler size={10} /> Cách màn hình
             </p>
             <p className="mt-1 text-sm font-black text-slate-800">~{metrics.distanceMeters.toFixed(1)} m</p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-            <p className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">
+            <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-muted">
               <MoveHorizontal size={10} /> Độ lệch
             </p>
             <p className="mt-1 text-sm font-black text-slate-800">{sideLabel(metrics.lateralMeters)}</p>
           </div>
         </div>
       ) : (
-        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-[11px] font-medium text-slate-400">
+        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-xs font-medium text-muted">
           Panel này cập nhật theo ghế đang chọn hoặc đang hover trên sơ đồ.
         </p>
       )}

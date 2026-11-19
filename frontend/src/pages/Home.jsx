@@ -91,7 +91,7 @@ function Countdown({ showtimes }) {
       ].map((item) => (
         <div key={item.label} className="rounded-xl border border-line bg-background/70 px-2 py-2.5 text-center">
           <span className="price block text-2xl font-extrabold leading-none text-primary">{item.value}</span>
-          <span className="mt-1 block text-[10px] font-semibold text-muted">{item.label}</span>
+          <span className="mt-1 block text-[11px] font-semibold text-muted">{item.label}</span>
         </div>
       ))}
     </div>
@@ -250,7 +250,7 @@ function Home() {
 
               <div className="mt-5 flex items-center justify-between gap-4 border-t border-dashed border-line pt-4">
                 <div>
-                  <span className="block text-[10px] font-semibold text-muted">Giá từ</span>
+                  <span className="block text-[11px] font-semibold text-muted">Giá từ</span>
                   <span className="price text-lg font-extrabold text-primary">
                     {new Intl.NumberFormat("vi-VN").format(featuredEvent.minPrice || 0)}đ
                   </span>

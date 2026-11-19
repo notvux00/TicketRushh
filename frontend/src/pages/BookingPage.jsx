@@ -475,7 +475,7 @@ export default function BookingPage() {
               <div className="flex items-center gap-2 text-xs font-semibold text-muted">
                 <Ticket size={15} className="text-primary" /> Ghế đã chọn
               </div>
-              <span className={`rounded-full px-2 py-1 text-[9px] font-black ${isAtLimit ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
+              <span className={`rounded-full px-2 py-1 text-[11px] font-black ${isAtLimit ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
                 {selectedSeats.length}/{maxTickets}
               </span>
             </div>

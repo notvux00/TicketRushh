@@ -44,13 +44,13 @@ export default function EventZonePricing({
                     {zone.name}
                   </p>
                 )}
-                <p className="text-[9px] text-white/50 font-bold uppercase">
+                <p className="text-[11px] text-white/50 font-bold uppercase">
                   {zone.matrixRow * zone.matrixCol} Ghế ({zone.matrixRow}x
                   {zone.matrixCol})
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-emerald-400 font-black uppercase tracking-tighter mb-0.5">
+                <p className="text-[11px] text-emerald-400 font-black uppercase tracking-tighter mb-0.5">
                   Giá vé niêm yết
                 </p>
                 {isEditing ? (
@@ -75,7 +75,7 @@ export default function EventZonePricing({
         <div className="p-5 bg-primary rounded-[24px] text-white flex justify-between items-center shadow-lg shadow-primary/20">
           <div className="flex items-center gap-3">
             <Users size={18} className="opacity-60" />
-            <span className="text-[10px] font-black uppercase tracking-widest">
+            <span className="text-[11px] font-black uppercase tracking-widest">
               Tổng sức chứa / Suất
             </span>
           </div>

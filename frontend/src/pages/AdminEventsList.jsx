@@ -131,7 +131,7 @@ function AdminEventsList() {
                     const badge = getCategoryBadge(event.category);
                     return (
                       <span
-                        className={`backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black uppercase shadow-sm flex items-center gap-1.5 border ${badge.bg} ${badge.text} ${badge.border}`}
+                        className={`backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-black uppercase shadow-sm flex items-center gap-1.5 border ${badge.bg} ${badge.text} ${badge.border}`}
                       >
                         {badge.icon} {badge.label}
                       </span>
@@ -189,14 +189,14 @@ function AdminEventsList() {
                     {isEventExpired(event) ? (
                       <>
                         <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
                           Đã diễn ra
                         </span>
                       </>
                     ) : (
                       <>
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
                           Đang diễn ra
                         </span>
                       </>

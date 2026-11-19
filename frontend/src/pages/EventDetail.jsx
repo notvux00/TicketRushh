@@ -324,7 +324,7 @@ export default function EventDetail() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-bold text-text">{event.venueName}</p>
-                      <span className="inline-flex items-center gap-1 rounded-md bg-accent/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent ring-1 ring-inset ring-accent/15">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-accent/5 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-accent ring-1 ring-inset ring-accent/15">
                         <Verified size={11} aria-hidden="true" />
                         Địa điểm chính thức
                       </span>
@@ -378,7 +378,7 @@ export default function EventDetail() {
                       <span className="flex items-center justify-between gap-2">
                         <span className="text-sm font-bold">{showtime.name}</span>
                         {showtimeExpired && (
-                          <span className="rounded bg-line px-1.5 py-0.5 text-[10px] font-bold text-muted">Đã diễn ra</span>
+                          <span className="rounded bg-line px-1.5 py-0.5 text-[11px] font-bold text-muted">Đã diễn ra</span>
                         )}
                         {selected && !showtimeExpired && <CheckCircle2 size={16} aria-hidden="true" />}
                       </span>

@@ -505,7 +505,7 @@ export default function CheckoutPage() {
                                 : "bg-slate-200 text-slate-500"
                             }`}
                           >
-                            <span className="text-[9px] font-bold uppercase tracking-tighter">GIẢM</span>
+                            <span className="text-[11px] font-bold uppercase tracking-tighter">GIẢM</span>
                             <span className="text-xs font-black">
                               {v.discountType === "PERCENTAGE"
                                 ? `${v.discountValue}%`

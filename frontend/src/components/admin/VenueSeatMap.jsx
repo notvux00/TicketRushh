@@ -25,7 +25,7 @@ export default function VenueSeatMap({ zones = [] }) {
           }}
         >
           {/* Sân khấu */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-slate-900 text-white flex items-center justify-center text-[9px] font-black tracking-[0.6em] rounded-b-xl z-10">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-slate-900 text-white flex items-center justify-center text-[11px] font-black tracking-[0.6em] rounded-b-xl z-10">
             SÂN KHẤU
           </div>
           {/* Render zones với tọa độ 1:1 (cùng canvas CANVAS_W x CANVAS_H) */}
@@ -65,7 +65,7 @@ export default function VenueSeatMap({ zones = [] }) {
                   className="w-2.5 h-2.5 rounded-full shadow-inner"
                   style={{ backgroundColor: colorMap[name] }}
                 />
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tighter">
                   {name}
                 </span>
               </div>
