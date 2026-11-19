@@ -422,7 +422,10 @@ class DemoApplicationTests {
                     .dataSource(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())
                     .schemas(schema).group(true).load();
             upgraded.migrate();upgraded.validate();
-            assertEquals("10",upgraded.info().current().getVersion().toString());
+            assertEquals("11",upgraded.info().current().getVersion().toString());
+            assertEquals(1,db.queryForObject("select count(*) from "+schema+".events where id='55555555-5555-4555-8555-555555555555'",Integer.class));
+            assertEquals(3,db.queryForObject("select count(*) from "+schema+".zones where showtime_id='5a000000-0000-4000-8000-000000000001'",Integer.class));
+            assertTrue(db.queryForObject("select count(*) from "+schema+".seats s join "+schema+".zones z on z.id=s.zone_id where z.showtime_id='5a000000-0000-4000-8000-000000000001'",Integer.class) >= 200);
             try(var connection=java.sql.DriverManager.getConnection(postgres.getJdbcUrl(),postgres.getUsername(),postgres.getPassword())) {
                 connection.setSchema(schema);connection.setAutoCommit(false);
                 try(var statement=connection.prepareStatement("delete from tickets where order_id=?")) {
