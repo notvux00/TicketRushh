@@ -5,8 +5,8 @@
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
 > **Kết quả 2026-11-18:** 25/25 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
-> **Kết quả 2026-11-19:** UI-01…UI-06 + DEPLOY-01 `verified`; bản mới đang chạy tại
-> https://ticketrush.sudothanh.me (CloudFront/S3, smoke test 0 lỗi console).
+> **Kết quả 2026-11-19:** UI-01…UI-06 + DEPLOY-01/02 `verified`; bản mới đang chạy tại
+> https://ticketrush.sudothanh.me. Phát hành cuối qua GitHub Actions, CI xanh toàn bộ.
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -502,6 +502,21 @@
   live smoke: font Be Vietnam Pro load, 4 sự kiện, filter `STAGE` trả 2 sự kiện, event detail,
   admin login → `/admin`; booking live: chọn ghế A1 → checkout 09:59 → hủy đơn về event;
   0 console error / 0 HTTP >= 400.
+
+### DEPLOY-02 — Phát hành bằng GitHub Actions
+- **Trạng thái:** verified (2026-11-19, branch `task/DEPLOY-02-github-actions`)
+- **Vấn đề:** DEPLOY-01 phát hành thủ công bằng AWS CLI; cần chuyển sang pipeline có gate,
+  approval và log trên GitHub.
+- **Việc cần làm:**
+  - [x] Push `main` + tag task lên `origin`.
+  - [x] Dispatch `deploy-frontend.yml` với `confirm=deploy`, ref `main`.
+  - [x] Approve environment `demo` qua API (required reviewer `Xtan122`).
+  - [x] Theo dõi run, xác minh live và CI trên cùng commit.
+- **Kết quả:** deploy run **44458903586** success (22s); CI run **44458876417** success
+  (deployment/backend/frontend/terraform); live `index-DdT2Wrs9.js`; font load, 4 sự kiện,
+  filter `STAGE` = 2, 0 console error.
+- **Acceptance:** domain thật chạy artifact do GitHub Actions build; không dùng AWS CLI local.
+- **Test:** `gh run watch` exit 0; smoke live bằng Playwright; `/api/status` 200.
 
 ---
 
