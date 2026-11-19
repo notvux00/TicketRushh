@@ -328,6 +328,11 @@ class DemoApplicationTests {
         var f=fixture(); var other=fixture(); UUID order=checkout(f,0);
         assertEquals(0,adminGet("/api/admin/checkin/stats/"+f.showtime(),f).get("totalTickets").asInt());
         assertEquals(200,confirm(f,order).code()); String qr=draftQr(order);
+        var found = adminGet("/api/admin/checkin/search/"+f.showtime()+"?q=", f);
+        assertTrue(found.size() >= 1);
+        assertEquals(0, adminGet("/api/admin/checkin/search/"+f.showtime()+"?q=no-such-guest", f).size());
+        assertEquals(403, mvc.perform(get("/api/admin/checkin/search/"+f.showtime()+"?q=")
+                .header("Authorization","Bearer "+f.userToken())).andReturn().getResponse().getStatus());
         var wrong=postApi("/api/checkin/scan",admin(f),Map.of("qrPayload",qr,"showtimeId",other.showtime()));
         assertEquals("WRONG_SHOWTIME",wrong.body().get("status").asText());
         assertEquals(0,adminGet("/api/admin/checkin/stats/"+f.showtime(),f).get("checkedIn").asInt());
