@@ -93,7 +93,7 @@ function Home() {
   const selectedCategory = rawCategory
     ? categoryGroup(rawCategory)?.key || rawCategory.toUpperCase()
     : null;
-  const [visibleCount, setVisibleCount] = useState(4);
+  const [visibleCount, setVisibleCount] = useState(8);
 
   const sortedEvents = useMemo(
     () =>
@@ -146,12 +146,12 @@ function Home() {
     if (selectedCategory === key) next.delete("category");
     else next.set("category", key);
     setSearchParams(next, { replace: true });
-    setVisibleCount(4);
+    setVisibleCount(8);
   };
 
   const clearFilters = () => {
     setSearchParams({}, { replace: true });
-    setVisibleCount(4);
+    setVisibleCount(8);
   };
 
   return (

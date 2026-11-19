@@ -5,8 +5,8 @@
 > Trạng thái: `todo` · `doing` · `review` · `verified` · `merged`.
 >
 > **Kết quả 2026-11-18:** 25/25 task đã `verified` + merge vào `main`, mỗi task có tag riêng.
-> **Kết quả 2026-11-19:** UI-01…UI-06 + DEPLOY-01/02 `verified`; bản mới đang chạy tại
-> https://ticketrush.sudothanh.me. Phát hành cuối qua GitHub Actions, CI xanh toàn bộ.
+> **Kết quả 2026-11-19:** UI-01…UI-06 + DEPLOY-01/02 + DATA-01 `verified`; bản mới đang
+> chạy tại https://ticketrush.sudothanh.me. Phát hành qua GitHub Actions, CI xanh toàn bộ.
 > P2-02b hoàn tất phần tách step/modal admin (follow-up cosmetic của P2-02).
 > Gate cuối: backend 87 test, frontend lint/build + Playwright 16, node 16, python 12,
 > worker 5 (PostgreSQL), Terraform validate demo/prod.
@@ -517,6 +517,25 @@
   filter `STAGE` = 2, 0 console error.
 - **Acceptance:** domain thật chạy artifact do GitHub Actions build; không dùng AWS CLI local.
 - **Test:** `gh run watch` exit 0; smoke live bằng Playwright; `/api/status` 200.
+
+### DATA-01 — Mở rộng catalog sự kiện demo
+- **Trạng thái:** verified (2026-11-19, branch `task/DATA-01-demo-catalog`)
+- **Vấn đề:** live chỉ có 4 sự kiện, 4 ảnh dùng lại và category chưa phủ Workshop;
+  trang chủ/filter/admin nhìn mỏng, khó đánh giá UI với dữ liệu thật.
+- **File:** `backend/src/main/resources/db/migration/V11__demo_catalog_expansion.sql`,
+  `seed-demo.sql`, `frontend/public/images/events/*.jpg`, `docs/IMAGE_CREDITS.md`,
+  `backend/src/test/java/com/ticketrush/DemoApplicationTests.java`.
+- **Việc cần làm:**
+  - [x] Thêm 6 sự kiện: Indie Fest, Giao hưởng mùa đông, Kịch Người Vợ Ma,
+    suất chiếu phim Việt, VBA basketball, workshop nhiếp ảnh.
+  - [x] Thêm 11 showtime, 26 zone và sinh 1.956 ghế mới; đánh dấu một phần ghế đã bán.
+  - [x] Thêm 6 ảnh local (CC0/CC BY-SA), ghi nguồn và giấy phép.
+  - [x] Cập nhật test nâng cấp V6→V11, kiểm tra event/zone/seat mới.
+- **Kết quả dữ liệu:** 10 sự kiện, 17 showtime, 37 zone, 2.484 ghế (180 ghế SOLD demo).
+- **Acceptance:** migration chạy sạch trên DB trống; filter 4 nhóm trả đúng; ảnh local
+  không 404; admin dashboard thấy 10 sự kiện; booking mở được sự kiện mới.
+- **Test:** apply V1→V11 trên PostgreSQL sạch; backend `./mvnw -B verify` 88 tests (JDK 17);
+  frontend lint/build + Playwright 19/19; live smoke sau deploy.
 
 ---
 
