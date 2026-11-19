@@ -46,6 +46,9 @@ test("dashboard uses real responses and admin navigation works on mobile", async
   await setup(context); await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Tổng quan hệ thống" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Việc cần xử lý" })).toBeVisible();
+  await expect(page.getByText("Voucher đang bật", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Tạo sự kiện mới/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Doanh thu sự kiện" })).toContainText("50.0%");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("link", { name: "Voucher", exact: true }).click();

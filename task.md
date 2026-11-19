@@ -661,9 +661,14 @@
   - [ ] Test backend cho phân quyền và lọc đúng showtime.
 
 ### UR-09 — Dashboard admin theo việc cần xử lý
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-09-admin-actions`)
 - **File:** `frontend/src/pages/AdminDashboard.jsx`.
-- **Việc cần làm:** card “Việc cần xử lý” (đơn pending, event 7 ngày tới, voucher sắp hết).
+- **Việc cần làm:**
+  - [x] Card “Việc cần xử lý”: đơn chờ thanh toán, sự kiện trong 7 ngày, voucher đang bật.
+  - [x] Card CTA “Tạo sự kiện mới”; link thẳng đến màn xử lý.
+  - [x] `now` cập nhật mỗi phút, không gọi `Date.now` trong render.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 23/23; thêm assertion
+  action center trong `admin-tools.spec.js` (pass 2026-11-19).
 
 ### UR-10 — QR động (rotating token)
 - **Trạng thái:** todo
