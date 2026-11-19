@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion as Motion } from "framer-motion";
-import { 
-  HelpCircle, User, AlertTriangle, Play, 
-  Clock, ShoppingCart, ShieldCheck, ArrowLeft,
-  X, LogOut, Settings, Ticket
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Clock,
+  RefreshCw,
+  ShieldCheck,
+  Ticket,
+  Users,
+  Wifi,
+  WifiOff,
+  X,
 } from "lucide-react";
 import { getWsUrl } from "../lib/wsUrl";
 import { Client } from "@stomp/stompjs";
@@ -14,44 +20,86 @@ import Navbar from "../components/layout/Navbar";
 import EventImage from "../components/common/EventImage";
 import { confirmAction } from "../lib/confirm";
 
+function formatWait(seconds) {
+  if (!seconds || seconds < 0) return "Đang cập nhật";
+  if (seconds < 60) return "Dưới 1 phút";
+  return `~${Math.ceil(seconds / 60)} phút`;
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "Lịch diễn đang cập nhật";
+  return new Date(dateString).toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ConnectionBadge({ connection }) {
+  if (connection === "online") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">
+        <Wifi size={13} aria-hidden="true" />
+        Đã kết nối
+      </span>
+    );
+  }
+  if (connection === "offline") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-urgency-soft px-3 py-1.5 text-xs font-bold text-urgency">
+        <WifiOff size={13} aria-hidden="true" />
+        Đang kết nối lại
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-inset ring-line">
+      <RefreshCw size={13} className="animate-spin" aria-hidden="true" />
+      Đang kết nối
+    </span>
+  );
+}
+
 export default function WaitingRoomPage() {
   const { eventId, showtimeId } = useParams();
   const navigate = useNavigate();
   const { user, session, isAuthenticated } = useAuth();
   const accessToken = session?.access_token;
-  
+
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
+  const [connection, setConnection] = useState("connecting");
 
-    const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const data = await eventApi.getQueueStatus(showtimeId);
       setStatus(data);
-
-      // Nếu đã được cấp quyền trong khi đang polling, chuyển hướng ngay
       if (data.accessGranted || !data.needQueue) {
         navigate(`/event/${eventId}/book/${showtimeId}`);
       }
-    } catch (err) {
-      console.error("Error fetching queue status:", err);
+    } catch (error) {
+      console.error("Error fetching queue status:", error);
     } finally {
       setLoading(false);
     }
   }, [showtimeId, eventId, navigate]);
 
-// WebSocket connection
   useEffect(() => {
     if (!showtimeId || !user) return;
 
     const client = new Client({
       brokerURL: getWsUrl(),
       connectHeaders: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      reconnectDelay: 2000, // Thử lại nhanh hơn (2s)
+      reconnectDelay: 2000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       onConnect: () => {
-        // Vé vào cửa chỉ được gửi tới đúng user đã xác thực.
+        setConnection("online");
         client.subscribe("/user/queue/access", (message) => {
           if (!message.body) return;
           const payload = JSON.parse(message.body);
@@ -59,21 +107,17 @@ export default function WaitingRoomPage() {
             navigate(`/event/${eventId}/book/${showtimeId}`);
           }
         });
-        // Topic công khai chỉ chứa dữ liệu không định danh.
         client.subscribe(`/topic/queue/${showtimeId}`, (message) => {
           if (!message.body) return;
           const payload = JSON.parse(message.body);
-          if (payload.type === "POSITION_UPDATE") {
-            fetchStatus();
-          }
+          if (payload.type === "POSITION_UPDATE") fetchStatus();
         });
       },
       onStompError: (frame) => {
+        setConnection("offline");
         console.error("Broker reported error: " + frame.headers["message"]);
-        console.error("Additional details: " + frame.body);
       },
-      onWebSocketClose: () => {
-      },
+      onWebSocketClose: () => setConnection("offline"),
     });
 
     client.activate();
@@ -88,8 +132,8 @@ export default function WaitingRoomPage() {
       try {
         const eventData = await eventApi.getEventById(eventId);
         setEvent(eventData);
-      } catch (err) {
-        console.error("Error fetching event data:", err);
+      } catch (error) {
+        console.error("Error fetching event data:", error);
       }
     };
 
@@ -99,185 +143,196 @@ export default function WaitingRoomPage() {
     }
 
     fetchEventData();
-    // Join once; subsequent polling only reads status.
-    eventApi.joinQueue(showtimeId).catch((err) => {
-      console.error("Error joining queue:", err);
+    eventApi.joinQueue(showtimeId).catch((error) => {
+      console.error("Error joining queue:", error);
     }).finally(() => fetchStatus());
 
-    // Polling dự phòng mỗi 10 giây
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, [eventId, showtimeId, isAuthenticated, navigate, fetchStatus]);
 
   const handleLeaveQueue = async () => {
-    if (await confirmAction("Bạn có chắc chắn muốn rời hàng chờ? Bạn sẽ mất vị trí hiện tại.")) {
+    if (await confirmAction("Bạn có chắc muốn rời hàng chờ? Bạn sẽ mất vị trí hiện tại.")) {
       try {
         await eventApi.leaveQueue(showtimeId);
         navigate(`/event/${eventId}`);
-      } catch (err) {
-        console.error("Error leaving queue:", err);
+      } catch (error) {
+        console.error("Error leaving queue:", error);
       }
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="mx-auto max-w-5xl px-4 py-12">
+          <div className="h-8 w-40 animate-pulse rounded-lg bg-line" />
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="h-80 animate-pulse rounded-2xl bg-line/60" />
+            <div className="h-80 animate-pulse rounded-2xl bg-surface" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Progress percentage (simplified for demo)
-  const progressOffset = status?.position ? Math.max(0, 600 - (status.position / (status.totalInQueue || 1) * 600)) : 0;
+  const position = Number(status?.position) || 0;
+  const total = Number(status?.totalInQueue) || 0;
+  const peopleAhead = Math.max(0, position - 1);
+  const progress = total > 0 && position > 0 ? Math.min(100, Math.max(0, ((position - 1) / total) * 100)) : 0;
+  const maxTickets = event?.maxTicketsPerOrder ?? 4;
+  const showtime = event?.showtimes?.find((item) => item.id === showtimeId) || event?.showtimes?.[0];
 
   return (
-    <div className="min-h-screen bg-surface text-text flex flex-col pt-20">
+    <div className="min-h-screen bg-background pt-16">
       <Navbar />
-      
-      <main className="flex-1 flex flex-col p-6 md:p-12 relative overflow-hidden max-w-7xl mx-auto w-full">
-        {/* Ambient BG Effects */}
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-accent/10 rounded-full blur-[100px] pointer-events-none"></div>
-        
-        <div className="flex flex-col lg:flex-row h-full gap-12 relative z-10">
-          {/* Left Side: Queue Progress & Info */}
-          <div className="w-full lg:w-2/5 flex flex-col justify-between">
-            <Motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-block bg-primary/10 px-4 py-1.5 rounded-full mb-6">
-                <span className="text-[11px] font-black tracking-[0.25em] uppercase text-primary">PHÒNG CHỜ TRỰC TUYẾN</span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text leading-tight mb-4">
-                Giữ vững vị trí của bạn.
-              </h1>
-              <p className="text-lg text-muted leading-relaxed mb-8 max-w-sm">
-                Bạn sắp được tham gia đặt vé cho sự kiện <span className="font-bold text-primary">"{event?.eventName || "Đang tải..."}"</span>.
-              </p>
 
-              {/* Large Progress Display */}
-              <div className="relative w-full aspect-square max-w-[280px] mx-auto flex items-center justify-center my-12">
-                <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                  <circle 
-                    className="text-gray-100" 
-                    cx="50%" cy="50%" fill="transparent" r="45%" 
-                    stroke="currentColor" strokeWidth="8"
-                  ></circle>
-                  <Motion.circle
-                    className="text-primary" 
-                    cx="50%" cy="50%" fill="transparent" r="45%" 
-                    stroke="currentColor" strokeWidth="12"
-                    strokeDasharray="600"
-                    initial={{ strokeDashoffset: 600 }}
-                    animate={{ strokeDashoffset: progressOffset }}
-                    strokeLinecap="round"
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                  ></Motion.circle>
-                </svg>
-                <div className="text-center">
-                  <Motion.div
-                    key={status?.position}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-7xl font-black tracking-tighter text-primary"
-                  >
-                    {status?.position || "..."}
-                  </Motion.div>
-                  <div className="text-[10px] font-black text-muted tracking-[0.3em] uppercase mt-1">VỊ TRÍ HIỆN TẠI</div>
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary ring-1 ring-inset ring-primary/10">
+            <Users size={13} aria-hidden="true" />
+            Phòng chờ trực tuyến
+          </span>
+          <ConnectionBadge connection={connection} />
+        </div>
+
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
+          Bạn đang ở trong hàng chờ
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+          Giữ tab này mở. Hệ thống tự cập nhật vị trí và sẽ đưa bạn sang chọn ghế ngay khi tới lượt.
+        </p>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-lift sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white/60">Vị trí hiện tại</p>
+                <div className="mt-1 flex items-end gap-2.5" aria-live="polite">
+                  <span className="price text-7xl font-extrabold leading-none tracking-tighter">
+                    {position > 0 ? position : "—"}
+                  </span>
+                  <span className="mb-2 text-sm font-medium text-white/55">/ {total > 0 ? total : "—"}</span>
                 </div>
               </div>
-            </Motion.div>
+              <span className="rounded-xl bg-white/10 p-3 ring-1 ring-inset ring-white/15">
+                <Ticket size={22} aria-hidden="true" />
+              </span>
+            </div>
 
-            {/* Alert Panel */}
-            <Motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white/60 backdrop-blur-2xl border-l-4 border-orange-500 p-6 rounded-r-xl shadow-lg flex items-start gap-4 mb-8"
-            >
-              <AlertTriangle className="text-orange-500 shrink-0" size={32} />
-              <div>
-                <h4 className="font-bold text-text">Đừng làm mới trình duyệt</h4>
-                <p className="text-sm text-muted mt-1 leading-snug">Vị trí sẽ tự động cập nhật. Việc tải lại trang có thể khiến bạn mất lượt chờ.</p>
+            <p className="mt-3 text-sm text-white/70">
+              {peopleAhead > 0 ? `${peopleAhead} người đang ở phía trước bạn.` : "Bạn sắp tới lượt, đừng rời trang."}
+            </p>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-white/60">Tiến độ hàng chờ</span>
+                <span className="price text-white">{Math.round(progress)}%</span>
               </div>
-            </Motion.div>
+              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-amber-300 transition-[width] duration-500"
+                  style={{ width: `${Math.max(progress, 2)}%` }}
+                />
+              </div>
+            </div>
 
-            <button 
+            <dl className="mt-6 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-white/10 p-3.5 ring-1 ring-inset ring-white/10">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-white/55">
+                  <Clock size={12} aria-hidden="true" />
+                  Chờ dự kiến
+                </dt>
+                <dd className="mt-1 text-base font-bold">{formatWait(status?.estimatedWaitSeconds)}</dd>
+              </div>
+              <div className="rounded-xl bg-white/10 p-3.5 ring-1 ring-inset ring-white/10">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-white/55">
+                  <Ticket size={12} aria-hidden="true" />
+                  Giới hạn
+                </dt>
+                <dd className="mt-1 text-base font-bold">{maxTickets} vé / đơn</dd>
+              </div>
+            </dl>
+
+            <p className="mt-5 flex items-center gap-2 text-[11px] text-white/45">
+              <RefreshCw size={12} aria-hidden="true" />
+              Tự động cập nhật mỗi 10 giây và qua WebSocket.
+            </p>
+          </section>
+
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+              <div className="relative h-36 overflow-hidden bg-background">
+                <EventImage src={event?.coverImage} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/80 to-transparent" />
+                <div className="absolute inset-x-4 bottom-3">
+                  <p className="line-clamp-2 text-sm font-bold text-white">{event?.eventName || "Đang tải sự kiện..."}</p>
+                </div>
+              </div>
+              <div className="space-y-2 p-4 text-xs text-muted">
+                <p className="flex items-center gap-2">
+                  <Clock size={14} className="shrink-0 text-primary" aria-hidden="true" />
+                  {formatDate(showtime?.startTime)}
+                </p>
+                <p className="flex items-start gap-2">
+                  <ShieldCheck size={14} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    {event?.venueName}
+                    {event?.venueAddress ? ` · ${event.venueAddress}` : ""}
+                  </span>
+                </p>
+              </div>
+            </section>
+
+            <section className="rounded-xl border-l-4 border-urgency bg-urgency-soft p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={20} className="mt-0.5 shrink-0 text-urgency" aria-hidden="true" />
+                <div>
+                  <h2 className="text-sm font-bold text-text">Đừng tải lại trang</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    Vị trí được giữ theo tài khoản của bạn. Tải lại hoặc mở tab khác có thể khiến bạn mất lượt chờ.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <button
+              type="button"
               onClick={handleLeaveQueue}
-              className="text-sm font-bold text-muted hover:text-red-500 transition-colors flex items-center gap-2 mb-8"
+              className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-muted transition-colors hover:text-danger"
             >
-              <X size={16} /> Rời hàng chờ
+              <X size={16} aria-hidden="true" />
+              Rời hàng chờ
             </button>
           </div>
+        </div>
 
-          {/* Right Side: Content & Media */}
-          <div className="w-full lg:w-3/5 flex flex-col gap-8">
-            {/* Video Section */}
-            <Motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
-              className="flex-1 min-h-[300px] rounded-3xl bg-primary relative overflow-hidden flex items-center justify-center group cursor-pointer shadow-2xl"
-            >
-              <EventImage
-                alt="Concert Preview"
-                className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay group-hover:scale-105 transition-transform duration-700"
-                src={event?.coverImage}
-              />
-              <div className="relative z-10 text-center text-white">
-                <div className="w-20 h-20 rounded-full border-2 border-white/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform bg-white/10 backdrop-blur-md mx-auto">
-                  <Play size={40} className="fill-white ml-1" />
-                </div>
-                <p className="text-xs font-bold tracking-[0.2em] uppercase">Xem Highlights Concert 2026</p>
-              </div>
-              <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white/80 text-[10px] font-bold tracking-widest uppercase">
-                <span>Trailer Chính Thức</span>
-                <span>04:12</span>
-              </div>
-            </Motion.div>
-
-            {/* Stats & Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { icon: Clock, label: "Thời gian chờ", value: `~ ${Math.ceil((status?.estimatedWaitSeconds || 0) / 60)} Phút` },
-                { icon: ShoppingCart, label: "Giới hạn vé", value: `${String(event?.maxTicketsPerOrder ?? 4).padStart(2, '0')} Vé` },
-                { icon: ShieldCheck, label: "Giao dịch", value: "Bảo mật" }
-              ].map((item, index) => (
-                <Motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + (index * 0.1) }}
-                  className="bg-white/60 backdrop-blur-2xl p-6 rounded-3xl border border-white/40 shadow-xl"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                      <item.icon size={20} />
-                    </div>
-                    <span className="text-[10px] font-black tracking-widest text-muted uppercase">{item.label}</span>
-                  </div>
-                  <div className="text-xl font-bold text-text">{item.value}</div>
-                </Motion.div>
-              ))}
+        <section className="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Lưu ý khi chờ">
+          {[
+            { title: "Giữ tab mở", body: "Bạn sẽ được chuyển sang chọn ghế ngay khi tới lượt." },
+            { title: "Chuẩn bị thanh toán", body: "Ghế chỉ được giữ 10 phút sau khi bắt đầu thanh toán." },
+            { title: "Chọn tối đa " + maxTickets + " vé", body: "Giới hạn áp dụng cho mỗi đơn hàng." },
+          ].map((tip) => (
+            <div key={tip.title} className="rounded-xl border border-line bg-surface p-4">
+              <p className="text-sm font-bold text-text">{tip.title}</p>
+              <p className="mt-1 text-xs leading-5 text-muted">{tip.body}</p>
             </div>
-          </div>
+          ))}
+        </section>
+
+        <div className="mt-10 flex flex-col items-start justify-between gap-2 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={() => navigate(`/event/${eventId}`)}
+            className="inline-flex items-center gap-1.5 font-semibold hover:text-primary"
+          >
+            <ArrowLeft size={14} aria-hidden="true" />
+            Về trang sự kiện
+          </button>
+          <p>© 2026 TicketRush</p>
         </div>
       </main>
-
-      {/* Simple Bottom Footer */}
-      <footer className="w-full px-12 py-8 flex flex-col md:flex-row justify-between items-center text-[10px] text-muted font-bold uppercase tracking-[0.2em] border-t border-gray-100 bg-white mt-auto">
-        <div className="flex gap-10 mb-4 md:mb-0">
-          <a className="hover:text-primary transition-colors" href="#">Điều khoản</a>
-          <a className="hover:text-primary transition-colors" href="#">Bảo mật</a>
-          <a className="hover:text-primary transition-colors" href="#">Trợ giúp</a>
-        </div>
-        <div>
-          © 2026 TicketRush. Powered by team 7.
-        </div>
-      </footer>
     </div>
   );
 }
