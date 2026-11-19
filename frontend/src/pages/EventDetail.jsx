@@ -1,28 +1,40 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-  Calendar, 
-  MapPin, 
-  Play, 
-  Mail, 
-  Phone, 
-  Verified, 
+import {
   ArrowLeft,
-  Share2,
-  Globe,
-  Users,
-  CreditCard,
   Building2,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Info,
+  MapPin,
+  Phone,
+  Play,
+  Share2,
   ShieldCheck,
-  Ticket
+  Ticket,
+  Verified,
 } from "lucide-react";
 import { eventApi } from "../api/eventApi";
 import { useAuth } from "../hooks/useAuth";
 import { isEventExpired, isShowtimeExpired } from "../utils/eventUtils";
-import { Clock } from "lucide-react";
 import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 import EventImage from "../components/common/EventImage";
+import EventCard from "../components/common/EventCard";
 import { toast } from "../lib/toast";
+
+function formatDate(dateString) {
+  if (!dateString) return "Lịch diễn đang cập nhật";
+  return new Date(dateString).toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function EventDetail() {
   const { id } = useParams();
@@ -47,11 +59,10 @@ export default function EventDetail() {
           setSelectedShowtime(data.showtimes[0]);
         }
 
-        // Fetch related events (all events for now)
         const allEvents = await eventApi.getAllEvents();
-        setRelatedEvents(allEvents.filter(e => e.id !== id).slice(0, 4));
-      } catch (err) {
-        console.error("Error fetching event:", err);
+        setRelatedEvents(Array.isArray(allEvents) ? allEvents.filter((item) => item.id !== id).slice(0, 4) : []);
+      } catch (fetchError) {
+        console.error("Error fetching event:", fetchError);
         setError("Không thể tải thông tin sự kiện.");
       } finally {
         setLoading(false);
@@ -59,7 +70,6 @@ export default function EventDetail() {
     };
 
     fetchEvent();
-    // Scroll to top when id changes
     window.scrollTo(0, 0);
   }, [id]);
 
@@ -69,9 +79,9 @@ export default function EventDetail() {
       try {
         setLoadingZones(true);
         const data = await eventApi.getShowtimeZones(selectedShowtime.id);
-        setZones(data);
-      } catch (err) {
-        console.error("Error fetching zones:", err);
+        setZones(Array.isArray(data) ? data : []);
+      } catch (fetchError) {
+        console.error("Error fetching zones:", fetchError);
       } finally {
         setLoadingZones(false);
       }
@@ -80,405 +90,370 @@ export default function EventDetail() {
     fetchZones();
   }, [selectedShowtime]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "TBA";
-    const date = new Date(dateString);
-    return date.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleShare = async () => {
+    const shareData = { title: event?.eventName || "TicketRush", url: window.location.href };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Đã sao chép liên kết sự kiện.");
+      }
+    } catch {
+      // Người dùng huỷ hộp thoại chia sẻ: không cần báo lỗi.
+    }
+  };
+
+  const handleBook = async () => {
+    if (!selectedShowtime) {
+      toast.error("Vui lòng chọn suất diễn trước khi mua vé.");
+      return;
+    }
+    if (isShowtimeExpired(selectedShowtime)) {
+      toast.error("Suất diễn này đã kết thúc, không thể đặt vé.");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      localStorage.setItem("redirectAfterLogin", `/event/${event.id}/book/${selectedShowtime.id}`);
+      openAuthModal();
+      return;
+    }
+
+    try {
+      const queueStatus = await eventApi.getQueueStatus(selectedShowtime.id);
+      if (queueStatus.needQueue && !queueStatus.accessGranted) {
+        navigate(`/event/${event.id}/queue/${selectedShowtime.id}`);
+      } else {
+        navigate(`/event/${event.id}/book/${selectedShowtime.id}`);
+      }
+    } catch (bookError) {
+      console.error("Queue check error:", bookError);
+      navigate(`/event/${event.id}/book/${selectedShowtime.id}`);
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-background">
+        <div className="h-[420px] animate-pulse bg-line/60 lg:h-[520px]" />
+        <div className="mx-auto grid max-w-7xl gap-6 px-6 pb-20 pt-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="h-96 animate-pulse rounded-2xl bg-surface" />
+          <div className="h-80 animate-pulse rounded-2xl bg-surface" />
+        </div>
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-        <h2 className="text-2xl font-bold text-text mb-4">{error || "Sự kiện không tồn tại."}</h2>
-        <button 
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+        <h1 className="text-2xl font-bold text-text">{error || "Sự kiện không tồn tại."}</h1>
+        <button
+          type="button"
           onClick={() => navigate("/")}
-          className="bg-primary text-white px-6 py-2 rounded-xl font-bold"
+          className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white"
         >
-          Quay lại trang chủ
+          Về trang chủ
         </button>
       </div>
     );
   }
 
+  const expired = isEventExpired(event);
+  const selectedExpired = selectedShowtime ? isShowtimeExpired(selectedShowtime) : true;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Banner */}
-      <div className="relative w-full h-[400px] md:h-[500px] bg-gray-200 overflow-hidden">
-        <EventImage
-          src={event.coverImage}
-          alt={event.eventName}
-          className="w-full h-full object-cover"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
-        {isEventExpired(event) && (
-          <div className="absolute top-4 right-4 bg-orange-500 text-white px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-2xl z-20">
-            <Clock size={16} />
-            Sự kiện đã diễn ra
-          </div>
-        )}
-      </div>
-
-      {/* Content Layout */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-32 relative z-10 pb-20">
-        <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* Left Column (70%) */}
-          <div className="w-full lg:w-[70%] flex flex-col gap-8">
-            
-            {/* Title (Mobile Only) */}
-            <div className="lg:hidden glass-card p-6 rounded-2xl shadow-sm border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <h1 className="text-2xl font-bold text-primary tracking-tight">{event.eventName}</h1>
-                {isEventExpired(event) && (
-                  <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold uppercase border border-slate-200">Đã diễn ra</span>
-                )}
-              </div>
-              <div className="flex flex-col gap-3 text-muted text-sm font-medium">
-                <div className="flex items-center gap-2">
-                  <Calendar size={18} className="text-primary" />
-                  <span>{selectedShowtime ? formatDate(selectedShowtime.startTime) : "Sắp diễn ra"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin size={18} className="text-primary" />
-                  <span>{event.venueName}, {event.venueAddress}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Tabs/Content */}
-            <div className="glass-card rounded-2xl overflow-hidden shadow-sm">
-              <div className="flex border-b border-border px-4">
-                <button className="py-4 px-6 text-primary border-b-2 border-primary font-bold text-sm uppercase tracking-wider">
-                  Giới thiệu
-                </button>
-              </div>
-              
-              <div className="p-6">
-                <div className="max-w-none">
-                  <p className="text-muted leading-loose text-base mb-6">
-                    {event.description || "Thông tin chi tiết về sự kiện này đang được cập nhật. Hãy quay lại sau để biết thêm chi tiết về chương trình, nghệ sĩ và các quy định tham gia."}
-                  </p>
-                  
-                  <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-primary rounded-full"></div>
-                    Trailer Sự Kiện
-                  </h3>
-                  
-                  <div className="w-full aspect-video bg-black rounded-xl border border-border flex items-center justify-center relative overflow-hidden group">
-                    {event.trailerUrl ? (
-                      <video
-                        src={event.trailerUrl}
-                        className="w-full h-full"
-                        controls
-                        poster={event.coverImage || DEFAULT_EVENT_IMAGE}
-                      />
-                    ) : (
-                      <>
-                        <EventImage
-                          src={event.coverImage}
-                          alt="Trailer"
-                          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors"></div>
-                        <div className="w-20 h-20 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl z-10 group-hover:scale-110 transition-transform cursor-pointer">
-                          <Play size={40} className="text-primary fill-primary ml-1" />
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <h3 className="text-lg font-bold text-primary mb-4 mt-8 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-primary rounded-full"></div>
-                    Thông Tin Vé
-                  </h3>
-                  
-                  <div className="flex flex-col gap-3 mb-8">
-                    {loadingZones ? (
-                      <div className="p-6 flex flex-col items-center justify-center bg-background rounded-xl border border-border">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary mb-3"></div>
-                        <span className="text-xs font-bold text-muted uppercase tracking-wider">Đang tải bảng giá...</span>
-                      </div>
-                    ) : zones.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {zones.map((zone) => (
-                          <div 
-                            key={zone.id} 
-                            className="group relative flex items-center justify-between p-4 rounded-xl bg-surface border border-border hover:-translate-y-[2px] hover:shadow-sm transition-all duration-300 overflow-hidden"
-                          >
-                            <div className="flex items-center gap-3 relative z-10">
-                              <div className="w-1 h-6 bg-primary/20 rounded-full group-hover:bg-primary transition-colors"></div>
-                              <span className="text-sm font-bold text-primary tracking-tight uppercase">
-                                {zone.name}
-                              </span>
-                            </div>
-                            
-                            <div className="flex flex-col items-end relative z-10">
-                              <span className="text-base font-bold text-primary">
-                                {new Intl.NumberFormat('vi-VN').format(zone.price)} <span className="text-[10px] ml-0.5">đ</span>
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-6 flex flex-col items-center justify-center bg-background rounded-xl border border-border">
-                        <Ticket size={24} className="text-muted/50 mb-2" />
-                        <span className="text-[10px] font-bold text-muted uppercase tracking-wider text-center">
-                          Vui lòng chọn suất diễn để xem giá vé
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <h3 className="text-lg font-bold text-primary mb-4 mt-8 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-primary rounded-full"></div>
-                    Địa Điểm & Đơn Vị Tổ Chức
-                  </h3>
-                  
-                  <div className="p-6 rounded-xl bg-surface border border-border">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-border">
-                        <Building2 size={24} />
-                      </div>
-                      <div>
-                        <div className="font-bold text-lg text-primary mb-0.5">{event.venueName}</div>
-                        <div className="text-[10px] font-bold text-accent flex items-center gap-1 bg-accent/5 w-fit px-2 py-0.5 rounded uppercase tracking-wider border border-accent/20">
-                          <Verified size={12} />
-                          Địa điểm chính thức
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-muted mb-6 leading-loose text-sm">
-                      Sự kiện được tổ chức tại {event.venueName}, một trong những địa điểm tổ chức sự kiện hàng đầu với cơ sở vật chất hiện đại và dịch vụ chuyên nghiệp.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-3 bg-background p-3 rounded-xl border border-border">
-                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-primary shadow-sm"><MapPin size={16} /></div>
-                        <span className="font-semibold text-sm text-primary">{event.venueAddress}</span>
-                      </div>
-                      <div className="flex items-center gap-3 bg-background p-3 rounded-xl border border-border">
-                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-primary shadow-sm"><Phone size={16} /></div>
-                        <span className="font-semibold text-sm text-primary">1900 1234</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column (30%) - Sticky Sidebar */}
-          <div className="w-full lg:w-[30%]">
-            <div className="sticky top-24 glass-card rounded-2xl p-6 shadow-sm border border-border overflow-hidden">
-              {/* Ticket Decoration */}
-              <div className="absolute -left-4 top-1/2 w-8 h-8 bg-background rounded-full border-r border-border -translate-y-1/2"></div>
-              <div className="absolute -right-4 top-1/2 w-8 h-8 bg-background rounded-full border-l border-border -translate-y-1/2"></div>
-              
-              <div className="hidden lg:block">
-                <div className="flex flex-col gap-2 mb-6">
-                  <h1 className="text-xl font-bold text-primary tracking-tight leading-tight">{event.eventName}</h1>
-                  {isEventExpired(event) && (
-                    <div className="flex items-center gap-1.5 bg-slate-100 text-slate-500 px-2 py-1 rounded-md w-fit border border-slate-200">
-                      <Clock size={12} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Đã diễn ra</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Showtimes Selection */}
-                <div className="flex flex-col gap-3 mb-8">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar size={16} className="text-primary" />
-                    <span className="text-xs font-bold text-primary uppercase tracking-wider">Chọn suất diễn</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-2">
-                    {event.showtimes?.map((showtime) => {
-                      const expired = isShowtimeExpired(showtime);
-                      return (
-                        <button
-                          key={showtime.id}
-                          disabled={expired}
-                          onClick={() => setSelectedShowtime(showtime)}
-                          className={`p-3 rounded-xl border transition-all text-left group relative overflow-hidden ${
-                            selectedShowtime?.id === showtime.id
-                              ? "border-primary bg-primary shadow-md"
-                              : expired 
-                                ? "border-border bg-background opacity-60 cursor-not-allowed"
-                                : "border-border bg-surface hover:border-primary/50 hover:shadow-sm"
-                          }`}
-                        >
-                          <div className={`text-sm font-bold mb-1 transition-colors ${
-                            selectedShowtime?.id === showtime.id ? "text-white" : expired ? "text-muted" : "text-primary"
-                          }`}>
-                            {showtime.name}
-                            {expired && <span className="ml-2 text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded uppercase">Đã diễn ra</span>}
-                          </div>
-                          <div className={`text-xs font-medium transition-colors ${
-                            selectedShowtime?.id === showtime.id ? "text-white/80" : "text-muted"
-                          }`}>
-                            {formatDate(showtime.startTime)}
-                          </div>
-                        </button>
-                      );
-                    })}
-                    {(!event.showtimes || event.showtimes.length === 0) && (
-                      <div className="text-sm text-muted italic p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                        Chưa có lịch diễn chính thức
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4 mb-8">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary shrink-0 border border-border">
-                      <MapPin size={20} />
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted font-bold uppercase tracking-wider mb-0.5">Địa điểm</div>
-                      <div className="text-sm font-bold text-primary">{event.venueName}</div>
-                      <div className="text-xs text-muted font-medium mt-0.5">{event.venueAddress}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-border mb-6">
-                <div className="text-[10px] text-muted font-bold uppercase tracking-wider mb-1">Giá vé từ</div>
-                <div className="text-2xl font-bold text-primary tracking-tighter">
-                  {event.minPrice > 0 
-                    ? `${new Intl.NumberFormat('vi-VN').format(event.minPrice)} VNĐ`
-                    : "Giá liên hệ"
-                  }
-                </div>
-                <div className="text-xs text-muted font-bold mt-2 uppercase tracking-wider">Tối đa {event.maxTicketsPerOrder || 4} vé / đơn hàng</div>
-              </div>
-
-              <button 
-                onClick={async () => {
-                  if (!selectedShowtime) {
-                    toast.error("Vui lòng chọn suất diễn trước khi mua vé!");
-                    return;
-                  }
-                  if (isShowtimeExpired(selectedShowtime)) {
-                    toast.error("Suất diễn này đã kết thúc, không thể đặt vé!");
-                    return;
-                  }
-                  
-                  if (!isAuthenticated) {
-                    const bookingPath = `/event/${event.id}/book/${selectedShowtime.id}`;
-                    localStorage.setItem("redirectAfterLogin", bookingPath);
-                    openAuthModal();
-                    return;
-                  }
-
-                  try {
-                    // Kiểm tra hàng chờ ảo
-                    const queueStatus = await eventApi.getQueueStatus(selectedShowtime.id);
-                    
-                    if (queueStatus.needQueue && !queueStatus.accessGranted) {
-                      // Nếu cần xếp hàng và chưa có quyền truy cập -> vào phòng chờ
-                      navigate(`/event/${event.id}/queue/${selectedShowtime.id}`);
-                    } else {
-                      // Nếu không cần xếp hàng hoặc đã có quyền -> vào trang đặt vé
-                      navigate(`/event/${event.id}/book/${selectedShowtime.id}`);
-                    }
-                  } catch (err) {
-                    console.error("Queue check error:", err);
-                    // Fallback: cho vào thẳng nếu có lỗi API (đảm bảo trải nghiệm)
-                    navigate(`/event/${event.id}/book/${selectedShowtime.id}`);
-                  }
-                }}
-                disabled={!selectedShowtime || isShowtimeExpired(selectedShowtime)}
-                className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all duration-300 ${
-                  !selectedShowtime || isShowtimeExpired(selectedShowtime)
-                    ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                    : "bg-primary text-white shadow-md hover:bg-secondary hover:-translate-y-[2px]"
-                }`}
-              >
-                {isShowtimeExpired(selectedShowtime) ? "HẾT HẠN ĐẶT VÉ" : "MUA VÉ NGAY"}
-              </button>
-            </div>
-          </div>
+      <section className="relative isolate overflow-hidden bg-ink text-white">
+        <div className="absolute inset-0 -z-10">
+          <EventImage
+            src={event.coverImage}
+            alt=""
+            className="h-full w-full object-cover opacity-55"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/75 to-ink/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/20 to-ink/30" />
         </div>
 
-        {/* Related Events Section */}
-        {relatedEvents.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-xl font-bold text-primary tracking-tight mb-6 flex items-center gap-2">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              Có thể bạn cũng thích
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedEvents.map((rEvent) => (
-                <div 
-                  key={rEvent.id}
-                  onClick={() => navigate(`/event/${rEvent.id}`)}
-                  className="glass-card rounded-2xl p-3 group cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col border border-border"
-                >
-                  <div className="w-full h-48 bg-gray-100 rounded-2xl overflow-hidden mb-4 relative shadow-inner">
+        <div className="mx-auto max-w-7xl px-6 pb-16 pt-24 lg:pb-20 lg:pt-32">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white ring-1 ring-inset ring-white/20">
+              {event.category === "MUSIC"
+                ? "Âm nhạc"
+                : event.category === "STAGE"
+                  ? "Sân khấu"
+                  : event.category === "SPORTS"
+                    ? "Thể thao"
+                    : event.category === "WORKSHOP"
+                      ? "Workshop"
+                      : "Sự kiện"}
+            </span>
+            {expired && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-urgency px-3 py-1 text-xs font-bold text-white">
+                <Clock size={13} aria-hidden="true" />
+                Đã diễn ra
+              </span>
+            )}
+          </div>
+
+          <h1 className="mt-4 max-w-4xl text-[clamp(2rem,4.6vw,3.9rem)] font-extrabold leading-[1.06] tracking-[-0.035em] text-white">
+            {event.eventName}
+          </h1>
+
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium text-white/80">
+            <span className="inline-flex items-center gap-2">
+              <Calendar size={17} className="text-white/50" aria-hidden="true" />
+              {formatDate(selectedShowtime?.startTime)}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <MapPin size={17} className="text-white/50" aria-hidden="true" />
+              {event.venueName}
+            </span>
+          </div>
+
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15"
+            >
+              <Share2 size={16} aria-hidden="true" />
+              Chia sẻ
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-white/75 transition-colors hover:text-white"
+            >
+              <ArrowLeft size={16} aria-hidden="true" />
+              Quay lại
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+        <div className="relative z-10 -mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="order-2 space-y-6 lg:order-1">
+            <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-7">
+              <h2 className="text-xl font-extrabold text-text">Giới thiệu sự kiện</h2>
+              <p className="mt-3 text-[15px] leading-7 text-muted">
+                {event.description ||
+                  "Thông tin chi tiết về sự kiện đang được cập nhật. Hãy quay lại sau để biết thêm về chương trình, nghệ sĩ và quy định tham gia."}
+              </p>
+
+              <div className="mt-6 flex items-center justify-between gap-3">
+                <h3 className="text-base font-bold text-text">Trailer</h3>
+                <span className="text-xs font-medium text-muted">Hình ảnh từ sự kiện</span>
+              </div>
+
+              <div className="mt-3 aspect-video overflow-hidden rounded-xl bg-ink">
+                {event.trailerUrl ? (
+                  <video
+                    src={event.trailerUrl}
+                    className="h-full w-full"
+                    controls
+                    poster={event.coverImage || DEFAULT_EVENT_IMAGE}
+                  />
+                ) : (
+                  <div className="relative flex h-full items-center justify-center">
                     <EventImage
-                      src={rEvent.coverImage}
-                      alt={rEvent.eventName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={event.coverImage}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover opacity-60"
                     />
-                    {/* Calendar Badge */}
-                    <div className="absolute top-3 left-3 flex gap-1.5">
-                      {rEvent.showtimes && rEvent.showtimes.length > 0 ? (
-                        rEvent.showtimes.slice(0, 1).map((showtime) => (
-                          <div key={showtime.id} className="bg-surface/90 backdrop-blur px-2 py-1 rounded-lg flex flex-col items-center shadow-sm min-w-[36px] border border-border">
-                            <span className="text-[8px] font-bold text-muted uppercase">
-                              {new Date(showtime.startTime).toLocaleString('vi-VN', { timeZone: "Asia/Ho_Chi_Minh", month: 'short' })}
-                            </span>
-                            <span className="text-sm font-bold text-primary leading-none">
-                              {new Date(showtime.startTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "numeric" })}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="bg-surface/90 backdrop-blur px-2 py-1 rounded-lg flex flex-col items-center shadow-sm min-w-[36px] border border-border">
-                          <span className="text-[8px] font-bold text-muted uppercase">TBA</span>
-                          <span className="text-sm font-bold text-primary leading-none">??</span>
-                        </div>
-                      )}
+                    <div className="absolute inset-0 bg-ink/20" />
+                    <div className="relative z-10 grid h-16 w-16 place-items-center rounded-full bg-white/90 text-primary shadow-xl">
+                      <Play size={28} className="ml-1 fill-current" aria-hidden="true" />
                     </div>
                   </div>
-                  <div className="px-2 pb-2 flex-grow flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-bold text-primary text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors leading-tight">
-                        {rEvent.eventName}
-                      </h4>
-                    </div>
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className="text-primary font-bold text-xs">
-                        {rEvent.minPrice > 0 
-                          ? `Từ ${new Intl.NumberFormat('vi-VN').format(rEvent.minPrice)} VNĐ`
-                          : "Giá liên hệ"
-                        }
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-7">
+              <div className="flex items-center gap-2">
+                <Ticket size={19} className="text-primary" aria-hidden="true" />
+                <h2 className="text-xl font-extrabold text-text">Thông tin vé</h2>
+              </div>
+
+              <div className="mt-4">
+                {loadingZones ? (
+                  <div className="space-y-2" role="status" aria-label="Đang tải bảng giá">
+                    {[1, 2].map((item) => (
+                      <div key={item} className="h-14 animate-pulse rounded-xl bg-background" />
+                    ))}
+                  </div>
+                ) : zones.length > 0 ? (
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    {zones.map((zone) => (
+                      <div
+                        key={zone.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-background/60 px-4 py-3"
+                      >
+                        <span className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-primary">
+                          <span className="h-6 w-1 rounded-full bg-primary/25" />
+                          {zone.name}
+                        </span>
+                        <span className="price whitespace-nowrap text-base font-extrabold text-primary">
+                          {new Intl.NumberFormat("vi-VN").format(zone.price)}đ
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-dashed border-line bg-background/60 px-4 py-6 text-center text-sm text-muted">
+                    Chọn một suất diễn để xem giá vé.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-7">
+              <div className="flex items-center gap-2">
+                <Building2 size={19} className="text-primary" aria-hidden="true" />
+                <h2 className="text-xl font-extrabold text-text">Địa điểm</h2>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-line bg-background/60 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface text-primary ring-1 ring-line">
+                    <Building2 size={20} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-bold text-text">{event.venueName}</p>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-accent/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent ring-1 ring-inset ring-accent/15">
+                        <Verified size={11} aria-hidden="true" />
+                        Địa điểm chính thức
                       </span>
-                      <button className="text-[9px] font-bold uppercase text-muted hover:text-primary transition-colors">Chi tiết</button>
                     </div>
+                    <p className="mt-1.5 text-sm leading-6 text-muted">{event.venueAddress}</p>
                   </div>
                 </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2.5 text-sm font-semibold text-text ring-1 ring-line">
+                    <MapPin size={15} className="shrink-0 text-primary" aria-hidden="true" />
+                    <span className="line-clamp-1">{event.venueAddress}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2.5 text-sm font-semibold text-text ring-1 ring-line">
+                    <Phone size={15} className="shrink-0 text-primary" aria-hidden="true" />
+                    1900 1234
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <aside className="order-1 lg:order-2 lg:sticky lg:top-24">
+            <div
+              className="ticket-notch overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-lift"
+              style={{ "--notch-top": "58%" }}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar size={17} className="text-primary" aria-hidden="true" />
+                <h2 className="text-sm font-bold text-text">Chọn suất diễn</h2>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {event.showtimes?.map((showtime) => {
+                  const showtimeExpired = isShowtimeExpired(showtime);
+                  const selected = selectedShowtime?.id === showtime.id;
+                  return (
+                    <button
+                      key={showtime.id}
+                      type="button"
+                      disabled={showtimeExpired}
+                      onClick={() => setSelectedShowtime(showtime)}
+                      className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                        selected
+                          ? "border-primary bg-primary text-white"
+                          : showtimeExpired
+                            ? "cursor-not-allowed border-line bg-background text-muted opacity-70"
+                            : "border-line bg-surface text-text hover:border-primary/40 hover:bg-background"
+                      }`}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-bold">{showtime.name}</span>
+                        {showtimeExpired && (
+                          <span className="rounded bg-line px-1.5 py-0.5 text-[10px] font-bold text-muted">Đã diễn ra</span>
+                        )}
+                        {selected && !showtimeExpired && <CheckCircle2 size={16} aria-hidden="true" />}
+                      </span>
+                      <span className={`mt-1 block text-xs ${selected ? "text-white/75" : "text-muted"}`}>
+                        {formatDate(showtime.startTime)}
+                      </span>
+                    </button>
+                  );
+                })}
+                {(!event.showtimes || event.showtimes.length === 0) && (
+                  <p className="rounded-xl border border-dashed border-line bg-background p-4 text-center text-sm text-muted">
+                    Chưa có lịch diễn chính thức.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-start gap-3 rounded-xl bg-background p-3">
+                <MapPin size={17} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-muted">Địa điểm</p>
+                  <p className="mt-0.5 text-sm font-bold text-text">{event.venueName}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted">{event.venueAddress}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 border-t border-dashed border-line pt-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted">Giá vé từ</p>
+                    <p className="price text-2xl font-extrabold tracking-tight text-primary">
+                      {event.minPrice > 0 ? `${new Intl.NumberFormat("vi-VN").format(event.minPrice)}đ` : "Giá liên hệ"}
+                    </p>
+                  </div>
+                  <span className="rounded-lg bg-background px-2.5 py-1.5 text-[11px] font-bold text-muted">
+                    Tối đa {event.maxTicketsPerOrder || 4} vé
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleBook}
+                  disabled={!selectedShowtime || selectedExpired}
+                  className="mt-4 h-12 w-full rounded-xl bg-primary text-sm font-bold text-white shadow-lg shadow-primary/15 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none"
+                >
+                  {!selectedShowtime ? "Chưa mở bán" : selectedExpired ? "Đã hết hạn đặt vé" : "Mua vé ngay"}
+                </button>
+
+                <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-4 text-muted">
+                  <Info size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  Ghế được giữ tạm 10 phút ở bước thanh toán. Hoàn tất đúng hạn để không mất chỗ.
+                </p>
+
+                <div className="mt-3 flex items-center justify-center gap-1.5 border-t border-line pt-3 text-[11px] font-medium text-muted">
+                  <ShieldCheck size={13} className="text-success" aria-hidden="true" />
+                  Vé điện tử có ký số, kiểm tra tại cổng
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {relatedEvents.length > 0 && (
+          <section className="mt-16">
+            <div className="mb-6 flex items-end justify-between gap-4 border-b border-line pb-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-text sm:text-2xl">Có thể bạn cũng thích</h2>
+                <p className="mt-1 text-sm text-muted">Các sự kiện khác đang mở bán.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedEvents.map((relatedEvent) => (
+                <EventCard key={relatedEvent.id} event={relatedEvent} />
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
     </div>
