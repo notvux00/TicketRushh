@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 
 const exploreLinks = [
   { label: "Tất cả sự kiện", to: "/" },
-  { label: "Âm nhạc & Concert", to: "/?category=MUSIC" },
-  { label: "Sân khấu & Nghệ thuật", to: "/?category=STAGE" },
+  { label: "Âm nhạc", to: "/?category=CONCERT" },
+  { label: "Sân khấu & Phim", to: "/?category=STAGE" },
   { label: "Thể thao", to: "/?category=SPORTS" },
   { label: "Workshop", to: "/?category=WORKSHOP" },
 ];

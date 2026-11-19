@@ -22,6 +22,7 @@ import { DEFAULT_EVENT_IMAGE } from "../lib/mediaUrl";
 import EventImage from "../components/common/EventImage";
 import EventCard from "../components/common/EventCard";
 import { toast } from "../lib/toast";
+import { categoryLabel } from "../utils/category";
 
 function formatDate(dateString) {
   if (!dateString) return "Lịch diễn đang cập nhật";
@@ -179,15 +180,7 @@ export default function EventDetail() {
         <div className="mx-auto max-w-7xl px-6 pb-16 pt-24 lg:pb-20 lg:pt-32">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white ring-1 ring-inset ring-white/20">
-              {event.category === "MUSIC"
-                ? "Âm nhạc"
-                : event.category === "STAGE"
-                  ? "Sân khấu"
-                  : event.category === "SPORTS"
-                    ? "Thể thao"
-                    : event.category === "WORKSHOP"
-                      ? "Workshop"
-                      : "Sự kiện"}
+              {categoryLabel(event.category)}
             </span>
             {expired && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-urgency px-3 py-1 text-xs font-bold text-white">

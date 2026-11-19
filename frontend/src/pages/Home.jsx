@@ -4,25 +4,8 @@ import EventCard from "../components/common/EventCard";
 import EventImage from "../components/common/EventImage";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  ArrowRight,
-  CalendarDays,
-  Clock,
-  Inbox,
-  MapPin,
-  Music,
-  PencilRuler,
-  Theater,
-  Trophy,
-  X,
-} from "lucide-react";
-
-const CATEGORIES = [
-  { name: "Âm nhạc", icon: Music, tone: "bg-blue-50 text-blue-600", key: "MUSIC" },
-  { name: "Sân khấu", icon: Theater, tone: "bg-violet-50 text-violet-600", key: "STAGE" },
-  { name: "Thể thao", icon: Trophy, tone: "bg-orange-50 text-orange-600", key: "SPORTS" },
-  { name: "Workshop", icon: PencilRuler, tone: "bg-teal-50 text-teal-600", key: "WORKSHOP" },
-];
+import { ArrowRight, CalendarDays, Clock, Inbox, MapPin, X } from "lucide-react";
+import { CATEGORY_GROUPS, categoryGroup, categoryLabel, matchesCategoryGroup } from "../utils/category";
 
 function nextShowtime(showtimes) {
   if (!Array.isArray(showtimes) || showtimes.length === 0) return null;
@@ -106,7 +89,10 @@ function Home() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = (searchParams.get("search") || "").trim().toLowerCase();
-  const selectedCategory = (searchParams.get("category") || "").toUpperCase() || null;
+  const rawCategory = searchParams.get("category") || "";
+  const selectedCategory = rawCategory
+    ? categoryGroup(rawCategory)?.key || rawCategory.toUpperCase()
+    : null;
   const [visibleCount, setVisibleCount] = useState(4);
 
   const sortedEvents = useMemo(
@@ -143,15 +129,11 @@ function Home() {
     [events],
   );
 
-  const filteredEvents = useMemo(
-    () =>
-      sortedEvents.filter((event) => {
-        const matchesSearch = (event.eventName || "").toLowerCase().includes(searchQuery);
-        const matchesCategory = !selectedCategory || event.category?.toUpperCase() === selectedCategory;
-        return matchesSearch && matchesCategory;
-      }),
-    [sortedEvents, searchQuery, selectedCategory],
-  );
+  const filteredEvents = sortedEvents.filter((event) => {
+    const matchesSearch = (event.eventName || "").toLowerCase().includes(searchQuery);
+    const matchesCategory = matchesCategoryGroup(event.category, selectedCategory);
+    return matchesSearch && matchesCategory;
+  });
 
   const featuredEvent = sortedEvents[0];
   const featuredShowtime = nextShowtime(featuredEvent?.showtimes);
@@ -222,7 +204,7 @@ function Home() {
                 <ArrowRight size={17} aria-hidden="true" />
               </Link>
               <Link
-                to="/?category=MUSIC"
+                to="/?category=CONCERT"
                 className="inline-flex h-12 items-center rounded-xl px-5 text-sm font-semibold text-white ring-1 ring-inset ring-white/25 transition-colors hover:bg-white/10"
               >
                 Khám phá theo thể loại
@@ -270,7 +252,7 @@ function Home() {
 
       <section className="mx-auto max-w-7xl px-6 pt-10" aria-label="Thể loại sự kiện">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {CATEGORIES.map((category) => {
+          {CATEGORY_GROUPS.map((category) => {
             const Icon = category.icon;
             const active = selectedCategory === category.key;
             return (
@@ -310,7 +292,7 @@ function Home() {
                 {searchQuery
                   ? `${filteredEvents.length} sự kiện phù hợp`
                   : selectedCategory
-                    ? `${CATEGORIES.find((category) => category.key === selectedCategory)?.name || "Thể loại"} · ${filteredEvents.length} sự kiện`
+                    ? `${CATEGORY_GROUPS.find((category) => category.key === selectedCategory)?.name || categoryLabel(rawCategory)} · ${filteredEvents.length} sự kiện`
                     : "Những sự kiện gần nhất và được quan tâm nhiều nhất."}
               </p>
             </div>

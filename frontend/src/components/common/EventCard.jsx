@@ -2,13 +2,7 @@ import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { isEventExpired } from "../../utils/eventUtils";
 import EventImage from "./EventImage";
-
-const CATEGORY_LABELS = {
-  MUSIC: "Âm nhạc",
-  STAGE: "Sân khấu",
-  SPORTS: "Thể thao",
-  WORKSHOP: "Workshop",
-};
+import { categoryLabel } from "../../utils/category";
 
 function formatMoney(value) {
   if (!value || value <= 0) return "Giá liên hệ";
@@ -58,7 +52,7 @@ function EventCard({ event }) {
             </span>
           ) : (
             <span className="absolute bottom-3 left-3 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-              {CATEGORY_LABELS[event.category] || event.category || "Sự kiện"}
+              {categoryLabel(event.category)}
             </span>
           )}
         </div>
