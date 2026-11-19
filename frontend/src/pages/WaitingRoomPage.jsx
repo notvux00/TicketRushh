@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  Bell,
   Clock,
   RefreshCw,
   ShieldCheck,
@@ -19,6 +20,7 @@ import { useAuth } from "../hooks/useAuth";
 import Navbar from "../components/layout/Navbar";
 import EventImage from "../components/common/EventImage";
 import { confirmAction } from "../lib/confirm";
+import { toast } from "../lib/toast";
 
 function formatWait(seconds) {
   if (!seconds || seconds < 0) return "Đang cập nhật";
@@ -87,6 +89,21 @@ export default function WaitingRoomPage() {
   const [event, setEvent] = useState(null);
   const [connection, setConnection] = useState("connecting");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [notifyState, setNotifyState] = useState(() =>
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported",
+  );
+
+  const notifyTurn = useCallback(() => {
+    if (notifyState !== "granted" || document.visibilityState === "visible") return;
+    try {
+      new Notification("Đến lượt bạn chọn ghế", {
+        body: "Quay lại TicketRush để chọn ghế trước khi hết thời gian giữ chỗ.",
+        tag: `ticketrush-queue-${showtimeId}`,
+      });
+    } catch {
+      // Browser notification is best-effort.
+    }
+  }, [notifyState, showtimeId]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -94,6 +111,7 @@ export default function WaitingRoomPage() {
       setStatus(data);
       setLastUpdated(new Date());
       if (data.accessGranted || !data.needQueue) {
+        notifyTurn();
         navigate(`/event/${eventId}/book/${showtimeId}`);
       }
     } catch (error) {
@@ -101,7 +119,7 @@ export default function WaitingRoomPage() {
     } finally {
       setLoading(false);
     }
-  }, [showtimeId, eventId, navigate]);
+  }, [showtimeId, eventId, navigate, notifyTurn]);
 
   useEffect(() => {
     if (!showtimeId || !user) return;
@@ -118,6 +136,7 @@ export default function WaitingRoomPage() {
           if (!message.body) return;
           const payload = JSON.parse(message.body);
           if (payload.type === "ACCESS_GRANTED" && payload.showtimeId === showtimeId) {
+            notifyTurn();
             navigate(`/event/${eventId}/book/${showtimeId}`);
           }
         });
@@ -139,7 +158,7 @@ export default function WaitingRoomPage() {
     return () => {
       if (client.active) client.deactivate();
     };
-  }, [showtimeId, user, accessToken, eventId, navigate, fetchStatus]);
+  }, [showtimeId, user, accessToken, eventId, navigate, fetchStatus, notifyTurn]);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -176,6 +195,24 @@ export default function WaitingRoomPage() {
     }
   };
 
+  const enableNotifications = async () => {
+    if (!("Notification" in window)) {
+      setNotifyState("unsupported");
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifyState(permission);
+      if (permission === "granted") {
+        toast.success("Đã bật thông báo khi tới lượt.");
+      } else if (permission === "denied") {
+        toast.error("Trình duyệt đang chặn thông báo. Bạn có thể bật lại trong cài đặt trang.");
+      }
+    } catch {
+      toast.error("Không thể bật thông báo trên trình duyệt này.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -208,7 +245,29 @@ export default function WaitingRoomPage() {
             <Users size={13} aria-hidden="true" />
             Phòng chờ trực tuyến
           </span>
-          <ConnectionBadge connection={connection} />
+          <div className="flex flex-wrap items-center gap-2">
+            {notifyState === "granted" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">
+                <Bell size={13} aria-hidden="true" />
+                Đã bật thông báo
+              </span>
+            ) : notifyState === "default" ? (
+              <button
+                type="button"
+                onClick={enableNotifications}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-bold text-muted transition-colors hover:border-primary/30 hover:text-primary"
+              >
+                <Bell size={13} aria-hidden="true" />
+                Bật thông báo
+              </button>
+            ) : notifyState === "denied" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-urgency-soft px-3 py-1.5 text-xs font-bold text-urgency">
+                <Bell size={13} aria-hidden="true" />
+                Thông báo bị chặn
+              </span>
+            ) : null}
+            <ConnectionBadge connection={connection} />
+          </div>
         </div>
 
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-text sm:text-4xl">

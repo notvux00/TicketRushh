@@ -685,10 +685,20 @@
   frontend lint/build + Playwright **23/23**; thêm unit test v3 + integration test
   endpoint/scan/chủ vé khác (404).
 
-### UR-11 — Email báo khi tới lượt queue
-- **Trạng thái:** todo
-- **File:** backend queue service + `WaitingRoomPage.jsx`.
-- **Việc cần làm:** đăng ký email, gửi khi accessGranted, huỷ đăng ký.
+### UR-11 — Thông báo khi tới lượt queue (browser notification)
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-11-queue-notify`)
+- **File:** `frontend/src/pages/WaitingRoomPage.jsx`.
+- **Việc cần làm:**
+  - [x] Xin quyền Notification bằng user gesture; hiện trạng thái đã bật/bị chặn.
+  - [x] Gửi notification khi `accessGranted` nếu tab đang ẩn.
+  - [x] Fallback toast khi trình duyệt không hỗ trợ.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 23/23 (pass 2026-11-19).
+- **Ghi chú:** email thật cần SES/SMTP + domain verification; tách sang UR-11b.
+
+### UR-11b — Email báo khi tới lượt (blocked)
+- **Trạng thái:** blocked — chưa có SES/SMTP, domain gửi và secret trong hạ tầng demo.
+- **Việc cần làm khi mở lại:** thêm migration opt-in, endpoint đăng ký/huỷ, worker gửi mail,
+  cấu hình SES + IAM + bounce handling; không gửi mail giả trong demo.
 
 ### UR-12 — Thêm vé vào Apple/Google Wallet
 - **Trạng thái:** todo
