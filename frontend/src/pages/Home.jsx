@@ -184,10 +184,10 @@ function Home() {
       <section className="py-12 px-6 max-w-7xl mx-auto w-full -mt-16 relative z-20">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { n: "Âm nhạc", i: <Music />, c: "blue", k: "MUSIC" },
-            { n: "Sân khấu & Nghệ thuật", i: <Theater />, c: "purple", k: "STAGE" },
-            { n: "Thể thao", i: <Trophy />, c: "orange", k: "SPORTS" },
-            { n: "Workshop", i: <PencilRuler />, c: "teal", k: "WORKSHOP" },
+            { n: "Âm nhạc", i: <Music />, tone: "bg-blue-50 text-blue-600", k: "MUSIC" },
+            { n: "Sân khấu & Nghệ thuật", i: <Theater />, tone: "bg-violet-50 text-violet-600", k: "STAGE" },
+            { n: "Thể thao", i: <Trophy />, tone: "bg-orange-50 text-orange-600", k: "SPORTS" },
+            { n: "Workshop", i: <PencilRuler />, tone: "bg-teal-50 text-teal-600", k: "WORKSHOP" },
           ].map((cat, idx) => (
             <div
               key={idx}
@@ -197,7 +197,7 @@ function Home() {
               }`}
             >
               <div
-                className={`w-12 h-12 rounded-xl bg-${cat.c}-50 flex items-center justify-center text-${cat.c}-600 group-hover:bg-primary group-hover:text-white transition-colors`}
+                className={`flex h-12 w-12 items-center justify-center rounded-xl ${cat.tone} transition-colors group-hover:bg-primary group-hover:text-white`}
               >
                 {cat.i}
               </div>

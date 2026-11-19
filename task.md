@@ -385,7 +385,7 @@
 > glassmorphism, CTA và trạng thái ghế phải nổi bật hơn hiệu ứng trang trí.
 
 ### UI-01 — Nền tảng thiết kế và shared shell
-- **Trạng thái:** todo
+- **Trạng thái:** verified (2026-11-19, branch `task/UI-01-foundation`)
 - **Vấn đề:** chưa load font (UI phụ thuộc font OS); token thiếu success/warning/danger,
   radius/shadow rời rạc; class Tailwind động ở Home không được generate; `text-on-surface`,
   `bg-primary-container`, `animate-in`, `prose` không tồn tại; navbar mobile không có
@@ -393,16 +393,16 @@
 - **File:** `frontend/index.html`, `frontend/src/index.css`, `frontend/src/components/layout/Navbar.jsx`,
   `frontend/src/components/layout/Footer.jsx`, `frontend/src/main.jsx`, các page dùng class lỗi.
 - **Việc cần làm:**
-  - [ ] Self-host/import `Be Vietnam Pro` (Vietnamese subset) và khai báo `--font-sans`.
-  - [ ] Bổ sung token: ink/paper/action/urgency/success/danger/line, radius 8/12/20/999,
+  - [x] Self-host/import `Be Vietnam Pro` (Vietnamese subset) và khai báo `--font-sans`.
+  - [x] Bổ sung token: ink/paper/action/urgency/success/danger/line, radius 8/12/20/999,
     shadow 2 mức; `tabular-nums` cho giá/tiền; focus-visible, selection, reduced-motion.
-  - [ ] Thay class động bằng map literal; định nghĩa hoặc thay `on-surface`/`primary-container`.
-  - [ ] Bỏ `animate-in/prose` không có plugin hoặc thay bằng CSS/typography tối giản.
-  - [ ] Navbar mobile: search + menu, keyboard/Escape, `aria-expanded`, target >= 44px.
-  - [ ] Footer: link category thật (URL filter), bỏ link chết; gọn hơn trên mobile.
+  - [x] Thay class động bằng map literal; định nghĩa hoặc thay `on-surface`/`primary-container`.
+  - [x] Bỏ `animate-in/prose` không có plugin hoặc thay bằng CSS/typography tối giản.
+  - [x] Navbar mobile: search + menu, keyboard/Escape, `aria-expanded`, target >= 44px.
+  - [x] Footer: link category thật (URL filter), bỏ link chết; gọn hơn trên mobile.
 - **Acceptance:** không còn class không được generate; font hiển thị nhất quán trên Linux/CI;
   navbar dùng được ở 320/390/768/1440; `npm run lint && npm run build` pass; Playwright pass.
-- **Test:** `npm run lint`, `npm run build`, `npm run test:browser`.
+- **Test:** `npm run lint`, `npm run build` (font Vietnamese subset bundled), `npm run test:browser` 19/19; screenshot 390/1440 không lỗi console.
 
 ### UI-02 — Discovery: Home và Event Detail
 - **Trạng thái:** todo

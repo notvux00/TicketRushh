@@ -132,7 +132,7 @@ export default function WaitingRoomPage() {
   const progressOffset = status?.position ? Math.max(0, 600 - (status.position / (status.totalInQueue || 1) * 600)) : 0;
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface flex flex-col pt-20">
+    <div className="min-h-screen bg-surface text-text flex flex-col pt-20">
       <Navbar />
       
       <main className="flex-1 flex flex-col p-6 md:p-12 relative overflow-hidden max-w-7xl mx-auto w-full">
@@ -151,7 +151,7 @@ export default function WaitingRoomPage() {
               <div className="inline-block bg-primary/10 px-4 py-1.5 rounded-full mb-6">
                 <span className="text-[11px] font-black tracking-[0.25em] uppercase text-primary">PHÒNG CHỜ TRỰC TUYẾN</span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-on-surface leading-tight mb-4">
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text leading-tight mb-4">
                 Giữ vững vị trí của bạn.
               </h1>
               <p className="text-lg text-muted leading-relaxed mb-8 max-w-sm">
@@ -200,7 +200,7 @@ export default function WaitingRoomPage() {
             >
               <AlertTriangle className="text-orange-500 shrink-0" size={32} />
               <div>
-                <h4 className="font-bold text-on-surface">Đừng làm mới trình duyệt</h4>
+                <h4 className="font-bold text-text">Đừng làm mới trình duyệt</h4>
                 <p className="text-sm text-muted mt-1 leading-snug">Vị trí sẽ tự động cập nhật. Việc tải lại trang có thể khiến bạn mất lượt chờ.</p>
               </div>
             </Motion.div>
@@ -220,7 +220,7 @@ export default function WaitingRoomPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
-              className="flex-1 min-h-[300px] rounded-3xl bg-primary-container relative overflow-hidden flex items-center justify-center group cursor-pointer shadow-2xl"
+              className="flex-1 min-h-[300px] rounded-3xl bg-primary relative overflow-hidden flex items-center justify-center group cursor-pointer shadow-2xl"
             >
               <EventImage
                 alt="Concert Preview"
@@ -259,7 +259,7 @@ export default function WaitingRoomPage() {
                     </div>
                     <span className="text-[10px] font-black tracking-widest text-muted uppercase">{item.label}</span>
                   </div>
-                  <div className="text-xl font-bold text-on-surface">{item.value}</div>
+                  <div className="text-xl font-bold text-text">{item.value}</div>
                 </Motion.div>
               ))}
             </div>

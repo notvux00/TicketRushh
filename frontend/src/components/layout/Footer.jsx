@@ -1,130 +1,94 @@
-import {
-  Ticket,
-  Share2,
-  Globe,
-  Users,
-  CreditCard,
-  Landmark,
-  ShieldCheck,
-} from "lucide-react";
+import { CreditCard, Landmark, Mail, MapPin, Phone, ShieldCheck, Ticket } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const exploreLinks = [
+  { label: "Tất cả sự kiện", to: "/" },
+  { label: "Âm nhạc & Concert", to: "/?category=MUSIC" },
+  { label: "Sân khấu & Nghệ thuật", to: "/?category=STAGE" },
+  { label: "Thể thao", to: "/?category=SPORTS" },
+  { label: "Workshop", to: "/?category=WORKSHOP" },
+];
+
+const accountLinks = [
+  { label: "Vé của tôi", to: "/my-tickets" },
+  { label: "Hồ sơ cá nhân", to: "/profile" },
+  { label: "Liên hệ hỗ trợ", to: "mailto:support@ticketrush.vn" },
+];
 
 function Footer() {
   return (
-    <footer className="bg-primary text-white pt-20 pb-10">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-          {/* Brand & Social */}
-          <div>
-            <div className="flex items-center gap-2 mb-6">
-              <Ticket className="rotate-[-15deg]" size={32} />
-              <h2 className="text-xl font-extrabold tracking-tight uppercase">
-                TicketRush
-              </h2>
-            </div>
-            <p className="text-white/60 text-sm leading-relaxed mb-8">
-              Nền tảng đặt vé sự kiện cao cấp cho các chương trình ca nhạc, thể 
-              thao và trải nghiệm văn hóa độc quyền hàng đầu thế giới. Sống trọn 
-              từng khoảnh khắc.
+    <footer className="bg-primary text-white">
+      <div className="mx-auto max-w-7xl px-6 pb-8 pt-14">
+        <div className="grid grid-cols-1 gap-10 border-b border-white/10 pb-12 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="max-w-sm">
+            <Link to="/" className="mb-4 flex items-center gap-2.5" aria-label="TicketRush — trang chủ">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 ring-1 ring-white/15">
+                <Ticket size={20} className="-rotate-12" strokeWidth={2.4} />
+              </span>
+              <span className="text-lg font-extrabold tracking-tight">TicketRush</span>
+            </Link>
+            <p className="text-sm leading-6 text-white/65">
+              Đặt vé sự kiện, chọn đúng chỗ ngồi và giữ vé điện tử trong một luồng liền mạch.
+              Vé của bạn được ký số và kiểm tra tại cổng.
             </p>
-            <div className="flex gap-4">
-              {[
-                { icon: <Share2 size={20} />, label: "Chia sẻ" },
-                { icon: <Globe size={20} />, label: "Ngôn ngữ" },
-                { icon: <Users size={20} />, label: "Nhóm" },
-              ].map((item, idx) => (
-                <a
-                  key={idx}
-                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
-                  href="#"
-                >
-                  {item.icon}
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-bold text-white">Khám phá</h2>
+            <ul className="space-y-2.5">
+              {exploreLinks.map((link) => (
+                <li key={link.label}>
+                  <Link className="text-sm text-white/65 transition-colors hover:text-white" to={link.to}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-bold text-white">Dành cho khách</h2>
+            <ul className="space-y-2.5">
+              {accountLinks.map((link) => (
+                <li key={link.label}>
+                  <Link className="text-sm text-white/65 transition-colors hover:text-white" to={link.to}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-bold text-white">Liên hệ</h2>
+            <ul className="space-y-3 text-sm text-white/65">
+              <li className="flex items-start gap-2.5">
+                <Mail size={16} className="mt-0.5 shrink-0 text-white/45" aria-hidden="true" />
+                <a className="transition-colors hover:text-white" href="mailto:support@ticketrush.vn">
+                  support@ticketrush.vn
                 </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Explore Links */}
-          <div>
-            <h4 className="font-bold text-lg mb-6 uppercase tracking-widest text-xs">
-              Khám phá
-            </h4>
-            <ul className="space-y-4">
-              {[
-                { label: "Sự kiện xu hướng", key: "Trending" },
-                { label: "Âm nhạc & Concert", key: "Music" },
-                { label: "Thể thao", key: "Sports" },
-                { label: "Sân khấu & Nghệ thuật", key: "Arts" },
-                { label: "Workshop", key: "Workshops" },
-              ].map((link) => (
-                <li key={link.key}>
-                  <a
-                    className="text-white/60 hover:text-white transition-colors text-sm"
-                    href="#"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Phone size={16} className="mt-0.5 shrink-0 text-white/45" aria-hidden="true" />
+                <span>1900 1234 · 8:00–22:00</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <MapPin size={16} className="mt-0.5 shrink-0 text-white/45" aria-hidden="true" />
+                <span>TP. Hồ Chí Minh, Việt Nam</span>
+              </li>
             </ul>
-          </div>
-
-          {/* About Us Links */}
-          <div>
-            <h4 className="font-bold text-lg mb-6 uppercase tracking-widest text-xs">
-              Về chúng tôi
-            </h4>
-            <ul className="space-y-4">
-              {[
-                { label: "Câu chuyện của chúng tôi", key: "Story" },
-                { label: "Điều khoản dịch vụ", key: "Terms" },
-                { label: "Chính sách bảo mật", key: "Privacy" },
-                { label: "Trung tâm hỗ trợ", key: "Support" },
-                { label: "Thẻ quà tặng", key: "Gifts" },
-              ].map((link) => (
-                <li key={link.key}>
-                  <a
-                    className="text-white/60 hover:text-white transition-colors text-sm"
-                    href="#"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div className="col-span-1">
-            <h4 className="font-bold text-lg mb-6 uppercase tracking-widest text-xs">
-              Liên hệ
-            </h4>
-            <p className="text-white/60 text-sm mb-6 italic">
-              Bạn có câu hỏi? Đội ngũ của chúng tôi luôn sẵn sàng hỗ trợ 24/7 để
-              giúp bạn đặt vé một cách nhanh chóng nhất.
-            </p>
-            <a
-              className="text-white font-bold text-sm hover:text-white/80 transition-colors"
-              href="mailto:support@ticketrush.com"
-            >
-              support@ticketrush.com
-            </a>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
-            © 2026 TicketRush. Bản quyền đã được bảo hộ.
-          </p>
-          <div className="flex gap-8">
-            <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
-              Thanh toán an toàn & bảo mật
+        <div className="flex flex-col gap-4 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2026 TicketRush. Bản quyền đã được bảo hộ.</p>
+          <div className="flex items-center gap-2">
+            <span className="mr-1 inline-flex items-center gap-1.5">
+              <ShieldCheck size={14} aria-hidden="true" />
+              Thanh toán bảo mật
             </span>
-            <div className="flex gap-4 opacity-40">
-              <CreditCard size={20} />
-              <Landmark size={20} />
-              <ShieldCheck size={20} />
-            </div>
+            <CreditCard size={18} aria-hidden="true" />
+            <Landmark size={18} aria-hidden="true" />
           </div>
         </div>
       </div>

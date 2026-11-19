@@ -169,11 +169,11 @@ export default function MyTickets() {
         {/* Ticket Detail Modal */}
         {isModalOpen && selectedTicket && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade"
             onClick={() => setIsModalOpen(false)}
           >
             <div
-              className="bg-white w-full max-w-[360px] rounded-[28px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 relative flex flex-col"
+              className="bg-white w-full max-w-[360px] rounded-[28px] overflow-hidden shadow-2xl animate-dropdown relative flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <button
