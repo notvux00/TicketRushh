@@ -542,11 +542,127 @@
 
 ---
 
+## UR — UI/UX theo benchmark (nguồn: `docs/ui-benchmark-research.md`)
+
+> Nhóm task này bắt nguồn từ nghiên cứu UI/UX ngày 2026-11-19. Thứ tự ưu tiên
+> P1 → P2 → P3; mỗi task một nhánh, gate frontend (lint/build/Playwright) trước khi merge.
+
+### UR-01 — Sơ đồ ghế dễ đọc và không phụ thuộc màu
+- **Trạng thái:** verified (2026-11-19, branch `task/UR-01-seat-map-a11y`)
+- **Vấn đề:** ghế dùng text 8px, min-width 720px; trạng thái đang chọn chỉ khác màu;
+  legend thiếu dấu hiệu hình học; mobile phải phóng to mới bấm chính xác.
+- **File:** `frontend/src/components/booking/HallSeatMap.jsx`,
+  `frontend/src/components/booking/SeatLegend.jsx`, `frontend/src/pages/BookingPage.jsx`.
+- **Việc cần làm:**
+  - [x] Tăng text ghế lên 10px, min-width map lên 900px, giữ zoom 100–240%.
+  - [x] Thêm dấu ✓ trên ghế đang chọn; giữ X (đã bán) và Lock (người khác giữ).
+  - [x] Legend có icon + text 12px cho cả 4 trạng thái; thêm ghi chú grayscale.
+  - [x] Thêm `role="region"` + `aria-label` cho khung sơ đồ; giữ nguyên aria-label ghế.
+- **Acceptance:** 390px không tràn ngang ngoài khung map; ghế đọc được ở zoom 100%;
+  trạng thái phân biệt được khi ảnh grayscale; Playwright `seat-map` vẫn pass.
+- **Test:** `npm run lint`, `npm run build`, `npm run test:browser` 19/19 pass (2026-11-19).
+
+### UR-02 — Chọn khu vực trước khi chọn ghế
+- **Trạng thái:** todo
+- **Vấn đề:** sơ đồ hiển thị tất cả zone cùng lúc; mobile phải scroll ngang và khó biết
+  nên xem khu nào trước.
+- **File:** `frontend/src/pages/BookingPage.jsx`, `frontend/src/components/booking/HallSeatMap.jsx`.
+- **Việc cần làm:**
+  - [ ] Thêm hàng chip “Tất cả” + từng zone (màu, tên, số ghế trống, giá).
+  - [ ] Chọn chip → làm nổi zone đó, làm mờ zone khác và scroll map tới zone.
+  - [ ] `aria-pressed`, focus ring, thao tác được bằng keyboard.
+- **Acceptance:** chọn zone không làm mất ghế đã chọn; “Tất cả” trả lại trạng thái ban đầu;
+  mobile thấy zone đang chọn trong khung sau khi bấm.
+- **Test:** lint/build + Playwright seat-map + kiểm tra 390px.
+
+### UR-03 — Bottom sheet giỏ ghế trên mobile
+- **Trạng thái:** todo
+- **Vấn đề:** bottom bar hiện chỉ có tổng tiền và CTA; muốn xem/bỏ từng ghế phải scroll
+  lên sidebar (bị đẩy xuống dưới map trên mobile).
+- **File:** `frontend/src/pages/BookingPage.jsx`.
+- **Việc cần làm:**
+  - [ ] Thêm trạng thái mở/đóng; collapsed giữ nguyên bar hiện tại.
+  - [ ] Expanded hiện danh sách ghế, zone, giá, nút bỏ từng ghế; cao tối đa ~55vh.
+  - [ ] `aria-expanded`, `aria-controls`, đóng khi hết ghế; CTA luôn hiển thị.
+- **Acceptance:** một tay mở/đóng được; bỏ ghế cập nhật tổng tiền ngay; không che CTA.
+- **Test:** lint/build + Playwright + kiểm tra 390px.
+
+### UR-04 — Card/detail: giá và thời gian quyết định rõ hơn
+- **Trạng thái:** todo
+- **Vấn đề:** card hiện nhãn “Từ” cả khi chưa có giá; chưa hiện giờ suất gần nhất;
+  detail luôn ghi “Giá vé từ” kể cả khi chỉ có một mức giá.
+- **File:** `frontend/src/components/common/EventCard.jsx`, `frontend/src/pages/EventDetail.jsx`.
+- **Việc cần làm:**
+  - [ ] Ẩn nhãn “Từ” khi `minPrice <= 0`; giữ “Giá liên hệ”.
+  - [ ] Card hiện giờ + ngày của suất gần nhất; aria-label cho link.
+  - [ ] Detail đổi nhãn “Giá vé”/“Giá vé từ” theo dữ liệu zone.
+- **Acceptance:** không còn chuỗi “Từ Giá liên hệ”; card có đủ ngày/giờ/địa điểm/giá.
+- **Test:** lint/build + Playwright home.
+
+### UR-05 — Checkout: một countdown, một hệ token
+- **Trạng thái:** todo
+- **Vấn đề:** countdown lặp ở banner và bottom bar; page còn dùng `blue-700/slate-*`
+  lệch với token chung; nút hủy đỏ nằm cạnh CTA.
+- **File:** `frontend/src/pages/CheckoutPage.jsx`.
+- **Việc cần làm:**
+  - [ ] Banner trên chỉ còn thông tin “giữ đến HH:mm”; bottom bar giữ countdown.
+  - [ ] Thay màu legacy bằng token `background/surface/text/muted/line/primary`.
+  - [ ] Nút hủy chuyển sang ghost/subtle, vẫn có confirm.
+- **Acceptance:** chỉ một countdown sống; không còn `blue-700/slate-*` trong page;
+  luồng confirm/cancel/expire Playwright vẫn pass.
+- **Test:** lint/build + Playwright checkout-recovery.
+
+### UR-06 — Trạng thái QR và chế độ toàn màn hình
+- **Trạng thái:** todo
+- **Vấn đề:** QR hiện ngay lập tức, không có trạng thái “chưa tới giờ/đã dùng”, không có
+  chế độ toàn màn hình để đưa cho nhân viên soát vé.
+- **File:** `frontend/src/pages/MyTickets.jsx`, `frontend/src/components/ticket/QRCodeRenderer.jsx`.
+- **Việc cần làm:**
+  - [ ] Tính trạng thái: đã check-in / sẵn sàng / chưa tới giờ (mở trước 2 giờ).
+  - [ ] Chưa tới giờ: hiện thời điểm mở + nút “Hiển thị mã ngay” (không chặn demo).
+  - [ ] Nút “Phóng to QR” mở modal toàn màn hình, nền trắng, có nút đóng.
+- **Acceptance:** vé đã dùng không hiện QR như vé hợp lệ; modal đóng bằng Escape/click ngoài;
+  QR tải về vẫn dùng `my-ticket-qr-canvas`.
+- **Test:** lint/build + Playwright + kiểm tra modal 390px.
+
+### UR-07 — Queue: thông tin cập nhật và ETA khoảng
+- **Trạng thái:** todo
+- **File:** `frontend/src/pages/WaitingRoomPage.jsx`.
+- **Việc cần làm:** thêm “Cập nhật lúc”, ETA dạng khoảng, cảnh báo reconnect rõ hơn.
+
+### UR-08 — Check-in: phản hồi giác quan và tìm khách
+- **Trạng thái:** todo
+- **File:** `frontend/src/pages/AdminCheckin.jsx`.
+- **Việc cần làm:** beep/rung pass-fail, nút “Quét tiếp”, tìm theo tên/email/mã đơn.
+
+### UR-09 — Dashboard admin theo việc cần xử lý
+- **Trạng thái:** todo
+- **File:** `frontend/src/pages/AdminDashboard.jsx`.
+- **Việc cần làm:** card “Việc cần xử lý” (đơn pending, event 7 ngày tới, voucher sắp hết).
+
+### UR-10 — QR động (rotating token)
+- **Trạng thái:** todo
+- **File:** backend ticket service + `MyTickets.jsx`.
+- **Việc cần làm:** endpoint cấp token ngắn hạn, refresh 30–60 giây, vô hiệu token cũ.
+
+### UR-11 — Email báo khi tới lượt queue
+- **Trạng thái:** todo
+- **File:** backend queue service + `WaitingRoomPage.jsx`.
+- **Việc cần làm:** đăng ký email, gửi khi accessGranted, huỷ đăng ký.
+
+### UR-12 — Thêm vé vào Apple/Google Wallet
+- **Trạng thái:** todo
+- **File:** `MyTickets.jsx`, backend PKPass.
+- **Việc cần làm:** tạo PKPass, nút “Thêm vào Wallet”, fallback tải PDF.
+
+---
+
 ## Thứ tự thực hiện đề xuất
 
 1. **Sprint 1 (P0):** P0-01 → P0-02 → P0-04 → P0-05 → P0-03.
 2. **Sprint 2 (P1):** P1-01 → P1-02 → P1-03 → P1-04 → P1-05 → P1-06.
 3. **Sprint 3 (P2):** P2-03 → P2-06 → P2-01 → P2-02 → P2-04 → P2-05.
 4. **Sprint 4 (P3):** P3-01 → P3-02 → P3-03 → P3-04 → P3-05.
+5. **Sprint 5 (UR):** UR-01 → UR-02 → UR-03 → UR-04 → UR-05 → UR-06 → UR-07 → UR-12.
 
 > Phụ thuộc: P0-04 trước P0-05 (handler validation). P1-03 trước P2-05 (bỏ voucher hardcode). P3-04 sau khi hết warning.

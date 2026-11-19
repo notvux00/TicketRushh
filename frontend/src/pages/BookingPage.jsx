@@ -412,7 +412,8 @@ export default function BookingPage() {
               <SeatLegend />
             </div>
             <p className="mt-3 text-xs font-medium leading-5 text-muted">
-              Màu nền khu vực tương ứng hạng vé. Ghế đang chọn màu xanh, ghế người khác giữ màu vàng, ghế đã bán màu xám.
+              Màu nền khu vực tương ứng hạng vé. Ghế đang chọn có dấu ✓, ghế người khác giữ có ổ khóa,
+              ghế đã bán có dấu ×. Dùng nút phóng to nếu cần chạm chính xác hơn.
             </p>
           </section>
         </main>
