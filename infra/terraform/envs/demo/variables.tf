@@ -70,9 +70,15 @@ variable "asg_max_size" {
 }
 
 variable "asg_desired_capacity" {
-  description = "ASG desired capacity."
+  description = "ASG desired capacity when CPU target tracking is disabled."
   type        = number
   default     = 2
+}
+
+variable "asg_cpu_target_utilization" {
+  description = "Average CPU percentage for ASG target tracking. Null disables the policy."
+  type        = number
+  default     = 70
 }
 
 variable "db_instance_class" {

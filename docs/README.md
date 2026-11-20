@@ -7,6 +7,7 @@ Tài liệu mô tả mã nguồn hiện có. Hệ thống đã được kiểm t
 | [ARCHITECTURE](ARCHITECTURE.md) | Thành phần, luồng booking/queue, admin API, schema và giới hạn |
 | [LOCAL_DEV](LOCAL_DEV.md) | Khởi động local, biến môi trường và lệnh kiểm thử |
 | [AWS_DEPLOY](AWS_DEPLOY.md) | Bootstrap, DNS, worker package, image và triển khai demo |
+| [AWS_INFRASTRUCTURE](AWS_INFRASTRUCTURE.md) | Đặc tả kiến trúc và cấu hình hạ tầng AWS cho demo |
 | [RUNBOOK](RUNBOOK.md) | Health, log, xử lý sự cố, rollback và destroy |
 | [DEMO_SCRIPT](DEMO_SCRIPT.md) | Kịch bản theo chức năng đã có |
 | [COST](COST.md) | Các nguồn chi phí và cách lập dự toán |

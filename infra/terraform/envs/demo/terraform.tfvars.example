@@ -14,9 +14,11 @@ alarm_email    = "alerts@example.com"
 image_tag     = "latest"
 instance_type = "t3.small"
 
-asg_min_size         = 2
-asg_max_size         = 4
-asg_desired_capacity = 2
+asg_min_size               = 2
+asg_max_size               = 4
+asg_cpu_target_utilization = 70
+# Set asg_cpu_target_utilization = null to manage desired capacity in Terraform.
+# asg_desired_capacity = 2
 
 db_instance_class = "db.t4g.micro"
 redis_node_type   = "cache.t4g.micro"

@@ -134,10 +134,11 @@ module "compute" {
   instance_profile_name = module.security.instance_profile_name
   target_group_arn      = module.edge.target_group_arn
 
-  instance_type    = var.instance_type
-  min_size         = var.asg_min_size
-  max_size         = var.asg_max_size
-  desired_capacity = var.asg_desired_capacity
+  instance_type          = var.instance_type
+  min_size               = var.asg_min_size
+  max_size               = var.asg_max_size
+  desired_capacity       = var.asg_desired_capacity
+  cpu_target_utilization = var.asg_cpu_target_utilization
 
   image_tag_default = var.image_tag
 
