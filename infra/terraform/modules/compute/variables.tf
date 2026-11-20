@@ -47,9 +47,20 @@ variable "max_size" {
 }
 
 variable "desired_capacity" {
-  description = "ASG desired capacity."
+  description = "ASG desired capacity when CPU target tracking is disabled."
   type        = number
   default     = 2
+}
+
+variable "cpu_target_utilization" {
+  description = "Average CPU percentage for ASG target tracking. Null disables the policy."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.cpu_target_utilization == null ? true : var.cpu_target_utilization > 0 && var.cpu_target_utilization <= 100
+    error_message = "The CPU target must be greater than 0 and at most 100, or null to disable target tracking."
+  }
 }
 
 variable "root_volume_size" {

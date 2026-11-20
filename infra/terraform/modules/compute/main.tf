@@ -209,7 +209,8 @@ resource "aws_autoscaling_group" "app" {
   vpc_zone_identifier = var.app_subnet_ids
   min_size            = var.min_size
   max_size            = var.max_size
-  desired_capacity    = var.desired_capacity
+  # Target tracking owns the running capacity when enabled.
+  desired_capacity = var.cpu_target_utilization == null ? var.desired_capacity : null
 
   launch_template {
     id      = aws_launch_template.app.id
@@ -244,4 +245,22 @@ resource "aws_autoscaling_group" "app" {
   }
 
   depends_on = [aws_cloudwatch_log_group.backend]
+}
+
+resource "aws_autoscaling_policy" "cpu_target_tracking" {
+  count = var.cpu_target_utilization == null ? 0 : 1
+
+  name                      = "${var.name_prefix}-cpu-target-tracking"
+  autoscaling_group_name    = aws_autoscaling_group.app.name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = 300
+
+  target_tracking_configuration {
+    target_value     = var.cpu_target_utilization
+    disable_scale_in = false
+
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+  }
 }
