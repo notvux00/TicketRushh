@@ -1,26 +1,28 @@
+# Role 1 outputs are placeholders in this local scaffold.
+
 output "alb_security_group_id" {
   description = "Security group attached to the ALB."
-  value       = aws_security_group.alb.id
+  value       = null
 }
 
 output "app_security_group_id" {
   description = "Security group attached to application instances."
-  value       = aws_security_group.app.id
+  value       = null
 }
 
 output "db_security_group_id" {
   description = "Security group attached to RDS."
-  value       = aws_security_group.db.id
+  value       = null
 }
 
 output "rds_proxy_security_group_id" {
   description = "Security group attached to RDS Proxy."
-  value       = aws_security_group.rds_proxy.id
+  value       = null
 }
 
 output "redis_security_group_id" {
   description = "Security group attached to ElastiCache."
-  value       = aws_security_group.redis.id
+  value       = null
 }
 
 output "instance_profile_name" {
@@ -35,5 +37,5 @@ output "instance_role_arn" {
 
 output "lambda_security_group_id" {
   description = "Security group for the Lambda maintenance worker."
-  value       = aws_security_group.lambda.id
+  value       = null
 }
