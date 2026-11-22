@@ -52,8 +52,8 @@ const vpc = group("vpc", "group_vpc", "VPC 10.0.0.0/16", { dir: "col", gap: 18, 
     }),
   ]),
   phantom("asg_note_row", "", { dir: "row", gap: 16, align: "center", header: 0 }, [
-    icon("asg", "auto_scaling2", "Auto Scaling Group\nmin 2 · max 4"),
-    box("asg_note", "ALB → ASG → EC2\nHealth: /actuator/health\nALB SG: CloudFront + X-Origin-Verify", { w: 250, h: 66 }),
+    icon("asg", "auto_scaling2", "Auto Scaling Group\nManages EC2 capacity · 2–4"),
+    box("asg_note", "ALB → EC2 via Target Group\nHealth: /actuator/health/readiness\nALB SG: CloudFront + X-Origin-Verify", { w: 250, h: 66 }),
   ]),
 ]);
 
@@ -76,6 +76,11 @@ const region = group("region", "group_region", "AWS Region · ap-southeast-1", {
   shared,
 ]);
 
+const maintenance = band("maintenance", "Scheduled maintenance", [
+  icon("eventbridge", "eventbridge", "Amazon EventBridge"),
+  icon("maintenance_worker", "lambda", "Lambda · Maintenance worker\nVPC access via private app subnets"),
+]);
+
 // ─────────────────────────────────────────────────────────────
 // Cross-cutting observability band
 // ─────────────────────────────────────────────────────────────
@@ -86,7 +91,7 @@ const obs = band("obs", "Observability & alerts", [
   box("obs_note", "Alarms: ALB 5xx · p95 ·\nUnHealthyHost · CPU · RDS · Redis", { w: 250, h: 52 }),
 ]);
 
-const cloud = group("cloud", "group_aws_cloud_alt", "AWS Cloud", { dir: "col", gap: 22 }, [region, obs]);
+const cloud = group("cloud", "group_aws_cloud_alt", "AWS Cloud", { dir: "col", gap: 22 }, [region, maintenance, obs]);
 
 // ─────────────────────────────────────────────────────────────
 // Edge / global services
@@ -142,19 +147,23 @@ d.title("TicketRush — AWS Multi-AZ DEMO architecture + CI/CD (ap-southeast-1)"
 // ─────────────────────────────────────────────────────────────
 // Main flows + CI/CD flows
 // ─────────────────────────────────────────────────────────────
-d.link("users", "r53", "DNS", { step: 1 });
-d.link("r53", "cf", "", { step: 2 });
+d.link("users", "r53", "DNS lookup", { step: 1, dash: true });
+d.link("r53", "cf", "DNS alias", { dash: true });
+d.link("users", "cf", "HTTPS / WSS", { step: 2 });
 d.link("cf", "s3_frontend", "3 static", { role: "fanout" });
 d.link("cf", "alb", "/api · /ws", { step: 4 });
 d.link("alb", "ec2_a", "", { role: "fanout" });
 d.link("alb", "ec2_b", "", { role: "fanout" });
 d.link("ec2_a", "rds_a", "SQL", { step: 5 });
-d.link("ec2_b", "rds_b", "SQL");
+d.link("ec2_b", "rds_a", "SQL");
 d.link("ec2_a", "redis_a", "cache/lock", { step: 5 });
-d.link("ec2_b", "redis_b", "cache/lock");
+d.link("ec2_b", "redis_a", "cache/lock");
 d.link("rds_a", "rds_b", "Multi-AZ replication", { dash: true });
 d.link("redis_a", "redis_b", "replication", { dash: true });
 d.link("cf", "s3_media", "", { role: "fanout" });
+
+d.link("eventbridge", "maintenance_worker", "every 15 min", { dash: true });
+d.link("maintenance_worker", "rds_a", "maintenance SQL");
 
 d.link("gh", "gha", "push/PR");
 d.link("gha", "ecr_deploy", "build image");
