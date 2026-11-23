@@ -32,22 +32,22 @@ output "data_subnet_ids" {
 
 output "public_route_table_id" {
   description = "Public route table ID."
-  value       = null
+  value       = aws_route_table.public.id
 }
 
 output "app_route_table_ids" {
   description = "Private application route table IDs."
-  value       = null
+  value       = aws_route_table.app[*].id
 }
 
 output "data_route_table_ids" {
   description = "Private data route table IDs (no internet route)."
-  value       = null
+  value       = aws_route_table.data[*].id
 }
 
 output "nat_gateway_ids" {
   description = "NAT gateway IDs."
-  value       = null
+  value       = aws_nat_gateway.this[*].id
 }
 
 output "s3_gateway_endpoint_id" {
