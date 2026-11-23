@@ -1,21 +1,41 @@
-frontend/.env
+# ── Secrets & local environment ─────────────────────────────
 .env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env-example.txt
 backend/.env
 
-# Antigravity-kit
-/.agent
+# ── Dependencies & build output ─────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.build/
+backend/target/
+**/target/
+**/.build/
+**/__pycache__/
+*.py[cod]
 
-# Terraform
+# ── Terraform ───────────────────────────────────────────────
 **/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfplan
 crash.log
+crash.*.log
+**/terraform.tfvars
+!**/terraform.tfvars.example
 
-# Local runtime
-frontend/dist/
+# ── Tooling, editors & OS ───────────────────────────────────
+.agent/
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~
 
-# Lambda build artifacts and Python caches
-**/.build/
-**/__pycache__/
-*.pyc
+# ── Scratch / local notes ───────────────────────────────────
+scratch/
+DEPLOY_CHECKLIST.md
