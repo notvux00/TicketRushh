@@ -1,6 +1,6 @@
 # Tài liệu TicketRush
 
-Tài liệu mô tả mã nguồn hiện có. Hệ thống đã được kiểm thử local; chưa deploy/apply AWS trong phiên làm việc này.
+Tài liệu mô tả mã nguồn hiện có. Bản demo đang chạy trên AWS tại **https://ticketrush.sudothanh.me**; hạ tầng được quản lý bằng Terraform.
 
 | Tài liệu | Nội dung |
 | --- | --- |
@@ -15,6 +15,9 @@ Tài liệu mô tả mã nguồn hiện có. Hệ thống đã được kiểm t
 | [Bootstrap](../infra/terraform/bootstrap/README.md) | State backend và GitHub OIDC trust |
 | [Worker](../infra/lambda/maintenance/README.md) | SQL jobs, đóng gói, test và vận hành Lambda |
 | [Diagrams](../diagrams/README.md) | Sơ đồ minh họa và khác biệt so với Terraform |
+| [Image credits](IMAGE_CREDITS.md) | Nguồn và giấy phép ảnh demo |
+| [AGENT](../AGENT.md) | Quy trình thực thi task nội bộ |
+| [Task backlog](../task.md) | Trạng thái các hạng mục cải thiện |
 
 Admin có các route `/admin`, `/admin/events`, `/admin/add-event`, `/admin/vouchers`, `/admin/checkin`. Backend check-in hỗ trợ ADMIN/STAFF; giao diện admin hiện chỉ dành cho ADMIN.
 
