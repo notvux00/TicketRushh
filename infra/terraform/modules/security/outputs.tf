@@ -1,5 +1,3 @@
-# Outputs are placeholders until their resources are defined.
-
 output "alb_security_group_id" {
   description = "Security group attached to the ALB."
   value       = aws_security_group.alb.id
@@ -12,17 +10,17 @@ output "app_security_group_id" {
 
 output "db_security_group_id" {
   description = "Security group attached to RDS."
-  value       = null
+  value       = aws_security_group.db.id
 }
 
 output "rds_proxy_security_group_id" {
   description = "Security group attached to RDS Proxy."
-  value       = null
+  value       = aws_security_group.rds_proxy.id
 }
 
 output "redis_security_group_id" {
   description = "Security group attached to ElastiCache."
-  value       = null
+  value       = aws_security_group.redis.id
 }
 
 output "instance_profile_name" {
@@ -37,5 +35,5 @@ output "instance_role_arn" {
 
 output "lambda_security_group_id" {
   description = "Security group for the Lambda maintenance worker."
-  value       = null
+  value       = aws_security_group.lambda.id
 }

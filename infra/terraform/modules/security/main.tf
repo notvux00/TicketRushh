@@ -116,6 +116,108 @@ resource "aws_vpc_security_group_egress_rule" "app_ntp" {
   ip_protocol       = "udp"
 }
 
+resource "aws_security_group" "db" {
+  name        = "${var.name_prefix}-db"
+  description = "PostgreSQL access from the application tier"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-db"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_app" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "rds_proxy" {
+  name        = "${var.name_prefix}-rds-proxy"
+  description = "RDS Proxy between the application and PostgreSQL"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-rds-proxy"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "proxy_from_app" {
+  security_group_id            = aws_security_group.rds_proxy.id
+  description                  = "PostgreSQL from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "proxy_to_db" {
+  security_group_id            = aws_security_group.rds_proxy.id
+  description                  = "PostgreSQL to the database"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_proxy" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from RDS Proxy"
+  referenced_security_group_id = aws_security_group.rds_proxy.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_db" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Direct PostgreSQL when RDS Proxy is disabled"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_proxy" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "PostgreSQL through RDS Proxy when enabled"
+  referenced_security_group_id = aws_security_group.rds_proxy.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "redis" {
+  name        = "${var.name_prefix}-redis"
+  description = "Redis access from the application tier"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-redis"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_from_app" {
+  security_group_id            = aws_security_group.redis.id
+  description                  = "Redis TLS from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_redis" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Redis TLS"
+  referenced_security_group_id = aws_security_group.redis.id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+}
+
 # -----------------------------------------------------------------------------
 # EC2 instance role
 # -----------------------------------------------------------------------------
@@ -265,4 +367,61 @@ resource "aws_iam_instance_profile" "app" {
   role = aws_iam_role.app.name
 
   tags = local.tags
+}
+
+# ── Lambda maintenance worker ─────────────────────────────────────
+
+resource "aws_security_group" "lambda" {
+  name        = "${var.name_prefix}-lambda"
+  description = "Lambda maintenance worker"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-lambda"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_to_db" {
+  security_group_id            = aws_security_group.lambda.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_https" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "HTTPS for Secrets Manager API calls"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over TCP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over UDP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_lambda" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
 }
