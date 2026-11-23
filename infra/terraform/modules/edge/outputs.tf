@@ -32,32 +32,32 @@ output "cloudfront_domain_name" {
 
 output "alb_arn" {
   description = "ALB ARN."
-  value       = null
+  value       = aws_lb.this.arn
 }
 
 output "alb_dns_name" {
   description = "ALB DNS name."
-  value       = null
+  value       = aws_lb.this.dns_name
 }
 
 output "alb_zone_id" {
   description = "ALB hosted zone ID."
-  value       = null
+  value       = aws_lb.this.zone_id
 }
 
 output "target_group_arn" {
   description = "Target group ARN used by the ASG."
-  value       = null
+  value       = aws_lb_target_group.app.arn
 }
 
 output "alb_arn_suffix" {
   description = "ALB ARN suffix used in CloudWatch dimensions."
-  value       = null
+  value       = aws_lb.this.arn_suffix
 }
 
 output "target_group_arn_suffix" {
   description = "Target group ARN suffix used in CloudWatch dimensions."
-  value       = null
+  value       = aws_lb_target_group.app.arn_suffix
 }
 
 output "frontend_bucket_name" {
@@ -82,7 +82,7 @@ output "media_bucket_arn" {
 
 output "origin_verify_parameter_name" {
   description = "SSM parameter holding the CloudFront-to-ALB shared secret."
-  value       = null
+  value       = aws_ssm_parameter.origin_verify.name
 }
 
 output "waf_web_acl_arn" {
