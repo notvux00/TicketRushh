@@ -1,6 +1,10 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+data "aws_ec2_managed_prefix_list" "cloudfront_origin" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.region
@@ -10,7 +14,107 @@ locals {
   })
 }
 
-# Scaffold: add application, edge and database security groups and their rules.
+# -----------------------------------------------------------------------------
+# Security groups
+# -----------------------------------------------------------------------------
+
+resource "aws_security_group" "alb" {
+  name        = "${var.name_prefix}-alb"
+  description = "CloudFront to ALB HTTPS only"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-alb"
+  })
+}
+
+# Public (demo) ALB: only CloudFront origin-facing addresses may connect.
+resource "aws_vpc_security_group_ingress_rule" "alb_from_cloudfront" {
+  count = var.enable_vpc_origin ? 0 : 1
+
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from the CloudFront origin-facing prefix list"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_origin.id
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+# Private (prod) ALB: CloudFront VPC origins place ENIs inside the VPC.
+resource "aws_vpc_security_group_ingress_rule" "alb_from_vpc" {
+  count = var.enable_vpc_origin ? 1 : 0
+
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from CloudFront VPC origin ENIs"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "Forward traffic and health checks to the application"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "app" {
+  name        = "${var.name_prefix}-app"
+  description = "Spring Boot application instances"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-app"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Application port from the ALB"
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_https" {
+  security_group_id = aws_security_group.app.id
+  description       = "AWS APIs (ECR, Secrets Manager, SSM, CloudWatch) through NAT or endpoints"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_dns_tcp" {
+  security_group_id = aws_security_group.app.id
+  description       = "VPC DNS over TCP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_dns_udp" {
+  security_group_id = aws_security_group.app.id
+  description       = "VPC DNS over UDP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_ntp" {
+  security_group_id = aws_security_group.app.id
+  description       = "Amazon Time Sync Service"
+  cidr_ipv4         = "169.254.169.123/32"
+  from_port         = 123
+  to_port           = 123
+  ip_protocol       = "udp"
+}
 
 # -----------------------------------------------------------------------------
 # EC2 instance role
@@ -162,5 +266,3 @@ resource "aws_iam_instance_profile" "app" {
 
   tags = local.tags
 }
-
-# Scaffold: add the maintenance worker security group and rules.
