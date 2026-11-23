@@ -1,33 +1,33 @@
-# Role 1 outputs are placeholders in this local scaffold.
+# Outputs are placeholders until their resources are defined.
 
 output "vpc_id" {
   description = "VPC ID."
-  value       = null
+  value       = aws_vpc.this.id
 }
 
 output "vpc_cidr" {
   description = "VPC CIDR block."
-  value       = null
+  value       = aws_vpc.this.cidr_block
 }
 
 output "availability_zones" {
   description = "Availability zones used by the subnets."
-  value       = null
+  value       = local.azs
 }
 
 output "public_subnet_ids" {
   description = "Public subnet IDs, ordered by AZ."
-  value       = null
+  value       = aws_subnet.public[*].id
 }
 
 output "app_subnet_ids" {
   description = "Private application subnet IDs, ordered by AZ."
-  value       = null
+  value       = aws_subnet.app[*].id
 }
 
 output "data_subnet_ids" {
   description = "Private data subnet IDs, ordered by AZ."
-  value       = null
+  value       = aws_subnet.data[*].id
 }
 
 output "public_route_table_id" {
