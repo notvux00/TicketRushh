@@ -188,3 +188,65 @@ resource "aws_route_table_association" "data" {
   subnet_id      = aws_subnet.data[count.index].id
   route_table_id = aws_route_table.data[count.index].id
 }
+
+# -----------------------------------------------------------------------------
+# VPC endpoints
+# -----------------------------------------------------------------------------
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = aws_route_table.app[*].id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-s3-gateway"
+  })
+}
+
+resource "aws_security_group" "endpoints" {
+  count = var.enable_interface_endpoints ? 1 : 0
+
+  name        = "${var.name_prefix}-vpce"
+  description = "HTTPS access to interface VPC endpoints"
+  vpc_id      = aws_vpc.this.id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-vpce"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "endpoints_https" {
+  count = var.enable_interface_endpoints ? 1 : 0
+
+  security_group_id = aws_security_group.endpoints[0].id
+  description       = "HTTPS from the VPC CIDR"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "endpoints_all" {
+  count = var.enable_interface_endpoints ? 1 : 0
+
+  security_group_id = aws_security_group.endpoints[0].id
+  description       = "Endpoint response traffic"
+  cidr_ipv4         = var.vpc_cidr
+  ip_protocol       = "-1"
+}
+
+resource "aws_vpc_endpoint" "interface" {
+  for_each = var.enable_interface_endpoints ? toset(var.interface_endpoint_services) : toset([])
+
+  vpc_id              = aws_vpc.this.id
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.${each.value}"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.app[*].id
+  security_group_ids  = [aws_security_group.endpoints[0].id]
+  private_dns_enabled = true
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-${replace(each.value, ".", "-")}"
+  })
+}

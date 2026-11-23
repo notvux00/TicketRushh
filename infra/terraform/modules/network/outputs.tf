@@ -1,5 +1,3 @@
-# Outputs are placeholders until their resources are defined.
-
 output "vpc_id" {
   description = "VPC ID."
   value       = aws_vpc.this.id
@@ -52,10 +50,10 @@ output "nat_gateway_ids" {
 
 output "s3_gateway_endpoint_id" {
   description = "S3 gateway VPC endpoint ID."
-  value       = null
+  value       = aws_vpc_endpoint.s3.id
 }
 
 output "interface_endpoint_ids" {
   description = "Optional interface VPC endpoint IDs."
-  value       = null
+  value       = { for name, endpoint in aws_vpc_endpoint.interface : name => endpoint.id }
 }
