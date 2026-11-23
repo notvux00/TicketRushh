@@ -1,6 +1,10 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+data "aws_ec2_managed_prefix_list" "cloudfront_origin" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.region
@@ -10,7 +14,209 @@ locals {
   })
 }
 
-# Scaffold: add application, edge and database security groups and their rules.
+# -----------------------------------------------------------------------------
+# Security groups
+# -----------------------------------------------------------------------------
+
+resource "aws_security_group" "alb" {
+  name        = "${var.name_prefix}-alb"
+  description = "CloudFront to ALB HTTPS only"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-alb"
+  })
+}
+
+# Public (demo) ALB: only CloudFront origin-facing addresses may connect.
+resource "aws_vpc_security_group_ingress_rule" "alb_from_cloudfront" {
+  count = var.enable_vpc_origin ? 0 : 1
+
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from the CloudFront origin-facing prefix list"
+  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront_origin.id
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+# Private (prod) ALB: CloudFront VPC origins place ENIs inside the VPC.
+resource "aws_vpc_security_group_ingress_rule" "alb_from_vpc" {
+  count = var.enable_vpc_origin ? 1 : 0
+
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from CloudFront VPC origin ENIs"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_app" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "Forward traffic and health checks to the application"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "app" {
+  name        = "${var.name_prefix}-app"
+  description = "Spring Boot application instances"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-app"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_from_alb" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Application port from the ALB"
+  referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_https" {
+  security_group_id = aws_security_group.app.id
+  description       = "AWS APIs (ECR, Secrets Manager, SSM, CloudWatch) through NAT or endpoints"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_dns_tcp" {
+  security_group_id = aws_security_group.app.id
+  description       = "VPC DNS over TCP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_dns_udp" {
+  security_group_id = aws_security_group.app.id
+  description       = "VPC DNS over UDP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_ntp" {
+  security_group_id = aws_security_group.app.id
+  description       = "Amazon Time Sync Service"
+  cidr_ipv4         = "169.254.169.123/32"
+  from_port         = 123
+  to_port           = 123
+  ip_protocol       = "udp"
+}
+
+resource "aws_security_group" "db" {
+  name        = "${var.name_prefix}-db"
+  description = "PostgreSQL access from the application tier"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-db"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_app" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "rds_proxy" {
+  name        = "${var.name_prefix}-rds-proxy"
+  description = "RDS Proxy between the application and PostgreSQL"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-rds-proxy"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "proxy_from_app" {
+  security_group_id            = aws_security_group.rds_proxy.id
+  description                  = "PostgreSQL from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "proxy_to_db" {
+  security_group_id            = aws_security_group.rds_proxy.id
+  description                  = "PostgreSQL to the database"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_proxy" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from RDS Proxy"
+  referenced_security_group_id = aws_security_group.rds_proxy.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_db" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Direct PostgreSQL when RDS Proxy is disabled"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_proxy" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "PostgreSQL through RDS Proxy when enabled"
+  referenced_security_group_id = aws_security_group.rds_proxy.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_security_group" "redis" {
+  name        = "${var.name_prefix}-redis"
+  description = "Redis access from the application tier"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-redis"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_from_app" {
+  security_group_id            = aws_security_group.redis.id
+  description                  = "Redis TLS from application instances"
+  referenced_security_group_id = aws_security_group.app.id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_redis" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Redis TLS"
+  referenced_security_group_id = aws_security_group.redis.id
+  from_port                    = 6379
+  to_port                      = 6379
+  ip_protocol                  = "tcp"
+}
 
 # -----------------------------------------------------------------------------
 # EC2 instance role
@@ -163,4 +369,59 @@ resource "aws_iam_instance_profile" "app" {
   tags = local.tags
 }
 
-# Scaffold: add the maintenance worker security group and rules.
+# ── Lambda maintenance worker ─────────────────────────────────────
+
+resource "aws_security_group" "lambda" {
+  name        = "${var.name_prefix}-lambda"
+  description = "Lambda maintenance worker"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-lambda"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_to_db" {
+  security_group_id            = aws_security_group.lambda.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.db.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_https" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "HTTPS for Secrets Manager API calls"
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_tcp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over TCP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_dns_udp" {
+  security_group_id = aws_security_group.lambda.id
+  description       = "VPC DNS over UDP"
+  cidr_ipv4         = var.vpc_cidr
+  from_port         = 53
+  to_port           = 53
+  ip_protocol       = "udp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_from_lambda" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "PostgreSQL from Lambda maintenance worker"
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+}
