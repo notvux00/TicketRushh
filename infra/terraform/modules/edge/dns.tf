@@ -81,6 +81,34 @@ resource "aws_acm_certificate_validation" "alb" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Application and origin aliases
+# -----------------------------------------------------------------------------
+
+resource "aws_route53_record" "app_ipv4" {
+  zone_id = aws_route53_zone.this.zone_id
+  name    = local.app_fqdn
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.this.domain_name
+    zone_id                = aws_cloudfront_distribution.this.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "app_ipv6" {
+  zone_id = aws_route53_zone.this.zone_id
+  name    = local.app_fqdn
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.this.domain_name
+    zone_id                = aws_cloudfront_distribution.this.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
 resource "aws_route53_record" "origin_ipv4" {
   zone_id = aws_route53_zone.this.zone_id
   name    = local.origin_fqdn
@@ -92,3 +120,4 @@ resource "aws_route53_record" "origin_ipv4" {
     evaluate_target_health = true
   }
 }
+
