@@ -62,22 +62,22 @@ output "target_group_arn_suffix" {
 
 output "frontend_bucket_name" {
   description = "Private S3 bucket for the React build."
-  value       = null
+  value       = aws_s3_bucket.frontend.bucket
 }
 
 output "frontend_bucket_arn" {
   description = "ARN of the frontend bucket."
-  value       = null
+  value       = aws_s3_bucket.frontend.arn
 }
 
 output "media_bucket_name" {
   description = "Private S3 bucket for media uploads."
-  value       = null
+  value       = aws_s3_bucket.media.bucket
 }
 
 output "media_bucket_arn" {
   description = "ARN of the media bucket."
-  value       = null
+  value       = aws_s3_bucket.media.arn
 }
 
 output "origin_verify_parameter_name" {
