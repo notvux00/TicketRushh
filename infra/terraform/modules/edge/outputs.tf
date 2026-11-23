@@ -1,23 +1,23 @@
-# Role 1 outputs are placeholders in this local scaffold.
+# Outputs are placeholders until their resources are defined.
 
 output "app_fqdn" {
   description = "Public application hostname."
-  value       = null
+  value       = local.app_fqdn
 }
 
 output "origin_fqdn" {
   description = "ALB origin hostname."
-  value       = null
+  value       = local.origin_fqdn
 }
 
 output "route53_zone_id" {
   description = "Route 53 hosted zone ID for the delegated subdomain."
-  value       = null
+  value       = aws_route53_zone.this.zone_id
 }
 
 output "route53_name_servers" {
   description = "Route 53 name servers to add as NS records for the subdomain at Cloudflare."
-  value       = null
+  value       = aws_route53_zone.this.name_servers
 }
 
 output "cloudfront_distribution_id" {

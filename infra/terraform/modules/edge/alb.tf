@@ -7,4 +7,19 @@ locals {
   })
 }
 
-# Scaffold: add the ALB, origin verification and target group.
+# -----------------------------------------------------------------------------
+# Certificates and HTTPS listener
+# -----------------------------------------------------------------------------
+
+resource "aws_acm_certificate" "alb" {
+  domain_name       = local.origin_fqdn
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(local.tags, {
+    Name = local.origin_fqdn
+  })
+}
