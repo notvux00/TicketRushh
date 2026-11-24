@@ -34,9 +34,17 @@ Kế hoạch được lập từ cấu hình và thiết kế đã có để tá
 
 ## Thứ tự commit lại
 
-1. `feat(terraform): configure Role 3 data services and secrets`
-2. `feat(aws): configure scheduled maintenance worker`
-3. `feat(terraform): configure CloudWatch and SNS monitoring`
+| Giai đoạn | Commit | Phạm vi |
+| --- | --- | --- |
+| Dữ liệu | 1. `feat(terraform): configure application secrets` | Mật khẩu và Secrets Manager cho PostgreSQL, Redis, JWT, vé QR và admin. |
+| Dữ liệu | 2. `feat(terraform): configure PostgreSQL and RDS Proxy` | Subnet group, RDS PostgreSQL Multi-AZ, backup và RDS Proxy theo profile. |
+| Dữ liệu | 3. `feat(terraform): configure ElastiCache Redis` | Subnet group, parameter group, Redis replication group, failover và snapshot. |
+| Bảo trì | 4. `feat(lambda): restore scheduled maintenance jobs` | Mã Python của maintenance worker và bốn tác vụ SQL. |
+| Bảo trì | 5. `feat(terraform): wire Lambda to EventBridge` | Đóng gói Lambda, IAM, log group và lịch EventBridge mỗi 15 phút. |
+| Giám sát | 6. `feat(terraform): configure CloudWatch alarms and SNS` | SNS topic, đăng ký email và sáu alarm CloudWatch. |
+| Giám sát | 7. `feat(terraform): configure CloudWatch dashboard` | Dashboard cho ALB, EC2, RDS và Redis. |
+
+Mỗi commit khôi phục các output có đủ tài nguyên phụ thuộc ở bước đó. Bước đối chiếu cuối thực hiện sau commit thứ 7.
 
 Mỗi bước chỉ ghi file thuộc nhóm đó. Trong contract, mảng `sections` chứa các đoạn UTF-8 theo thứ tự tài nguyên Terraform hoặc vùng chức năng Python. Ghép thuộc tính `text` theo thứ tự, không chèn thêm dấu xuống dòng, không đổi comment, spacing, địa chỉ, thứ tự hoặc kiểu kết thúc dòng. Sau khi stage, băm nội dung Git đã chuẩn hóa và so với SHA-256 trong contract. Kiểm tra đủ bảy file và toàn bộ thư mục được lưu trong ZIP so với mốc tham chiếu.
 
