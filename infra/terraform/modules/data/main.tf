@@ -116,3 +116,159 @@ resource "aws_secretsmanager_secret_version" "admin" {
   secret_id     = aws_secretsmanager_secret.admin.id
   secret_string = local.effective_admin_password
 }
+
+# -----------------------------------------------------------------------------
+# RDS PostgreSQL
+# -----------------------------------------------------------------------------
+
+resource "aws_db_subnet_group" "this" {
+  name       = "${var.name_prefix}-db"
+  subnet_ids = var.data_subnet_ids
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-db"
+  })
+}
+
+resource "aws_db_instance" "this" {
+  identifier = "${var.name_prefix}-postgres"
+
+  engine         = "postgres"
+  engine_version = "16"
+  instance_class = var.db_instance_class
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = random_password.db.result
+  port     = 5432
+
+  allocated_storage     = var.db_allocated_storage
+  max_allocated_storage = var.db_max_allocated_storage > 0 ? var.db_max_allocated_storage : null
+  storage_type          = "gp3"
+  storage_encrypted     = true
+
+  multi_az                = var.db_multi_az
+  publicly_accessible     = false
+  vpc_security_group_ids  = [var.db_security_group_id]
+  db_subnet_group_name    = aws_db_subnet_group.this.name
+  backup_retention_period = var.db_backup_retention_period
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "sun:04:00-sun:05:00"
+
+  auto_minor_version_upgrade = true
+  copy_tags_to_snapshot      = true
+
+  deletion_protection       = var.db_deletion_protection
+  skip_final_snapshot       = var.db_skip_final_snapshot
+  final_snapshot_identifier = var.db_skip_final_snapshot ? null : "${var.name_prefix}-final"
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-postgres"
+  })
+}
+
+# -----------------------------------------------------------------------------
+# RDS Proxy (production profile)
+# -----------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "rds_proxy_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "rds_proxy" {
+  count = var.enable_rds_proxy ? 1 : 0
+
+  name               = "${var.name_prefix}-rds-proxy"
+  description        = "Allows RDS Proxy to read the TicketRush database secret"
+  assume_role_policy = data.aws_iam_policy_document.rds_proxy_assume_role.json
+
+  tags = local.tags
+}
+
+data "aws_iam_policy_document" "rds_proxy" {
+  statement {
+    sid       = "ReadDatabaseSecret"
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.db.arn]
+  }
+
+  statement {
+    sid       = "DecryptDatabaseSecret"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["secretsmanager.${local.region}.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "rds_proxy" {
+  count = var.enable_rds_proxy ? 1 : 0
+
+  name   = "${var.name_prefix}-rds-proxy"
+  role   = aws_iam_role.rds_proxy[0].id
+  policy = data.aws_iam_policy_document.rds_proxy.json
+}
+
+resource "aws_db_proxy" "this" {
+  count = var.enable_rds_proxy ? 1 : 0
+
+  name                   = "${var.name_prefix}-pg-proxy"
+  engine_family          = "POSTGRESQL"
+  role_arn               = aws_iam_role.rds_proxy[0].arn
+  vpc_subnet_ids         = var.data_subnet_ids
+  vpc_security_group_ids = [var.rds_proxy_security_group_id]
+  require_tls            = true
+  idle_client_timeout    = 1800
+  debug_logging          = false
+
+  auth {
+    auth_scheme = "SECRETS"
+    description = "TicketRush PostgreSQL credentials"
+    iam_auth    = "DISABLED"
+    secret_arn  = aws_secretsmanager_secret.db.arn
+  }
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-pg-proxy"
+  })
+
+  depends_on = [aws_iam_role_policy.rds_proxy]
+}
+
+resource "aws_db_proxy_default_target_group" "this" {
+  count = var.enable_rds_proxy ? 1 : 0
+
+  db_proxy_name = aws_db_proxy.this[0].name
+
+  connection_pool_config {
+    max_connections_percent      = 80
+    max_idle_connections_percent = 50
+    connection_borrow_timeout    = 120
+  }
+
+  lifecycle {
+    replace_triggered_by = [aws_db_proxy.this[0].id]
+  }
+}
+
+resource "aws_db_proxy_target" "this" {
+  count = var.enable_rds_proxy ? 1 : 0
+
+  db_proxy_name          = aws_db_proxy.this[0].name
+  target_group_name      = aws_db_proxy_default_target_group.this[0].name
+  db_instance_identifier = aws_db_instance.this.identifier
+}

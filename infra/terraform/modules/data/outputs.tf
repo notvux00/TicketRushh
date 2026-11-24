@@ -2,17 +2,17 @@
 
 output "db_instance_id" {
   description = "RDS instance identifier."
-  value       = null
+  value       = aws_db_instance.this.identifier
 }
 
 output "db_arn" {
   description = "RDS instance ARN."
-  value       = null
+  value       = aws_db_instance.this.arn
 }
 
 output "db_address" {
   description = "Database endpoint chosen for the application (RDS Proxy when enabled)."
-  value       = null
+  value       = var.enable_rds_proxy ? aws_db_proxy.this[0].endpoint : aws_db_instance.this.address
 }
 
 output "db_port" {
@@ -77,5 +77,5 @@ output "admin_secret_name" {
 
 output "rds_proxy_endpoint" {
   description = "RDS Proxy endpoint, or null when disabled."
-  value       = null
+  value       = var.enable_rds_proxy ? aws_db_proxy.this[0].endpoint : null
 }
