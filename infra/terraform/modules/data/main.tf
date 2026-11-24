@@ -272,3 +272,67 @@ resource "aws_db_proxy_target" "this" {
   target_group_name      = aws_db_proxy_default_target_group.this[0].name
   db_instance_identifier = aws_db_instance.this.identifier
 }
+
+# -----------------------------------------------------------------------------
+# ElastiCache Redis
+# -----------------------------------------------------------------------------
+
+resource "aws_elasticache_subnet_group" "this" {
+  name       = "${var.name_prefix}-redis"
+  subnet_ids = var.data_subnet_ids
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-redis"
+  })
+}
+
+resource "aws_elasticache_parameter_group" "this" {
+  name   = "${var.name_prefix}-redis7"
+  family = "redis7"
+
+  parameter {
+    name  = "maxmemory-policy"
+    value = "noeviction"
+  }
+
+  parameter {
+    name  = "notify-keyspace-events"
+    value = "Ex"
+  }
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-redis7"
+  })
+}
+
+resource "aws_elasticache_replication_group" "this" {
+  replication_group_id = "${var.name_prefix}-redis"
+  description          = "TicketRush Redis primary/replica"
+
+  engine         = "redis"
+  engine_version = var.redis_engine_version
+  node_type      = var.redis_node_type
+
+  num_cache_clusters         = var.redis_num_cache_clusters
+  automatic_failover_enabled = var.redis_multi_az
+  multi_az_enabled           = var.redis_multi_az
+
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+  auth_token                 = random_password.redis.result
+  auth_token_update_strategy = "ROTATE"
+
+  subnet_group_name    = aws_elasticache_subnet_group.this.name
+  security_group_ids   = [var.redis_security_group_id]
+  parameter_group_name = aws_elasticache_parameter_group.this.name
+
+  maintenance_window         = "sun:05:00-sun:06:00"
+  snapshot_window            = "02:00-03:00"
+  snapshot_retention_limit   = 5
+  apply_immediately          = true
+  auto_minor_version_upgrade = true
+
+  tags = merge(local.tags, {
+    Name = "${var.name_prefix}-redis"
+  })
+}

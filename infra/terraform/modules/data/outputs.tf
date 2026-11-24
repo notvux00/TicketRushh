@@ -1,5 +1,3 @@
-# Resource-backed outputs are placeholders in this local scaffold.
-
 output "db_instance_id" {
   description = "RDS instance identifier."
   value       = aws_db_instance.this.identifier
@@ -37,17 +35,17 @@ output "db_secret_arn" {
 
 output "redis_replication_group_id" {
   description = "ElastiCache replication group ID."
-  value       = null
+  value       = aws_elasticache_replication_group.this.replication_group_id
 }
 
 output "redis_primary_endpoint" {
   description = "Redis primary endpoint."
-  value       = null
+  value       = aws_elasticache_replication_group.this.primary_endpoint_address
 }
 
 output "redis_reader_endpoint" {
   description = "Redis reader endpoint."
-  value       = null
+  value       = aws_elasticache_replication_group.this.reader_endpoint_address
 }
 
 output "redis_port" {
