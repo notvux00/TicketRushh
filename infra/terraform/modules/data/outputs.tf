@@ -27,12 +27,12 @@ output "db_name" {
 
 output "db_secret_name" {
   description = "Secrets Manager secret name for database credentials."
-  value       = null
+  value       = aws_secretsmanager_secret.db.name
 }
 
 output "db_secret_arn" {
   description = "Secrets Manager secret ARN for database credentials."
-  value       = null
+  value       = aws_secretsmanager_secret.db.arn
 }
 
 output "redis_replication_group_id" {
@@ -57,22 +57,22 @@ output "redis_port" {
 
 output "redis_secret_name" {
   description = "Secrets Manager secret name for the Redis auth token."
-  value       = null
+  value       = aws_secretsmanager_secret.redis.name
 }
 
 output "jwt_secret_name" {
   description = "Secrets Manager secret name for the JWT signing key."
-  value       = null
+  value       = aws_secretsmanager_secret.jwt.name
 }
 
 output "ticket_signing_secret_name" {
   description = "Secrets Manager secret name for the ticket QR signing key."
-  value       = null
+  value       = aws_secretsmanager_secret.ticket_signing.name
 }
 
 output "admin_secret_name" {
   description = "Secrets Manager secret name for the initial admin password."
-  value       = null
+  value       = aws_secretsmanager_secret.admin.name
 }
 
 output "rds_proxy_endpoint" {
